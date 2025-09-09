@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>条码扫码 Demo</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    #reader { width: 300px; margin: auto; }
+    #result { margin-top: 20px; font-size: 18px; font-weight: bold; color: green; }
+    #order-status-area { margin-top: 20px; }
+    #order-status-label { margin-right: 8px; }
+    select { font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>条码扫码 Demo</h2>
+  <p>请将条形码对准摄像头</p>
+  <div id="reader"></div>
+  <div id="result">等待扫描...</div>
+  <div id="order-status-area" style="display:none;">
+    <span id="order-status-label">修改订单状态：</span>
+    <select id="order-status-select">
+      <option value="">请选择状态</option>
+      <option value="运输中">运输中</option>
+      <option value="已到达">已到达</option>
+      <option value="已签收">已签收</option>
+    </select>
+  </div>
+
+  <script>
+    function validateBarcode(barcode) {
+      // 校验规则：纯数字，长度10-20
+      return /^\d{10,20}$/.test(barcode);
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById("result").innerText = "识别结果: " + decodedText;
+
+      // 校验条码
+      if (validateBarcode(decodedText)) {
+        // 显示订���状态下拉
+        document.getElementById("order-status-area").style.display = "block";
+      } else {
+        document.getElementById("order-status-area").style.display = "none";
+      }
+
+      // 扫描一次就停止（避免重复触发）
+      html5QrCode.stop().then(() => {
+        console.log("扫码停止");
+      }).catch(err => {
+        console.error("停止失败", err);
+      });
+    }
+
+    // 初始化扫码器
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" }, // 后置摄像头
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    ).catch(err => {
+      document.getElementById("result").innerText = "启动失败: " + err;
+    });
+  </script>
+</body>
+</html>
