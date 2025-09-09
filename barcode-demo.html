@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>条码扫码 Demo</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <title>条码扫码 Demo (ZXing)</title>
+  <script src="https://unpkg.com/@zxing/browser"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,13 +17,22 @@
       font-size: 1.4em;
       margin-bottom: 0.6em;
     }
-    #reader {
+    #video-area {
       width: 100vw;
       max-width: 360px;
       margin: auto;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.12);
       background: #fff;
+      overflow: hidden;
+    }
+    #video {
+      width: 100%;
+      max-width: 360px;
+      height: 240px;
+      background: #222;
+      border-radius: 10px;
+      object-fit: cover;
     }
     #result {
       margin-top: 18px;
@@ -49,10 +58,14 @@
       max-width: 80vw;
     }
     @media (max-width: 480px) {
-      #reader {
+      #video-area {
         width: 96vw;
         max-width: 96vw;
         min-width: 220px;
+      }
+      #video {
+        max-width: 96vw;
+        height: 180px;
       }
       select {
         font-size: 1em;
@@ -76,9 +89,11 @@
   </style>
 </head>
 <body>
-  <h2>条码扫码 Demo</h2>
-  <p style="font-size:1em;">请将条形码对准摄像头</p>
-  <div id="reader"></div>
+  <h2>条码扫码 Demo (ZXing)</h2>
+  <p style="font-size:1em;">请将条形码或二维码对准摄像头</p>
+  <div id="video-area">
+    <video id="video" autoplay muted playsinline></video>
+  </div>
   <div id="result">等待扫描...</div>
   <div id="order-status-area" style="display:none;">
     <span id="order-status-label">修改订单状态：</span>
@@ -97,45 +112,46 @@
       return /^\d{10,20}$/.test(barcode);
     }
 
-    let html5QrCode;
+    let codeReader, controls;
 
-    function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById("result").innerText = "识别结果: " + decodedText;
-
-      if (validateBarcode(decodedText)) {
-        document.getElementById("order-status-area").style.display = "block";
-      } else {
-        document.getElementById("order-status-area").style.display = "none";
-      }
-
-      // 扫描一次就停止
-      html5QrCode.stop().then(() => {
-        document.getElementById("restart-btn").style.display = "inline-block";
-      }).catch(err => {
-        console.error("停止失败", err);
-      });
-    }
-
-    function startScanner() {
+    async function startScanner() {
       document.getElementById("result").innerText = "等待扫描...";
       document.getElementById("order-status-area").style.display = "none";
       document.getElementById("restart-btn").style.display = "none";
-      if (html5QrCode) {
-        html5QrCode.clear();
+      if (controls) {
+        await controls.stop();
+        controls = null;
       }
-      html5QrCode = new Html5Qrcode("reader");
-      html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 12, qrbox: { width: 220, height: 220 } },
-        onScanSuccess
-      ).catch(err => {
-        document.getElementById("result").innerText = "启动失败: " + err;
-      });
+
+      codeReader = new ZXing.BrowserMultiFormatReader();
+      const videoElem = document.getElementById('video');
+      try {
+        controls = await codeReader.decodeFromVideoDevice(
+          null,
+          videoElem,
+          (result, err) => {
+            if (result) {
+              document.getElementById("result").innerText = "识别结果: " + result.text;
+              if (validateBarcode(result.text)) {
+                document.getElementById("order-status-area").style.display = "block";
+              } else {
+                document.getElementById("order-status-area").style.display = "none";
+              }
+              // 扫到一次就停
+              controls.stop();
+              document.getElementById("restart-btn").style.display = "inline-block";
+            } else if (err && !(err instanceof ZXing.NotFoundException)) {
+              document.getElementById("result").innerText = "扫码错误: " + err;
+            }
+          }
+        );
+      } catch (e) {
+        document.getElementById("result").innerText = "启动失败: " + e;
+      }
     }
 
     document.getElementById("restart-btn").onclick = startScanner;
 
-    // 初始化扫码器
     window.onload = startScanner;
   </script>
 </body>
