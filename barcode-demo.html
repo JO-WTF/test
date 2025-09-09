@@ -2,20 +2,82 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>条码扫码 Demo</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    #reader { width: 300px; margin: auto; }
-    #result { margin-top: 20px; font-size: 18px; font-weight: bold; color: green; }
-    #order-status-area { margin-top: 20px; }
-    #order-status-label { margin-right: 8px; }
-    select { font-size: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 10px;
+      margin: 0;
+      background: #f8f8f8;
+    }
+    h2 {
+      font-size: 1.4em;
+      margin-bottom: 0.6em;
+    }
+    #reader {
+      width: 100vw;
+      max-width: 360px;
+      margin: auto;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      background: #fff;
+    }
+    #result {
+      margin-top: 18px;
+      font-size: 1.1em;
+      font-weight: bold;
+      color: green;
+      word-break: break-all;
+    }
+    #order-status-area {
+      margin-top: 18px;
+    }
+    #order-status-label {
+      margin-right: 8px;
+      font-size: 1em;
+    }
+    select {
+      font-size: 1em;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+      margin-top: 6px;
+      max-width: 80vw;
+    }
+    @media (max-width: 480px) {
+      #reader {
+        width: 96vw;
+        max-width: 96vw;
+        min-width: 220px;
+      }
+      select {
+        font-size: 1em;
+        padding: 8px 10px;
+      }
+    }
+    button {
+      margin-top: 18px;
+      font-size: 1em;
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: none;
+      background: #2d6cf6;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    button:active {
+      background: #1542a0;
+    }
   </style>
 </head>
 <body>
   <h2>条码扫码 Demo</h2>
-  <p>请将条形码对准摄像头</p>
+  <p style="font-size:1em;">请将条形码对准摄像头</p>
   <div id="reader"></div>
   <div id="result">等待扫描...</div>
   <div id="order-status-area" style="display:none;">
@@ -27,6 +89,7 @@
       <option value="已签收">已签收</option>
     </select>
   </div>
+  <button id="restart-btn" style="display:none;">重新扫码</button>
 
   <script>
     function validateBarcode(barcode) {
@@ -34,34 +97,46 @@
       return /^\d{10,20}$/.test(barcode);
     }
 
+    let html5QrCode;
+
     function onScanSuccess(decodedText, decodedResult) {
       document.getElementById("result").innerText = "识别结果: " + decodedText;
 
-      // 校验条码
       if (validateBarcode(decodedText)) {
-        // 显示订���状态下拉
         document.getElementById("order-status-area").style.display = "block";
       } else {
         document.getElementById("order-status-area").style.display = "none";
       }
 
-      // 扫描一次就停止（避免重复触发）
+      // 扫描一次就停止
       html5QrCode.stop().then(() => {
-        console.log("扫码停止");
+        document.getElementById("restart-btn").style.display = "inline-block";
       }).catch(err => {
         console.error("停止失败", err);
       });
     }
 
+    function startScanner() {
+      document.getElementById("result").innerText = "等待扫描...";
+      document.getElementById("order-status-area").style.display = "none";
+      document.getElementById("restart-btn").style.display = "none";
+      if (html5QrCode) {
+        html5QrCode.clear();
+      }
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 12, qrbox: { width: 220, height: 220 } },
+        onScanSuccess
+      ).catch(err => {
+        document.getElementById("result").innerText = "启动失败: " + err;
+      });
+    }
+
+    document.getElementById("restart-btn").onclick = startScanner;
+
     // 初始化扫码器
-    const html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start(
-      { facingMode: "environment" }, // 后置摄像头
-      { fps: 10, qrbox: 250 },
-      onScanSuccess
-    ).catch(err => {
-      document.getElementById("result").innerText = "启动失败: " + err;
-    });
+    window.onload = startScanner;
   </script>
 </body>
 </html>
