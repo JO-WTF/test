@@ -4,14 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>条码扫码 Demo (ZXing)</title>
-  <script src="https://unpkg.com/@zxing/browser"></script>
+  <!-- 使用 @zxing/library (UMD 版本) -->
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; padding: 10px; margin: 0; background: #f8f8f8; }
     h2 { font-size: 1.4em; margin-bottom: 0.6em; }
-    #video-area { width: 100vw; max-width: 360px; margin: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #fff; overflow: hidden; display:none;}
+    #video-area { width: 100vw; max-width: 360px; margin: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #fff; overflow: hidden; display: none;}
     #video { width: 100%; max-width: 360px; height: 240px; background: #222; border-radius: 10px; object-fit: cover;}
-    #result { margin-top: 18px; font-size: 1.1em; font-weight: bold; color: green; word-break: break-all; display:none;}
-    #order-status-area { margin-top: 18px; }
+    #result { margin-top: 18px; font-size: 1.1em; font-weight: bold; color: green; word-break: break-all;}
+    #order-status-area { margin-top: 18px; display:none; }
     #order-status-label { margin-right: 8px; font-size: 1em; }
     select { font-size: 1em; padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; margin-top: 6px; max-width: 80vw;}
     @media (max-width: 480px) { #video-area { width: 96vw; max-width: 96vw; min-width: 220px; } #video { max-width: 96vw; height: 180px; } select { font-size: 1em; padding: 8px 10px; } }
@@ -22,14 +23,16 @@
 </head>
 <body>
   <h2>条码扫码 Demo (ZXing)</h2>
-  <p style="font-size:1em;">请将条形码或二维码对准摄像头</p>
+  <p style="font-size:1em;">点击按钮后允许访问摄像头，然后将条码/二维码对准镜头</p>
+
   <button id="start-btn">开始扫码</button>
+
   <div id="video-area">
     <video id="video" autoplay muted playsinline></video>
   </div>
   <div id="tip"></div>
   <div id="result">等待扫描...</div>
-  <div id="order-status-area" style="display:none;">
+  <div id="order-status-area">
     <span id="order-status-label">修改订单状态：</span>
     <select id="order-status-select">
       <option value="">请选择状态</option>
@@ -46,34 +49,29 @@
       return /^\d{10,20}$/.test(barcode);
     }
 
-    let codeReader, controls;
+    let codeReader;
 
     async function startScanner() {
-      document.getElementById("start-btn").style.display = "none";
-      document.getElementById("video-area").style.display = "block";
-      document.getElementById("result").style.display = "block";
       document.getElementById("result").innerText = "等待扫描...";
       document.getElementById("tip").innerText = "";
       document.getElementById("order-status-area").style.display = "none";
       document.getElementById("restart-btn").style.display = "none";
-      if (controls) {
-        await controls.stop();
-        controls = null;
+      document.getElementById("start-btn").style.display = "none";
+      document.getElementById("video-area").style.display = "block";
+
+      if (!codeReader) {
+        codeReader = new ZXing.BrowserMultiFormatReader();
+      } else {
+        codeReader.reset(); // 重置扫描器
       }
 
-      codeReader = new ZXing.BrowserMultiFormatReader();
       const videoElem = document.getElementById('video');
-      // 固定后置摄像头
-      const constraints = { video: { facingMode: { exact: "environment" } } };
       try {
-        await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (e) {
-        document.getElementById("tip").innerText = "无法访问摄像头，请检查浏览器权限设置，并允许摄像头访问！";
-        return;
-      }
-      try {
-        controls = await codeReader.decodeFromVideoDevice(
-          null,
+        const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+        let deviceId = devices.length > 0 ? devices[0].deviceId : null;
+
+        codeReader.decodeFromVideoDevice(
+          deviceId,
           videoElem,
           (result, err) => {
             if (result) {
@@ -83,22 +81,20 @@
               } else {
                 document.getElementById("order-status-area").style.display = "none";
               }
-              // 扫到一次就停
-              controls.stop();
+              codeReader.reset(); // 扫到一次就停
               document.getElementById("restart-btn").style.display = "inline-block";
             } else if (err && !(err instanceof ZXing.NotFoundException)) {
               document.getElementById("result").innerText = "扫码错误: " + err;
             }
-          },
-          constraints.video
+          }
         );
       } catch (e) {
         document.getElementById("tip").innerText = "启动失败: " + e;
       }
     }
 
-    document.getElementById("start-btn").onclick = startScanner;
     document.getElementById("restart-btn").onclick = startScanner;
+    document.getElementById("start-btn").onclick = startScanner;
   </script>
 </body>
 </html>
