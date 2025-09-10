@@ -1,100 +1,81 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>条码扫码 Demo (ZXing)</title>
-  <!-- 使用 @zxing/library (UMD 版本) -->
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <meta charset="UTF-8">
+  <title>扫码 Demo</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 10px; margin: 0; background: #f8f8f8; }
-    h2 { font-size: 1.4em; margin-bottom: 0.6em; }
-    #video-area { width: 100vw; max-width: 360px; margin: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #fff; overflow: hidden; display: none;}
-    #video { width: 100%; max-width: 360px; height: 240px; background: #222; border-radius: 10px; object-fit: cover;}
-    #result { margin-top: 18px; font-size: 1.1em; font-weight: bold; color: green; word-break: break-all;}
-    #order-status-area { margin-top: 18px; display:none; }
-    #order-status-label { margin-right: 8px; font-size: 1em; }
-    select { font-size: 1em; padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; margin-top: 6px; max-width: 80vw;}
-    @media (max-width: 480px) { #video-area { width: 96vw; max-width: 96vw; min-width: 220px; } #video { max-width: 96vw; height: 180px; } select { font-size: 1em; padding: 8px 10px; } }
-    button { margin-top: 18px; font-size: 1em; padding: 8px 20px; border-radius: 6px; border: none; background: #2d6cf6; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);}
-    button:active { background: #1542a0; }
-    #tip { color: #d00; margin-top: 10px; font-size: 0.98em;}
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    video { width: 100%; max-width: 400px; border: 1px solid #ccc; margin: 10px 0; }
+    select, button { margin: 5px; padding: 8px; font-size: 14px; }
+    #result { margin-top: 10px; font-weight: bold; color: green; }
   </style>
 </head>
 <body>
-  <h2>条码扫码 Demo (ZXing)</h2>
-  <p style="font-size:1em;">点击按钮后允许访问摄像头，然后将条码/二维码对准镜头</p>
+  <h1>二维码扫码 Demo</h1>
+  <p>请选择摄像头并点击开始扫码</p>
+  
+  <select id="cameraSelect"></select>
+  <br>
+  <button id="startButton">开始扫码</button>
+  <button id="resetButton">停止</button>
 
-  <button id="start-btn">开始扫码</button>
-
-  <div id="video-area">
+  <div>
     <video id="video" autoplay muted playsinline></video>
   </div>
-  <div id="tip"></div>
-  <div id="result">等待扫描...</div>
-  <div id="order-status-area">
-    <span id="order-status-label">修改订单状态：</span>
-    <select id="order-status-select">
-      <option value="">请选择状态</option>
-      <option value="运输中">运输中</option>
-      <option value="已到达">已到达</option>
-      <option value="已签收">已签收</option>
-    </select>
-  </div>
-  <button id="restart-btn" style="display:none;">重新扫码</button>
+  
+  <div id="result">扫描结��会显示在这里</div>
 
+  <!-- 引入 ZXing -->
+  <script src="https://unpkg.com/@zxing/library@0.18.6"></script>
   <script>
-    function validateBarcode(barcode) {
-      // 校验规则：纯数字，长度10-20
-      return /^\d{10,20}$/.test(barcode);
-    }
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const resultElement = document.getElementById('result');
+    const startButton = document.getElementById('startButton');
+    const resetButton = document.getElementById('resetButton');
+    let selectedDeviceId = null;
 
-    let codeReader;
-
-    async function startScanner() {
-      document.getElementById("result").innerText = "等待扫描...";
-      document.getElementById("tip").innerText = "";
-      document.getElementById("order-status-area").style.display = "none";
-      document.getElementById("restart-btn").style.display = "none";
-      document.getElementById("start-btn").style.display = "none";
-      document.getElementById("video-area").style.display = "block";
-
-      if (!codeReader) {
-        codeReader = new ZXing.BrowserMultiFormatReader();
-      } else {
-        codeReader.reset(); // 重置扫描器
+    // 列出可用摄像头
+    codeReader.listVideoInputDevices().then(videoInputDevices => {
+      if (videoInputDevices.length === 0) {
+        alert("没有检测到摄像头！");
+        return;
       }
 
-      const videoElem = document.getElementById('video');
-      try {
-        const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-        let deviceId = devices.length > 0 ? devices[0].deviceId : null;
+      videoInputDevices.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.text = device.label || `摄像头 ${index + 1}`;
+        cameraSelect.appendChild(option);
+      });
 
-        codeReader.decodeFromVideoDevice(
-          deviceId,
-          videoElem,
-          (result, err) => {
-            if (result) {
-              document.getElementById("result").innerText = "识别结果: " + result.text;
-              if (validateBarcode(result.text)) {
-                document.getElementById("order-status-area").style.display = "block";
-              } else {
-                document.getElementById("order-status-area").style.display = "none";
-              }
-              codeReader.reset(); // 扫到一次就停
-              document.getElementById("restart-btn").style.display = "inline-block";
-            } else if (err && !(err instanceof ZXing.NotFoundException)) {
-              document.getElementById("result").innerText = "扫码错误: " + err;
-            }
-          }
-        );
-      } catch (e) {
-        document.getElementById("tip").innerText = "启动失败: " + e;
-      }
-    }
+      // 默认选第一个
+      selectedDeviceId = videoInputDevices[0].deviceId;
+      cameraSelect.onchange = () => {
+        selectedDeviceId = cameraSelect.value;
+      };
+    });
 
-    document.getElementById("restart-btn").onclick = startScanner;
-    document.getElementById("start-btn").onclick = startScanner;
+    // 开始扫码
+    startButton.addEventListener('click', () => {
+      resultElement.textContent = "正在扫描...";
+      codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
+        if (result) {
+          resultElement.textContent = "扫描结果：" + result.getText();
+          console.log(result.getText());
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error(err);
+        }
+      });
+    });
+
+    // 停止扫码
+    resetButton.addEventListener('click', () => {
+      codeReader.reset();
+      resultElement.textContent = "已停止扫描";
+    });
   </script>
 </body>
 </html>
