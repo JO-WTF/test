@@ -8,9 +8,9 @@
   <style>
     body { font-family: Arial, sans-serif; text-align: center; padding: 10px; margin: 0; background: #f8f8f8; }
     h2 { font-size: 1.4em; margin-bottom: 0.6em; }
-    #video-area { width: 100vw; max-width: 360px; margin: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #fff; overflow: hidden;}
+    #video-area { width: 100vw; max-width: 360px; margin: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #fff; overflow: hidden; display:none;}
     #video { width: 100%; max-width: 360px; height: 240px; background: #222; border-radius: 10px; object-fit: cover;}
-    #result { margin-top: 18px; font-size: 1.1em; font-weight: bold; color: green; word-break: break-all;}
+    #result { margin-top: 18px; font-size: 1.1em; font-weight: bold; color: green; word-break: break-all; display:none;}
     #order-status-area { margin-top: 18px; }
     #order-status-label { margin-right: 8px; font-size: 1em; }
     select { font-size: 1em; padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; margin-top: 6px; max-width: 80vw;}
@@ -23,6 +23,7 @@
 <body>
   <h2>条码扫码 Demo (ZXing)</h2>
   <p style="font-size:1em;">请将条形码或二维码对准摄像头</p>
+  <button id="start-btn">开始扫码</button>
   <div id="video-area">
     <video id="video" autoplay muted playsinline></video>
   </div>
@@ -48,6 +49,9 @@
     let codeReader, controls;
 
     async function startScanner() {
+      document.getElementById("start-btn").style.display = "none";
+      document.getElementById("video-area").style.display = "block";
+      document.getElementById("result").style.display = "block";
       document.getElementById("result").innerText = "等待扫描...";
       document.getElementById("tip").innerText = "";
       document.getElementById("order-status-area").style.display = "none";
@@ -59,9 +63,10 @@
 
       codeReader = new ZXing.BrowserMultiFormatReader();
       const videoElem = document.getElementById('video');
-      // 主动请求摄像头权限，提示用户
+      // 固定后置摄像头
+      const constraints = { video: { facingMode: { exact: "environment" } } };
       try {
-        await navigator.mediaDevices.getUserMedia({video:true});
+        await navigator.mediaDevices.getUserMedia(constraints);
       } catch (e) {
         document.getElementById("tip").innerText = "无法访问摄像头，请检查浏览器权限设置，并允许摄像头访问！";
         return;
@@ -84,16 +89,16 @@
             } else if (err && !(err instanceof ZXing.NotFoundException)) {
               document.getElementById("result").innerText = "扫码错误: " + err;
             }
-          }
+          },
+          constraints.video
         );
       } catch (e) {
         document.getElementById("tip").innerText = "启动失败: " + e;
       }
     }
 
+    document.getElementById("start-btn").onclick = startScanner;
     document.getElementById("restart-btn").onclick = startScanner;
-
-    window.onload = startScanner;
   </script>
 </body>
 </html>
