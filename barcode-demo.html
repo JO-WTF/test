@@ -6,86 +6,18 @@
   <title>条码扫码 Demo (ZXing)</title>
   <script src="https://unpkg.com/@zxing/browser"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 10px;
-      margin: 0;
-      background: #f8f8f8;
-    }
-    h2 {
-      font-size: 1.4em;
-      margin-bottom: 0.6em;
-    }
-    #video-area {
-      width: 100vw;
-      max-width: 360px;
-      margin: auto;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-      background: #fff;
-      overflow: hidden;
-    }
-    #video {
-      width: 100%;
-      max-width: 360px;
-      height: 240px;
-      background: #222;
-      border-radius: 10px;
-      object-fit: cover;
-    }
-    #result {
-      margin-top: 18px;
-      font-size: 1.1em;
-      font-weight: bold;
-      color: green;
-      word-break: break-all;
-    }
-    #order-status-area {
-      margin-top: 18px;
-    }
-    #order-status-label {
-      margin-right: 8px;
-      font-size: 1em;
-    }
-    select {
-      font-size: 1em;
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      background: #fff;
-      margin-top: 6px;
-      max-width: 80vw;
-    }
-    @media (max-width: 480px) {
-      #video-area {
-        width: 96vw;
-        max-width: 96vw;
-        min-width: 220px;
-      }
-      #video {
-        max-width: 96vw;
-        height: 180px;
-      }
-      select {
-        font-size: 1em;
-        padding: 8px 10px;
-      }
-    }
-    button {
-      margin-top: 18px;
-      font-size: 1em;
-      padding: 8px 20px;
-      border-radius: 6px;
-      border: none;
-      background: #2d6cf6;
-      color: #fff;
-      cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-    button:active {
-      background: #1542a0;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 10px; margin: 0; background: #f8f8f8; }
+    h2 { font-size: 1.4em; margin-bottom: 0.6em; }
+    #video-area { width: 100vw; max-width: 360px; margin: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #fff; overflow: hidden;}
+    #video { width: 100%; max-width: 360px; height: 240px; background: #222; border-radius: 10px; object-fit: cover;}
+    #result { margin-top: 18px; font-size: 1.1em; font-weight: bold; color: green; word-break: break-all;}
+    #order-status-area { margin-top: 18px; }
+    #order-status-label { margin-right: 8px; font-size: 1em; }
+    select { font-size: 1em; padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; margin-top: 6px; max-width: 80vw;}
+    @media (max-width: 480px) { #video-area { width: 96vw; max-width: 96vw; min-width: 220px; } #video { max-width: 96vw; height: 180px; } select { font-size: 1em; padding: 8px 10px; } }
+    button { margin-top: 18px; font-size: 1em; padding: 8px 20px; border-radius: 6px; border: none; background: #2d6cf6; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);}
+    button:active { background: #1542a0; }
+    #tip { color: #d00; margin-top: 10px; font-size: 0.98em;}
   </style>
 </head>
 <body>
@@ -94,6 +26,7 @@
   <div id="video-area">
     <video id="video" autoplay muted playsinline></video>
   </div>
+  <div id="tip"></div>
   <div id="result">等待扫描...</div>
   <div id="order-status-area" style="display:none;">
     <span id="order-status-label">修改订单状态：</span>
@@ -116,6 +49,7 @@
 
     async function startScanner() {
       document.getElementById("result").innerText = "等待扫描...";
+      document.getElementById("tip").innerText = "";
       document.getElementById("order-status-area").style.display = "none";
       document.getElementById("restart-btn").style.display = "none";
       if (controls) {
@@ -125,6 +59,13 @@
 
       codeReader = new ZXing.BrowserMultiFormatReader();
       const videoElem = document.getElementById('video');
+      // 主动请求摄像头权限，提示用户
+      try {
+        await navigator.mediaDevices.getUserMedia({video:true});
+      } catch (e) {
+        document.getElementById("tip").innerText = "无法访问摄像头，请检查浏览器权限设置，并允许摄像头访问！";
+        return;
+      }
       try {
         controls = await codeReader.decodeFromVideoDevice(
           null,
@@ -146,7 +87,7 @@
           }
         );
       } catch (e) {
-        document.getElementById("result").innerText = "启动失败: " + e;
+        document.getElementById("tip").innerText = "启动失败: " + e;
       }
     }
 
