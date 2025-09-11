@@ -11,7 +11,7 @@
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
     label{font-size:12px;color:#8aa2c8}
     input,select{background:#0e1631;color:#eaf2ff;border:1px solid #2a3a66;border-radius:10px;padding:8px 10px}
-    input[type="datetime-local"]{min-width:220px}
+    input[type="date"]{min-width:220px}
     .btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-weight:700;background:#69a8ff;color:#07122b}
     .ghost{background:#12182b;color:#eaf2ff}
     table{width:100%;border-collapse:collapse;margin-top:10px}
@@ -56,16 +56,18 @@
         </select>
       </div>
       <div>
-        <label>开始时间</label><br>
-        <input id="f-from" type="datetime-local">
+        <label>开始日期</label><br>
+        <input id="f-from" type="date">
       </div>
       <div>
-        <label>结束时间</label><br>
-        <input id="f-to" type="datetime-local">
+        <label>结束日期</label><br>
+        <input id="f-to" type="date">
       </div>
       <div>
         <button class="btn" id="btn-search">查询</button>
         <button class="btn ghost" id="btn-reset">重置</button>
+        <button class="btn ghost" id="btn-export">导出本页</button>
+        <button class="btn ghost" id="btn-export-all">导出全部</button>
       </div>
     </div>
   </div>
@@ -119,8 +121,14 @@
     if(st) p.set('status', st);
     if(rk) p.set('remark', rk);
     if(hp) p.set('has_photo', hp);
-    if(df) p.set('date_from', new Date(df).toISOString());
-    if(dt) p.set('date_to', new Date(dt).toISOString());
+    if(df){
+      const d = new Date(df + "T00:00:00");
+      p.set('date_from', d.toISOString());
+    }
+    if(dt){
+      const d = new Date(dt + "T23:59:59");
+      p.set('date_to', d.toISOString());
+    }
     p.set('page', q.page);
     p.set('page_size', q.page_size);
     return p.toString();
@@ -173,6 +181,117 @@
   };
   el('prev').onclick = ()=>{ if(q.page>1){ q.page--; fetchList(); }};
   el('next').onclick = ()=>{ q.page++; fetchList(); };
+
+  // 记录最近一次查询结果，便于“导出本页”
+  let lastItems = [];
+
+  // CSV 工具：转义单元格
+  function csvEscape(val){
+    if(val === null || val === undefined) return '';
+    const s = String(val);
+    // 如果包含逗号、双引号、换行，需要用引号包裹，并把双引号转义为 ""。
+    if(/[",\n]/.test(s)){
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  }
+
+  // 生成并下载 CSV 文件
+  function downloadCSV(rows, filename='du_export.csv'){
+    const bom = '\uFEFF'; // 让 Excel 识别 UTF-8
+    const lines = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([bom + lines], {type: 'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // 根据记录数组，生成 CSV 数据行（含表头）
+  function toCsvRows(items){
+    const header = ['ID','DU ID','状态','备注','照片URL','时间'];
+    const rows = [header];
+    for(const it of items){
+      const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
+      const remark = it.remark ? String(it.remark).replace(/[<>]/g,'') : '';
+      const photo = it.photo_url ? toAbsUrl(it.photo_url) : '';
+      rows.push([it.id, it.du_id, it.status || '', remark, photo, t]);
+    }
+    return rows;
+  }
+
+  // 导出“本页”——基于最近一次 fetch 的 items
+  function exportCurrentPage(){
+    if(!lastItems.length){
+      alert('没有可导出的数据，请先查询。');
+      return;
+    }
+    const rows = toCsvRows(lastItems);
+    downloadCSV(rows, 'du_current_page.csv');
+  }
+
+  // 拉取“全部结果”并导出（遵循当前筛选条件）
+  async function exportAll(){
+    try{
+      hint.textContent = '正在导出全部数据，请稍候…';
+      // 先拉一次，拿 total 和首页数据
+      const firstParams = new URLSearchParams(buildParams());
+      firstParams.set('page', '1');
+      firstParams.set('page_size', String(q.page_size)); // 使用当前每页大小
+      const firstUrl = `${API_BASE}/api/du/search?${firstParams.toString()}`;
+
+      const firstResp = await fetch(firstUrl);
+      const firstRaw = await firstResp.text();
+      let firstData = null; try{ firstData = firstRaw ? JSON.parse(firstRaw) : null }catch{}
+      if(!firstResp.ok){ throw new Error((firstData && (firstData.detail||firstData.message)) || ('HTTP '+firstResp.status)); }
+
+      const total = firstData?.total || 0;
+      let items = Array.isArray(firstData?.items) ? firstData.items.slice() : [];
+
+      // 如果还有更多页，把剩余页也抓回来
+      const per = q.page_size || 20;
+      const pages = Math.max(1, Math.ceil(total / per));
+      for(let p=2; p<=pages; p++){
+        const pParams = new URLSearchParams(buildParams());
+        pParams.set('page', String(p));
+        pParams.set('page_size', String(per));
+        const url = `${API_BASE}/api/du/search?${pParams.toString()}`;
+        const resp = await fetch(url);
+        const raw = await resp.text();
+        let data = null; try{ data = raw ? JSON.parse(raw) : null }catch{}
+        if(!resp.ok){ throw new Error((data && (data.detail||data.message)) || ('HTTP '+resp.status)); }
+        if(Array.isArray(data?.items) && data.items.length){
+          items = items.concat(data.items);
+        }
+      }
+
+      if(!items.length){
+        alert('没有匹配的数据可导出。');
+        hint.textContent = total ? '' : '没有数据';
+        return;
+      }
+
+      const rows = toCsvRows(items);
+      downloadCSV(rows, 'du_all_results.csv');
+      hint.textContent = '';
+    }catch(err){
+      hint.textContent = '导出失败：' + (err?.message || err);
+    }
+  }
+
+  // —— 将导出按钮与函数绑定 —— //
+  el('btn-export').onclick = exportCurrentPage;
+  el('btn-export-all').onclick = exportAll;
+
+  // 对现有 fetchList 做一个小改动：保存 lastItems
+  const _fetchList_orig = fetchList;
+  fetchList = async function(){
+    await _fetchList_orig();
+  };
+
 </script>
 </body>
 </html>
