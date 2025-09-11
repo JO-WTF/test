@@ -119,3 +119,64 @@ html, body, .wrap { overflow-x: hidden; }
 @media (max-width: 360px) {
   .uploader .thumb { width: 80px; height: 80px; }
 }
+
+/* —— DID + 输入框：一体化样式 —— */
+.did-input .did-row{
+  display:flex;
+  align-items:center;
+  gap:0;                          /* 贴合在一起 */
+  border:1px solid #20305a;       /* 外框 */
+  background:#0c1328;             /* 整体底色 */
+  border-radius:12px;
+  padding:0;                      /* 让内边距交给前后两块 */
+  overflow:hidden;                /* 圆角裁切 */
+}
+
+/* 左侧固定前缀：不可编辑的“DID”方块 */
+.did-input .prefix{
+  flex:0 0 auto;
+  padding:10px 12px;
+  background:#0a1124;             /* 略深，表示禁用/只读感 */
+  color:#9fb0d6;
+  font-weight:700;
+  border-right:1px solid #20305a; /* 与输入框分隔 */
+  letter-spacing:.5px;
+  user-select:none;
+  cursor:default;                 /* 不可点击的感觉 */
+}
+
+/* 右侧输入：弱化边框，透明背景，专注文字 */
+.did-input input{
+  flex:1 1 auto;
+  min-width:0;                    /* 关键：在 flex 内可收缩 */
+  border:0;                       /* 去边框 */
+  outline:0;
+  background:transparent;         /* 与容器融为一体 */
+  color:var(--fg);
+  padding:10px 12px;
+  font-weight:600;                /* 稍有重量但不喧宾 */
+}
+
+/* 占位提示更弱化 */
+.did-input input::placeholder{
+  color:var(--muted);
+  font-weight:400;
+}
+
+/* 聚焦态：外框高亮，而不是单独高亮 input */
+.did-input .did-row:focus-within{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(105,168,255,.15);
+}
+
+/* 错误/无效（可选）：给 did-row 加 .invalid 时的样式 */
+.did-input .did-row.invalid{
+  border-color:var(--err);
+  box-shadow:0 0 0 3px rgba(255,154,166,.15);
+}
+
+/* 极窄屏优化 */
+@media (max-width:360px){
+  .did-input .prefix{ padding:8px 10px; }
+  .did-input input{  padding:8px 10px; }
+}
