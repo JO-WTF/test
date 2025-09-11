@@ -1,7 +1,7 @@
 // app.js — 智能镜头切换 + iOS 变焦兜底 + 满13位收键盘停摄像头（稳定版）
 import { translations, tFactory } from './i18n.js';
 
-const { createApp, ref, reactive, onMounted, onBeforeUnmount } = window.Vue;
+const { createApp, ref, reactive, onMounted, onBeforeUnmount, nextTick } = window.Vue;
 
 // ====== ZXing Reader 工厂 ======
 function createReader(){
@@ -425,6 +425,13 @@ createApp({
                 remark: state.remark,
                 photo: state.photoPreview || ''
               };
+              // ✅ 等待 DOM 更新完成后滚动到底部
+              nextTick(() => {
+                window.scrollTo({
+                  top: document.body.scrollHeight,
+                  behavior: "smooth"
+                });
+              });
             }
           }else{
             const msg = (data && (data.detail || data.message)) || ('HTTP ' + status);
