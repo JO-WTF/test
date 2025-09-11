@@ -149,6 +149,7 @@
         <!-- 提交成功后的结果展示 -->
         <div class="result-box" ref="endAnchor v-if="state.showResult">
           <h3>{{ t('submittedTitle') }}</h3>
+          {{ t('submit') }}
           <div class="result-row"><span class="k">{{ t('duIdLabel') }}:</span><span class="v mono">{{ state.submitView.duId }}</span></div>
           <div class="result-row"><span class="k">{{ t('statusLabel') }}:</span><span class="v">{{ statusLabel(state.submitView.status) }}</span></div>
           <div class="result-row"><span class="k">{{ t('remarkLabel') }}:</span><span class="v">{{ state.submitView.remark || '-' }}</span></div>
