@@ -2,15 +2,17 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <!-- 禁用缩放 + 全面屏适配 -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Perbarui Status DU</title>
-  <!-- Vue 3 -->
+  <title>Pemindaian - Pembaruan Status</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <!-- Vue 3 & ZXing (全局 UMD) -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <!-- 仅使用 @zxing/browser（UMD 全局为 ZXingBrowser） -->
   <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
 
-  <!-- 兜底：禁止捏合/双击缩放（放在最前面尽早生效） -->
+  <!-- 可选：在 HTML 里覆盖后端地址，无需改代码 -->
+  <!-- <script>window.API_URL = "https://your-backend-service.com/api/du/update";</script> -->
+
+  <!-- 兜底：禁用缩放（保持和原版一致） -->
   <script>
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
@@ -30,1139 +32,114 @@
       if (e.ctrlKey || e.metaKey) e.preventDefault();
     }, { passive: false });
   </script>
-
-  <style>
-    :root { --fg:#eaf2ff; --bg:#0b1020; --accent:#69a8ff; --muted:#8aa2c8; --ok:#66e6a4; --err:#ff9aa6; }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%}
-    html,body{ -webkit-text-size-adjust:100%; touch-action:manipulation; }
-
-    body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 40px;gap:16px}
-    h1{font-size:18px;margin:0 0 4px;text-align:center;font-weight:600}
-
-    /* 语言切换 */
-    .lang-switch{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:1000}
-    .lang-switch button{appearance:none;border:1px solid #2a3a66;background:#101831;color:var(--fg);padding:6px 10px;border-radius:999px;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer}
-    .lang-switch img{width:20px;height:14px;object-fit:cover;border-radius:2px}
-    .lang-switch .active{outline:2px solid var(--accent);}
-
-    /* 扫描框区域：16:9 */
-    .scan-area{position:relative;width:min(84vw,520px);aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#000}
-    video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .corners{position:absolute;inset:0;pointer-events:none}
-    .c{position:absolute;width:18%;height:40%;border:3px solid var(--accent)}
-    .tl{left:10px;top:10px;border-right:0;border-bottom:0;border-radius:12px 0 0 0}
-    .tr{right:10px;top:10px;border-left:0;border-bottom:0;border-radius:0 12px 0 0}
-    .bl{left:10px;bottom:10px;border-right:0;border-top:0;border-radius:0 0 0 12px}
-    .br{right:10px;bottom:10px;border-left:0;border-top:0;border-radius:0 0 12px 0}
-
-    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    button{appearance:none;border:0;border-radius:999px;padding:12px 16px;font-weight:600;background:#12182b;color:var(--fg);font-size:16px;cursor:pointer}
-    .primary{background:var(--accent);color:#07122b}
-    .ghost{background:#12182b;color:var(--fg)}
-    button[disabled]{opacity:.6;cursor:not-allowed}
-    .tag{font-size:12px;padding:8px 10px;border-radius:999px;background:#0f1730;border:1px solid #1f2a4d}
-
-    .card{width:min(92vw,720px);background:#101831;border:1px solid #1f2a4d;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
-    .card h2{font-size:16px;margin:0}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-
-    /* 状态更新区块 */
-    .status-box{padding:14px;border:2px solid var(--accent);border-radius:12px;background:#0b1327;display:flex;flex-direction:column;gap:12px}
-    .status-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .status-row label{font-weight:700}
-    select.status{min-width:180px;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg)}
-
-    .flex-2{display:flex;gap:12px;flex-wrap:wrap}
-    .flex-2 > .col{flex:1 1 300px}
-    textarea{width:100%;min-height:96px;resize:vertical;border-radius:12px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg);padding:10px 12px;font-size:16px}
-
-    .uploader{border:1px dashed #2a3a66;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:flex-start}
-    .uploader input[type=file]{display:block;font-size:16px}
-    .thumb{width:96px;height:96px;border-radius:10px;background:#081028;border:1px solid #20305a;object-fit:cover}
-
-    /* 关键：输入控件字号 >=16px，避免聚焦自动缩放 */
-    input, select, textarea { font-size:16px; }
-
-    .ok{color:var(--ok)}
-    .err{color:var(--err)}
-
-    /* —— 进度条 —— */
-    .progress{position:relative;height:10px;background:#0f1730;border:1px solid #1f2a4d;border-radius:999px;overflow:hidden}
-    .progress-bar{height:100%;background:var(--accent);transition:width .2s ease}
-    .progress.indeterminate .progress-bar{width:30%;animation:indet 1.2s infinite}
-    @keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
-    .progress-text{margin-top:6px;font-size:12px;color:var(--muted)}
-
-    /* 未选择状态的显著提示 */
-    .invalid{border-color:var(--err)!important; box-shadow:0 0 0 3px rgba(255,154,166,.15)}
-    .hint{font-size:12px;color:var(--err)}
-    .shake{animation:shake .25s linear 2}
-    @keyframes shake{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
-  </style>
 </head>
 <body>
-<div id="app" class="wrap">
-  <!-- 语言切换 -->
-  <div class="lang-switch">
-    <button :class="{active: state.lang==='zh'}" @click="setLang('zh')" aria-label="Switch to Chinese">
-      <img src="https://flagcdn.com/w20/cn.png" alt="CN" />中文
-    </button>
-    <button :class="{active: state.lang==='en'}" @click="setLang('en')" aria-label="Switch to English">
-      <img src="https://flagcdn.com/w20/gb.png" alt="GB" />English
-    </button>
-    <button :class="{active: state.lang==='id'}" @click="setLang('id')" aria-label="Beralih ke Bahasa Indonesia">
-      <img src="https://flagcdn.com/w20/id.png" alt="ID" />Indonesia
-    </button>
-  </div>
-
-  <div>
-    <h1>{{ t('scanTitle') }}</h1>
-  </div>
-
-  <section class="scan-area">
-    <video ref="video" playsinline muted autoplay></video>
-    <div class="corners">
-      <div class="c tl"></div>
-      <div class="c tr"></div>
-      <div class="c bl"></div>
-      <div class="c br"></div>
+  <div id="app" class="wrap">
+    <!-- 语言切换 -->
+    <div class="lang-switch">
+      <button :class="{active: state.lang==='zh'}" @click="setLang('zh')" aria-label="Switch to Chinese">
+        <img src="https://flagcdn.com/w20/cn.png" alt="CN" />中文
+      </button>
+      <button :class="{active: state.lang==='en'}" @click="setLang('en')" aria-label="Switch to English">
+        <img src="https://flagcdn.com/w20/gb.png" alt="GB" />English
+      </button>
+      <button :class="{active: state.lang==='id'}" @click="setLang('id')" aria-label="Beralih ke Bahasa Indonesia">
+        <img src="https://flagcdn.com/w20/id.png" alt="ID" />Indonesia
+      </button>
     </div>
-  </section>
 
-  <div class="tag" v-if="state.torchSupported">{{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b></div>
-
-  <div class="row" v-if="!state.last">
-    <button class="primary" @click="start" :disabled="state.running">{{ t('startScan') }}</button>
-    <button class="ghost" @click="stop" :disabled="!state.running">{{ t('stop') }}</button>
-    <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">{{ t('torchToggle') }}</button>
-  </div>
-
-  <div class="card" v-if="state.last">
-    <div class="row">
-      <button class="primary" @click="resume">{{ t('rescan') }}</button>
+    <div>
+      <h1>{{ t('scanTitle') }}</h1>
     </div>
-    <h2>{{ t('result') }}</h2>
-    <div class="mono">{{ state.last.text }}</div>
 
-    <template v-if="state.isValid">
-      <div class="status-box">
-        <div class="status-row" :class="{'shake': state.needsStatusShake}">
-          <label for="duStatus">{{ t('updateStatus') }}：</label>
-          <select
-            id="duStatus"
-            class="status"
-            :class="{'invalid': state.needsStatusHint}"
-            v-model="state.duStatus"
-            aria-invalid="true"
-            @change="state.needsStatusHint=false; state.needsStatusShake=false"
-          >
-            <option value="" disabled>{{ t('choose') }}</option>
-            <!-- 注意：提交给后端的值仍保留中文（与原后端兼容），UI 文案本地化 -->
-            <option value="运输中">{{ t('inTransit') }}</option>
-            <option value="已到达">{{ t('arrived') }}</option>
-          </select>
-        </div>
-        <div class="hint" v-if="state.needsStatusHint">{{ t('needSelectStatus') }}</div>
+    <section class="scan-area">
+      <video ref="video" playsinline muted autoplay></video>
+      <div class="corners">
+        <div class="c tl"></div>
+        <div class="c tr"></div>
+        <div class="c bl"></div>
+        <div class="c br"></div>
+      </div>
+    </section>
 
-        <div class="flex-2">
-          <div class="col">
-            <label style="display:block;margin-bottom:6px">{{ t('remark') }}</label>
-            <textarea v-model="state.remark" :placeholder="t('remarkPlaceholder')"></textarea>
+    <div class="tag" v-if="state.torchSupported">{{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b></div>
+
+    <div class="row" v-if="!state.last">
+      <button class="primary" @click="start" :disabled="state.running">{{ t('startScan') }}</button>
+      <button class="ghost" @click="stop" :disabled="!state.running">{{ t('stop') }}</button>
+      <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">{{ t('torchToggle') }}</button>
+    </div>
+
+    <div class="card" v-if="state.last">
+      <div class="row">
+        <button class="primary" @click="resume">{{ t('rescan') }}</button>
+      </div>
+      <h2>{{ t('result') }}</h2>
+      <div class="mono">{{ state.last.text }}</div>
+
+      <template v-if="state.isValid">
+        <div class="status-box">
+          <div class="status-row" :class="{'shake': state.needsStatusShake}">
+            <label for="duStatus">{{ t('updateStatus') }}：</label>
+            <select
+              id="duStatus"
+              class="status"
+              :class="{'invalid': state.needsStatusHint}"
+              v-model="state.duStatus"
+              aria-invalid="true"
+              @change="state.needsStatusHint=false; state.needsStatusShake=false"
+            >
+              <option value="" disabled>{{ t('choose') }}</option>
+              <!-- 仍然向后端提交中文值以兼容现有 API -->
+              <option value="运输中">{{ t('inTransit') }}</option>
+              <option value="已到达">{{ t('arrived') }}</option>
+            </select>
           </div>
-          <div class="col">
-            <label style="display:block;margin-bottom:6px">{{ t('uploadPhoto') }}</label>
-            <div class="uploader">
-              <img v-if="state.photoPreview" :src="state.photoPreview" alt="preview" class="thumb" />
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <input type="file" accept="image/*" capture="environment" @change="onPickPhoto" />
-                <small class="muted">{{ t('photoTip') }}</small>
-                <button v-if="state.photoFile" class="ghost" @click="clearPhoto">{{ t('removePhoto') }}</button>
+          <div class="hint" v-if="state.needsStatusHint">{{ t('needSelectStatus') }}</div>
+
+          <div class="flex-2">
+            <div class="col">
+              <label style="display:block;margin-bottom:6px">{{ t('remark') }}</label>
+              <textarea v-model="state.remark" :placeholder="t('remarkPlaceholder')"></textarea>
+            </div>
+            <div class="col">
+              <label style="display:block;margin-bottom:6px">{{ t('uploadPhoto') }}</label>
+              <div class="uploader">
+                <img v-if="state.photoPreview" :src="state.photoPreview" alt="preview" class="thumb" />
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <input type="file" accept="image/*" capture="environment" @change="onPickPhoto" />
+                  <small class="muted">{{ t('photoTip') }}</small>
+                  <button v-if="state.photoFile" class="ghost" @click="clearPhoto">{{ t('removePhoto') }}</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <button class="primary" style="align-self:flex-start" @click="submitUpdate" :disabled="!state.isValid || state.submitting">
-          {{ state.submitting ? t('submitting') : t('submit') }}
-        </button>
+          <button class="primary" style="align-self:flex-start" @click="submitUpdate" :disabled="!state.isValid || state.submitting">
+            {{ state.submitting ? t('submitting') : t('submit') }}
+          </button>
 
-        <!-- 提交进度条：有照片 => 百分比；无照片 => 不确定动画 -->
-        <div v-if="state.submitting">
-          <div class="progress" :class="{'indeterminate': !state.photoFile}">
-            <div class="progress-bar" :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"></div>
-          </div>
-          <div class="progress-text">
-            {{ state.photoFile ? (t('uploadingPct') + ' ' + state.uploadPct + '%') : t('submittingDots') }}
-          </div>
-        </div>
-
-        <div v-if="state.submitMsg" :class="[state.submitOk ? 'ok' : 'err']">{{ state.submitMsg }}</div>
-      </div>
-    </template>
-
-    <template v-else>
-      <div class="err">{{ t('invalidId') }}</div>
-    </template>
-  </div>
-</div>
-
-<script>
-const { createApp, ref, reactive, onMounted, onBeforeUnmount } = Vue;
-
-/** 三语言文案 */
-const translations = {
-  zh: {
-    // 标题/按钮
-    scanTitle:"📷 扫码",
-    torch:"闪光灯", on:"开", off:"关",
-    startScan:"开始扫描", stop:"停止", torchToggle:"切换闪光灯",
-    rescan:"重新扫描", result:"识别结果",
-    // 表单
-    updateStatus:"更新 DU 状态", choose:"请选择",
-    inTransit:"运输中", arrived:"已到达",
-    remark:"备注信息", remarkPlaceholder:"可填写额外说明…",
-    uploadPhoto:"上传照片", photoTip:"支持拍照或从相册选择",
-    removePhoto:"移除照片",
-    // 校验/提示
-    needSelectStatus:"请先选择运输状态",
-    invalidId:"无效的DU ID",
-    // 提交
-    submit:"提交", submitting:"提交中…", submittingDots:"提交中…",
-    uploadIng:"上传中…", uploadingPct:"上传中：",
-    submitSuccess:"提交成功",
-    submitCanceled:"提交已取消",
-    submitNetworkErr:"提交失败：网络错误",
-    submitHttpErrPrefix:"提交失败：",
-    apiUrlMissing:"未配置后端 API_URL，请在页面顶部通过 window.API_URL 或直接改代码设置真实地址"
-  },
-  en: {
-    scanTitle:"📷 Scan",
-    torch:"Torch", on:"On", off:"Off",
-    startScan:"Start Scan", stop:"Stop", torchToggle:"Toggle Torch",
-    rescan:"Rescan", result:"Result",
-    updateStatus:"Update DU Status", choose:"Please select",
-    inTransit:"In Transit", arrived:"Arrived",
-    remark:"Remark", remarkPlaceholder:"Optional notes…",
-    uploadPhoto:"Upload Photo", photoTip:"Take or choose from gallery",
-    removePhoto:"Remove Photo",
-    needSelectStatus:"Please select a shipping status",
-    invalidId:"Invalid DU ID",
-    submit:"Submit", submitting:"Submitting…", submittingDots:"Submitting…",
-    uploadIng:"Uploading…", uploadingPct:"Uploading:",
-    submitSuccess:"Submitted successfully",
-    submitCanceled:"Submission canceled",
-    submitNetworkErr:"Submission failed: Network error",
-    submitHttpErrPrefix:"Submission failed: ",
-    apiUrlMissing:"API_URL not configured. Set it via window.API_URL or in code."
-  },
-  id: {
-    scanTitle:"📷 Pindai",
-    torch:"Lampu", on:"Nyala", off:"Mati",
-    startScan:"Mulai Pindai", stop:"Berhenti", torchToggle:"Ubah Lampu",
-    rescan:"Pindai Ulang", result:"Hasil",
-    updateStatus:"Perbarui Status DU", choose:"Silakan pilih",
-    inTransit:"Dalam Perjalanan", arrived:"Tiba",
-    remark:"Catatan", remarkPlaceholder:"Tambahkan keterangan…",
-    uploadPhoto:"Unggah Foto", photoTip:"Dukung kamera atau galeri",
-    removePhoto:"Hapus Foto",
-    needSelectStatus:"Silakan pilih status pengiriman",
-    invalidId:"ID DU tidak valid",
-    submit:"Kirim", submitting:"Mengirim…", submittingDots:"Mengirim…",
-    uploadIng:"Mengunggah…", uploadingPct:"Mengunggah:",
-    submitSuccess:"Berhasil dikirim",
-    submitCanceled:"Pengiriman dibatalkan",
-    submitNetworkErr:"Gagal kirim: Kesalahan jaringan",
-    submitHttpErrPrefix:"Gagal kirim: ",
-    apiUrlMissing:"API_URL belum dikonfigurasi. Atur via window.API_URL atau di kode."
-  }
-};
-
-createApp({
-  setup(){
-    const video = ref(null);
-    const API_URL = (window.API_URL || 'https://jakartabackend.onrender.com/api/du/update');
-
-    function createReader(){
-      try{
-        const hints = new Map();
-        const F = ZXingBrowser.BarcodeFormat;
-        const H = ZXingBrowser.DecodeHintType;
-        hints.set(H.POSSIBLE_FORMATS, [F.QR_CODE, F.CODE_128, F.CODE_39, F.EAN_13, F.EAN_8]);
-        return new ZXingBrowser.BrowserMultiFormatReader(hints, 250);
-      }catch{ return new ZXingBrowser.BrowserMultiFormatReader(); }
-    }
-    const reader = createReader();
-
-    const state = reactive({
-      lang:'id',              // 默认印尼语
-      running:false,
-      last:null,
-      locked:false,
-      torchSupported:false,
-      torchOn:false,
-      isValid:false,
-      duStatus:"",
-      remark:"",
-      photoFile:null,
-      photoPreview:"",
-      submitting:false,
-      submitOk:false,
-      submitMsg:"",
-      uploadPct:0,
-      needsStatusHint:false,   // 未选状态时的提示
-      needsStatusShake:false,  // 抖动一次
-    });
-
-    const DIGIT_DU_RE = /^\d{10,20}$/;
-    let controls = null;
-    let inactivityTimer = null;
-
-    const t = (k)=> (translations[state.lang] && translations[state.lang][k]) || k;
-
-    const setLang = (l)=>{
-      state.lang = l;
-      document.documentElement.lang = l;
-      // 同步标题
-      const titleMap = { zh:'手机扫码 - 状态更新', en:'Scanner - Status Update', id:'Pemindaian - Pembaruan Status' };
-      document.title = titleMap[l] || 'DU Status Update';
-    };
-
-    function clearInactivity(){ if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; } }
-    function startInactivityCountdown(){ clearInactivity(); inactivityTimer = setTimeout(()=>{ stop(); }, 2*60*1000); }
-
-    async function detectTorchSupport(){
-      try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
-        const caps = track?.getCapabilities?.();
-        state.torchSupported = !!(caps && 'torch' in caps);
-      }catch{ state.torchSupported = false; }
-    }
-
-    async function applyTorch(on){
-      try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
-        if(!track) return;
-        await track.applyConstraints({ advanced:[{ torch: !!on }] });
-        state.torchOn = !!on;
-      }catch{ state.torchOn = false; }
-    }
-
-    async function enhanceTrack(){
-      try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
-        if(!track) return;
-        try{ const ic = new ImageCapture(track); await ic.setOptions?.({ focusMode: 'continuous' }); }catch{}
-        try{
-          const caps = track.getCapabilities?.();
-          if(caps?.zoom){
-            const z=caps.zoom;
-            const target=Math.min(z.max, Math.max(z.min||1,(z.min||1)*1.3));
-            await track.applyConstraints({ advanced: [{ zoom: target }] });
-          }
-        }catch{}
-      }catch{}
-    }
-
-    async function buildBackCameraConstraints(){
-      const tries = [
-        { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-        { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-      ];
-      for(const c of tries){
-        try{ const s = await navigator.mediaDevices.getUserMedia(c); s.getTracks().forEach(t=>t.stop()); return c; }catch{}
-      }
-      try{
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cams = devices.filter(d=>d.kind==='videoinput');
-        const back = cams.find(d=>!/front|user/i.test(d.label)) || cams[0];
-        if(back){ return { video: { deviceId: { exact: back.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false }; }
-      }catch{}
-      return { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false };
-    }
-
-    const start = async ()=>{
-      if (state.running) return;
-      try{
-        state.running = true;
-        state.locked = false;
-        clearInactivity();
-        try{ controls?.stop(); }catch{}
-
-        let constraints = await buildBackCameraConstraints();
-        try{
-          controls = await reader.decodeFromConstraints(
-            constraints,
-            video.value,
-            async (result, err, _controls) => {
-              if (result && !state.locked) {
-                state.locked = true;
-                const text = result.getText();
-                const format = result.getBarcodeFormat();
-                state.isValid = DIGIT_DU_RE.test(text);
-                state.duStatus = "";
-                state.remark = "";
-                clearPhoto();
-                state.submitMsg = "";
-                state.submitOk = false;
-                state.needsStatusHint = false;
-                state.needsStatusShake = false;
-                state.last = { text, format };
-                try{ _controls.stop(); }catch{}
-                try{ reader.reset(); }catch{}
-                await applyTorch(false);
-                await detectTorchSupport();
-                state.running = false;
-                clearInactivity();
-                try{ navigator.vibrate?.(30); }catch{}
-              }
-            }
-          );
-        }catch(e){
-          if(e && (e.name==='OverconstrainedError' || e.name==='NotFoundError')){
-            constraints = { video: true, audio:false };
-            controls = await reader.decodeFromConstraints(constraints, video.value, ()=>{});
-          }else{ throw e; }
-        }
-
-        await enhanceTrack();
-        await detectTorchSupport();
-        startInactivityCountdown();
-      }catch(e){
-        console.error(e);
-        alert('Camera error: ' + (e?.name || '') + (e?.message ? (' - ' + e.message) : ''));
-        state.running = false;
-      }
-    };
-
-    const hardStopStream = ()=>{
-      const s = video.value?.srcObject;
-      if (s && s.getTracks) s.getTracks().forEach(t=>{ try{ t.stop(); }catch{} });
-      if (video.value) video.value.srcObject = null;
-      state.torchOn = false;
-      state.torchSupported = false;
-    };
-
-    const stop = async ()=>{
-      try{ controls?.stop(); }catch{}
-      try{ reader.reset(); }catch{}
-      try{ await applyTorch(false); }catch{}
-      hardStopStream();
-      state.running=false; state.locked=false;
-      clearInactivity();
-    };
-
-    const resume = async ()=>{
-      state.last=null; state.locked=false; state.isValid=false;
-      state.duStatus=""; state.remark="";
-      clearPhoto();
-      state.submitMsg=""; state.submitOk=false;
-      state.needsStatusHint=false; state.needsStatusShake=false;
-      await start();
-    };
-
-    const onPickPhoto = (e)=>{
-      const file = e.target.files?.[0];
-      if(!file) return;
-      state.photoFile = file;
-      try{ state.photoPreview = URL.createObjectURL(file); }catch{ state.photoPreview = ''; }
-    };
-
-    const clearPhoto = ()=>{
-      try{ state.photoPreview && URL.revokeObjectURL(state.photoPreview); }catch{}
-      state.photoPreview = '';
-      state.photoFile = null;
-    };
-
-    // —— 使用 XHR 获取上传进度 + 本地化消息 —— //
-    const submitUpdate = async ()=>{
-      if(!state.isValid){
-        state.submitOk=false; state.submitMsg=t('invalidId'); return;
-      }
-      if(!state.duStatus){
-        state.submitOk=false;
-        state.submitMsg = t('needSelectStatus');
-        state.needsStatusHint = true;
-        state.needsStatusShake = true;
-        // 聚焦下拉
-        requestAnimationFrame(()=>{
-          const sel = document.getElementById('duStatus');
-          if(sel){ sel.focus(); }
-          setTimeout(()=>{ state.needsStatusShake=false; }, 400);
-        });
-        return;
-      }
-
-      state.submitting = true;
-      state.submitMsg = '';
-      state.submitOk = false;
-      state.uploadPct = 0;
-
-      try{
-        const isPlaceholder = !API_URL || /<你的-render-域名>/.test(API_URL);
-        if(isPlaceholder){
-          throw new Error(t('apiUrlMissing'));
-        }
-
-        const fd = new FormData();
-        fd.append('duId', state.last.text);
-        fd.append('status', state.duStatus);         // 依旧传中文值以兼容后端
-        fd.append('remark', state.remark || '');
-        if(state.photoFile) fd.append('photo', state.photoFile);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', API_URL, true);
-
-        // 上传进度
-        xhr.upload.onprogress = (e)=>{
-          if(e && e.lengthComputable){
-            state.uploadPct = Math.min(100, Math.round(e.loaded / e.total * 100));
-          }
-        };
-
-        xhr.onerror = ()=>{ state.submitOk = false; state.submitMsg = t('submitNetworkErr'); state.submitting = false; };
-        xhr.onabort = ()=>{ state.submitOk = false; state.submitMsg = t('submitCanceled'); state.submitting = false; };
-
-        xhr.onreadystatechange = ()=>{
-          if(xhr.readyState !== 4) return;
-          const status = xhr.status;
-          const text = xhr.responseText || '';
-          let data = null; try{ data = text ? JSON.parse(text) : null }catch{}
-
-          if(status >= 200 && status < 300){
-            // 若后端未返回 ok/success，则视为成功（与原逻辑一致）
-            const ok = (data && (data.ok===true || data.success===true)) || true;
-            state.submitOk = !!ok;
-            state.submitMsg = ok ? (data?.message || t('submitSuccess')) : (data?.message || (t('submitHttpErrPrefix') + 'unknown'));
-            state.uploadPct = 100;
-            if(ok){ setTimeout(()=>{ resume(); }, 600); }
-          }else{
-            const msg = (data && (data.detail || data.message)) || ('HTTP ' + status);
-            state.submitOk = false;
-            state.submitMsg = t('submitHttpErrPrefix') + msg;
-          }
-          state.submitting = false;
-        };
-
-        xhr.send(fd);
-      }catch(err){
-        console.error(err);
-        state.submitOk = false;
-        state.submitMsg = t('submitHttpErrPrefix') + (err?.message || err);
-        state.submitting = false;
-      }
-    };
-
-    onMounted(async ()=>{
-      // 默认语言：印尼语
-      setLang('id');
-
-      video.value?.setAttribute('playsinline','true');
-      video.value?.setAttribute('muted','muted');
-      document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop(); });
-      window.addEventListener('pagehide', stop);
-      await start(); // 打开页面自动开启摄像头
-    });
-
-    onBeforeUnmount(()=>{ stop(); });
-
-    return {
-      state, video,
-      t, setLang,
-      start, stop, resume,
-      toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn); },
-      submitUpdate, onPickPhoto, clearPhoto
-    };
-  }
-}).mount('#app');
-</script>
-</body>
-</html>
-<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <!-- 禁用缩放 + 全面屏适配 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Perbarui Status DU</title>
-  <!-- Vue 3 -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <!-- 仅使用 @zxing/browser（UMD 全局为 ZXingBrowser） -->
-  <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
-
-  <!-- 兜底：禁止捏合/双击缩放（放在最前面尽早生效） -->
-  <script>
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-    document.addEventListener('gestureend', e => e.preventDefault());
-    let __lastTouchEnd = 0;
-    document.addEventListener('touchend', function(e) {
-      const now = Date.now();
-      if (now - __lastTouchEnd <= 300) {
-        const t = e.target;
-        if (!t.closest('input, textarea, select, a, button, label, [role="button"]')) {
-          e.preventDefault();
-        }
-      }
-      __lastTouchEnd = now;
-    }, { passive: false });
-    window.addEventListener('wheel', function(e){
-      if (e.ctrlKey || e.metaKey) e.preventDefault();
-    }, { passive: false });
-  </script>
-
-  <style>
-    :root { --fg:#eaf2ff; --bg:#0b1020; --accent:#69a8ff; --muted:#8aa2c8; --ok:#66e6a4; --err:#ff9aa6; }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%}
-    html,body{ -webkit-text-size-adjust:100%; touch-action:manipulation; }
-
-    body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 40px;gap:16px}
-    h1{font-size:18px;margin:0 0 4px;text-align:center;font-weight:600}
-
-    /* 语言切换 */
-    .lang-switch{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:1000}
-    .lang-switch button{appearance:none;border:1px solid #2a3a66;background:#101831;color:var(--fg);padding:6px 10px;border-radius:999px;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer}
-    .lang-switch img{width:20px;height:14px;object-fit:cover;border-radius:2px}
-    .lang-switch .active{outline:2px solid var(--accent);}
-
-    /* 扫描框区域：16:9 */
-    .scan-area{position:relative;width:min(84vw,520px);aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#000}
-    video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .corners{position:absolute;inset:0;pointer-events:none}
-    .c{position:absolute;width:18%;height:40%;border:3px solid var(--accent)}
-    .tl{left:10px;top:10px;border-right:0;border-bottom:0;border-radius:12px 0 0 0}
-    .tr{right:10px;top:10px;border-left:0;border-bottom:0;border-radius:0 12px 0 0}
-    .bl{left:10px;bottom:10px;border-right:0;border-top:0;border-radius:0 0 0 12px}
-    .br{right:10px;bottom:10px;border-left:0;border-top:0;border-radius:0 0 12px 0}
-
-    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    button{appearance:none;border:0;border-radius:999px;padding:12px 16px;font-weight:600;background:#12182b;color:var(--fg);font-size:16px;cursor:pointer}
-    .primary{background:var(--accent);color:#07122b}
-    .ghost{background:#12182b;color:var(--fg)}
-    button[disabled]{opacity:.6;cursor:not-allowed}
-    .tag{font-size:12px;padding:8px 10px;border-radius:999px;background:#0f1730;border:1px solid #1f2a4d}
-
-    .card{width:min(92vw,720px);background:#101831;border:1px solid #1f2a4d;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
-    .card h2{font-size:16px;margin:0}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-
-    /* 状态更新区块 */
-    .status-box{padding:14px;border:2px solid var(--accent);border-radius:12px;background:#0b1327;display:flex;flex-direction:column;gap:12px}
-    .status-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .status-row label{font-weight:700}
-    select.status{min-width:180px;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg)}
-
-    .flex-2{display:flex;gap:12px;flex-wrap:wrap}
-    .flex-2 > .col{flex:1 1 300px}
-    textarea{width:100%;min-height:96px;resize:vertical;border-radius:12px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg);padding:10px 12px;font-size:16px}
-
-    .uploader{border:1px dashed #2a3a66;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:flex-start}
-    .uploader input[type=file]{display:block;font-size:16px}
-    .thumb{width:96px;height:96px;border-radius:10px;background:#081028;border:1px solid #20305a;object-fit:cover}
-
-    /* 关键：输入控件字号 >=16px，避免聚焦自动缩放 */
-    input, select, textarea { font-size:16px; }
-
-    .ok{color:var(--ok)}
-    .err{color:var(--err)}
-
-    /* —— 进度条 —— */
-    .progress{position:relative;height:10px;background:#0f1730;border:1px solid #1f2a4d;border-radius:999px;overflow:hidden}
-    .progress-bar{height:100%;background:var(--accent);transition:width .2s ease}
-    .progress.indeterminate .progress-bar{width:30%;animation:indet 1.2s infinite}
-    @keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
-    .progress-text{margin-top:6px;font-size:12px;color:var(--muted)}
-
-    /* 未选择状态的显著提示 */
-    .invalid{border-color:var(--err)!important; box-shadow:0 0 0 3px rgba(255,154,166,.15)}
-    .hint{font-size:12px;color:var(--err)}
-    .shake{animation:shake .25s linear 2}
-    @keyframes shake{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
-  </style>
-</head>
-<body>
-<div id="app" class="wrap">
-  <!-- 语言切换 -->
-  <div class="lang-switch">
-    <button :class="{active: state.lang==='zh'}" @click="setLang('zh')" aria-label="Switch to Chinese">
-      <img src="https://flagcdn.com/w20/cn.png" alt="CN" />中文
-    </button>
-    <button :class="{active: state.lang==='en'}" @click="setLang('en')" aria-label="Switch to English">
-      <img src="https://flagcdn.com/w20/gb.png" alt="GB" />English
-    </button>
-    <button :class="{active: state.lang==='id'}" @click="setLang('id')" aria-label="Beralih ke Bahasa Indonesia">
-      <img src="https://flagcdn.com/w20/id.png" alt="ID" />Indonesia
-    </button>
-  </div>
-
-  <div>
-    <h1>{{ t('scanTitle') }}</h1>
-  </div>
-
-  <section class="scan-area">
-    <video ref="video" playsinline muted autoplay></video>
-    <div class="corners">
-      <div class="c tl"></div>
-      <div class="c tr"></div>
-      <div class="c bl"></div>
-      <div class="c br"></div>
-    </div>
-  </section>
-
-  <div class="tag" v-if="state.torchSupported">{{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b></div>
-
-  <div class="row" v-if="!state.last">
-    <button class="primary" @click="start" :disabled="state.running">{{ t('startScan') }}</button>
-    <button class="ghost" @click="stop" :disabled="!state.running">{{ t('stop') }}</button>
-    <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">{{ t('torchToggle') }}</button>
-  </div>
-
-  <div class="card" v-if="state.last">
-    <div class="row">
-      <button class="primary" @click="resume">{{ t('rescan') }}</button>
-    </div>
-    <h2>{{ t('result') }}</h2>
-    <div class="mono">{{ state.last.text }}</div>
-
-    <template v-if="state.isValid">
-      <div class="status-box">
-        <div class="status-row" :class="{'shake': state.needsStatusShake}">
-          <label for="duStatus">{{ t('updateStatus') }}：</label>
-          <select
-            id="duStatus"
-            class="status"
-            :class="{'invalid': state.needsStatusHint}"
-            v-model="state.duStatus"
-            aria-invalid="true"
-            @change="state.needsStatusHint=false; state.needsStatusShake=false"
-          >
-            <option value="" disabled>{{ t('choose') }}</option>
-            <!-- 注意：提交给后端的值仍保留中文（与原后端兼容），UI 文案本地化 -->
-            <option value="运输中">{{ t('inTransit') }}</option>
-            <option value="已到达">{{ t('arrived') }}</option>
-          </select>
-        </div>
-        <div class="hint" v-if="state.needsStatusHint">{{ t('needSelectStatus') }}</div>
-
-        <div class="flex-2">
-          <div class="col">
-            <label style="display:block;margin-bottom:6px">{{ t('remark') }}</label>
-            <textarea v-model="state.remark" :placeholder="t('remarkPlaceholder')"></textarea>
-          </div>
-          <div class="col">
-            <label style="display:block;margin-bottom:6px">{{ t('uploadPhoto') }}</label>
-            <div class="uploader">
-              <img v-if="state.photoPreview" :src="state.photoPreview" alt="preview" class="thumb" />
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <input type="file" accept="image/*" capture="environment" @change="onPickPhoto" />
-                <small class="muted">{{ t('photoTip') }}</small>
-                <button v-if="state.photoFile" class="ghost" @click="clearPhoto">{{ t('removePhoto') }}</button>
-              </div>
+          <div v-if="state.submitting">
+            <div class="progress" :class="{'indeterminate': !state.photoFile}">
+              <div class="progress-bar" :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"></div>
+            </div>
+            <div class="progress-text">
+              {{ state.photoFile ? (t('uploadingPct') + ' ' + state.uploadPct + '%') : t('submittingDots') }}
             </div>
           </div>
+
+          <div v-if="state.submitMsg" :class="[state.submitOk ? 'ok' : 'err']">{{ state.submitMsg }}</div>
         </div>
+      </template>
 
-        <button class="primary" style="align-self:flex-start" @click="submitUpdate" :disabled="!state.isValid || state.submitting">
-          {{ state.submitting ? t('submitting') : t('submit') }}
-        </button>
-
-        <!-- 提交进度条：有照片 => 百分比；无照片 => 不确定动画 -->
-        <div v-if="state.submitting">
-          <div class="progress" :class="{'indeterminate': !state.photoFile}">
-            <div class="progress-bar" :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"></div>
-          </div>
-          <div class="progress-text">
-            {{ state.photoFile ? (t('uploadingPct') + ' ' + state.uploadPct + '%') : t('submittingDots') }}
-          </div>
-        </div>
-
-        <div v-if="state.submitMsg" :class="[state.submitOk ? 'ok' : 'err']">{{ state.submitMsg }}</div>
-      </div>
-    </template>
-
-    <template v-else>
-      <div class="err">{{ t('invalidId') }}</div>
-    </template>
+      <template v-else>
+        <div class="err">{{ t('invalidId') }}</div>
+      </template>
+    </div>
   </div>
-</div>
 
-<script>
-const { createApp, ref, reactive, onMounted, onBeforeUnmount } = Vue;
-
-/** 三语言文案 */
-const translations = {
-  zh: {
-    // 标题/按钮
-    scanTitle:"📷 扫码",
-    torch:"闪光灯", on:"开", off:"关",
-    startScan:"开始扫描", stop:"停止", torchToggle:"切换闪光灯",
-    rescan:"重新扫描", result:"识别结果",
-    // 表单
-    updateStatus:"更新 DU 状态", choose:"请选择",
-    inTransit:"运输中", arrived:"已到达",
-    remark:"备注信息", remarkPlaceholder:"可填写额外说明…",
-    uploadPhoto:"上传照片", photoTip:"支持拍照或从相册选择",
-    removePhoto:"移除照片",
-    // 校验/提示
-    needSelectStatus:"请先选择运输状态",
-    invalidId:"无效的DU ID",
-    // 提交
-    submit:"提交", submitting:"提交中…", submittingDots:"提交中…",
-    uploadIng:"上传中…", uploadingPct:"上传中：",
-    submitSuccess:"提交成功",
-    submitCanceled:"提交已取消",
-    submitNetworkErr:"提交失败：网络错误",
-    submitHttpErrPrefix:"提交失败：",
-    apiUrlMissing:"未配置后端 API_URL，请在页面顶部通过 window.API_URL 或直接改代码设置真实地址"
-  },
-  en: {
-    scanTitle:"📷 Scan",
-    torch:"Torch", on:"On", off:"Off",
-    startScan:"Start Scan", stop:"Stop", torchToggle:"Toggle Torch",
-    rescan:"Rescan", result:"Result",
-    updateStatus:"Update DU Status", choose:"Please select",
-    inTransit:"In Transit", arrived:"Arrived",
-    remark:"Remark", remarkPlaceholder:"Optional notes…",
-    uploadPhoto:"Upload Photo", photoTip:"Take or choose from gallery",
-    removePhoto:"Remove Photo",
-    needSelectStatus:"Please select a shipping status",
-    invalidId:"Invalid DU ID",
-    submit:"Submit", submitting:"Submitting…", submittingDots:"Submitting…",
-    uploadIng:"Uploading…", uploadingPct:"Uploading:",
-    submitSuccess:"Submitted successfully",
-    submitCanceled:"Submission canceled",
-    submitNetworkErr:"Submission failed: Network error",
-    submitHttpErrPrefix:"Submission failed: ",
-    apiUrlMissing:"API_URL not configured. Set it via window.API_URL or in code."
-  },
-  id: {
-    scanTitle:"📷 Pindai",
-    torch:"Lampu", on:"Nyala", off:"Mati",
-    startScan:"Mulai Pindai", stop:"Berhenti", torchToggle:"Ubah Lampu",
-    rescan:"Pindai Ulang", result:"Hasil",
-    updateStatus:"Perbarui Status DU", choose:"Silakan pilih",
-    inTransit:"Dalam Perjalanan", arrived:"Tiba",
-    remark:"Catatan", remarkPlaceholder:"Tambahkan keterangan…",
-    uploadPhoto:"Unggah Foto", photoTip:"Dukung kamera atau galeri",
-    removePhoto:"Hapus Foto",
-    needSelectStatus:"Silakan pilih status pengiriman",
-    invalidId:"ID DU tidak valid",
-    submit:"Kirim", submitting:"Mengirim…", submittingDots:"Mengirim…",
-    uploadIng:"Mengunggah…", uploadingPct:"Mengunggah:",
-    submitSuccess:"Berhasil dikirim",
-    submitCanceled:"Pengiriman dibatalkan",
-    submitNetworkErr:"Gagal kirim: Kesalahan jaringan",
-    submitHttpErrPrefix:"Gagal kirim: ",
-    apiUrlMissing:"API_URL belum dikonfigurasi. Atur via window.API_URL atau di kode."
-  }
-};
-
-createApp({
-  setup(){
-    const video = ref(null);
-    const API_URL = (window.API_URL || 'https://jakartabackend.onrender.com/api/du/update');
-
-    function createReader(){
-      try{
-        const hints = new Map();
-        const F = ZXingBrowser.BarcodeFormat;
-        const H = ZXingBrowser.DecodeHintType;
-        hints.set(H.POSSIBLE_FORMATS, [F.QR_CODE, F.CODE_128, F.CODE_39, F.EAN_13, F.EAN_8]);
-        return new ZXingBrowser.BrowserMultiFormatReader(hints, 250);
-      }catch{ return new ZXingBrowser.BrowserMultiFormatReader(); }
-    }
-    const reader = createReader();
-
-    const state = reactive({
-      lang:'id',              // 默认印尼语
-      running:false,
-      last:null,
-      locked:false,
-      torchSupported:false,
-      torchOn:false,
-      isValid:false,
-      duStatus:"",
-      remark:"",
-      photoFile:null,
-      photoPreview:"",
-      submitting:false,
-      submitOk:false,
-      submitMsg:"",
-      uploadPct:0,
-      needsStatusHint:false,   // 未选状态时的提示
-      needsStatusShake:false,  // 抖动一次
-    });
-
-    const DIGIT_DU_RE = /^\d{10,20}$/;
-    let controls = null;
-    let inactivityTimer = null;
-
-    const t = (k)=> (translations[state.lang] && translations[state.lang][k]) || k;
-
-    const setLang = (l)=>{
-      state.lang = l;
-      document.documentElement.lang = l;
-      // 同步标题
-      const titleMap = { zh:'手机扫码 - 状态更新', en:'Scanner - Status Update', id:'Pemindaian - Pembaruan Status' };
-      document.title = titleMap[l] || 'DU Status Update';
-    };
-
-    function clearInactivity(){ if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; } }
-    function startInactivityCountdown(){ clearInactivity(); inactivityTimer = setTimeout(()=>{ stop(); }, 2*60*1000); }
-
-    async function detectTorchSupport(){
-      try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
-        const caps = track?.getCapabilities?.();
-        state.torchSupported = !!(caps && 'torch' in caps);
-      }catch{ state.torchSupported = false; }
-    }
-
-    async function applyTorch(on){
-      try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
-        if(!track) return;
-        await track.applyConstraints({ advanced:[{ torch: !!on }] });
-        state.torchOn = !!on;
-      }catch{ state.torchOn = false; }
-    }
-
-    async function enhanceTrack(){
-      try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
-        if(!track) return;
-        try{ const ic = new ImageCapture(track); await ic.setOptions?.({ focusMode: 'continuous' }); }catch{}
-        try{
-          const caps = track.getCapabilities?.();
-          if(caps?.zoom){
-            const z=caps.zoom;
-            const target=Math.min(z.max, Math.max(z.min||1,(z.min||1)*1.3));
-            await track.applyConstraints({ advanced: [{ zoom: target }] });
-          }
-        }catch{}
-      }catch{}
-    }
-
-    async function buildBackCameraConstraints(){
-      const tries = [
-        { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-        { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-      ];
-      for(const c of tries){
-        try{ const s = await navigator.mediaDevices.getUserMedia(c); s.getTracks().forEach(t=>t.stop()); return c; }catch{}
-      }
-      try{
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cams = devices.filter(d=>d.kind==='videoinput');
-        const back = cams.find(d=>!/front|user/i.test(d.label)) || cams[0];
-        if(back){ return { video: { deviceId: { exact: back.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false }; }
-      }catch{}
-      return { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false };
-    }
-
-    const start = async ()=>{
-      if (state.running) return;
-      try{
-        state.running = true;
-        state.locked = false;
-        clearInactivity();
-        try{ controls?.stop(); }catch{}
-
-        let constraints = await buildBackCameraConstraints();
-        try{
-          controls = await reader.decodeFromConstraints(
-            constraints,
-            video.value,
-            async (result, err, _controls) => {
-              if (result && !state.locked) {
-                state.locked = true;
-                const text = result.getText();
-                const format = result.getBarcodeFormat();
-                state.isValid = DIGIT_DU_RE.test(text);
-                state.duStatus = "";
-                state.remark = "";
-                clearPhoto();
-                state.submitMsg = "";
-                state.submitOk = false;
-                state.needsStatusHint = false;
-                state.needsStatusShake = false;
-                state.last = { text, format };
-                try{ _controls.stop(); }catch{}
-                try{ reader.reset(); }catch{}
-                await applyTorch(false);
-                await detectTorchSupport();
-                state.running = false;
-                clearInactivity();
-                try{ navigator.vibrate?.(30); }catch{}
-              }
-            }
-          );
-        }catch(e){
-          if(e && (e.name==='OverconstrainedError' || e.name==='NotFoundError')){
-            constraints = { video: true, audio:false };
-            controls = await reader.decodeFromConstraints(constraints, video.value, ()=>{});
-          }else{ throw e; }
-        }
-
-        await enhanceTrack();
-        await detectTorchSupport();
-        startInactivityCountdown();
-      }catch(e){
-        console.error(e);
-        alert('Camera error: ' + (e?.name || '') + (e?.message ? (' - ' + e.message) : ''));
-        state.running = false;
-      }
-    };
-
-    const hardStopStream = ()=>{
-      const s = video.value?.srcObject;
-      if (s && s.getTracks) s.getTracks().forEach(t=>{ try{ t.stop(); }catch{} });
-      if (video.value) video.value.srcObject = null;
-      state.torchOn = false;
-      state.torchSupported = false;
-    };
-
-    const stop = async ()=>{
-      try{ controls?.stop(); }catch{}
-      try{ reader.reset(); }catch{}
-      try{ await applyTorch(false); }catch{}
-      hardStopStream();
-      state.running=false; state.locked=false;
-      clearInactivity();
-    };
-
-    const resume = async ()=>{
-      state.last=null; state.locked=false; state.isValid=false;
-      state.duStatus=""; state.remark="";
-      clearPhoto();
-      state.submitMsg=""; state.submitOk=false;
-      state.needsStatusHint=false; state.needsStatusShake=false;
-      await start();
-    };
-
-    const onPickPhoto = (e)=>{
-      const file = e.target.files?.[0];
-      if(!file) return;
-      state.photoFile = file;
-      try{ state.photoPreview = URL.createObjectURL(file); }catch{ state.photoPreview = ''; }
-    };
-
-    const clearPhoto = ()=>{
-      try{ state.photoPreview && URL.revokeObjectURL(state.photoPreview); }catch{}
-      state.photoPreview = '';
-      state.photoFile = null;
-    };
-
-    // —— 使用 XHR 获取上传进度 + 本地化消息 —— //
-    const submitUpdate = async ()=>{
-      if(!state.isValid){
-        state.submitOk=false; state.submitMsg=t('invalidId'); return;
-      }
-      if(!state.duStatus){
-        state.submitOk=false;
-        state.submitMsg = t('needSelectStatus');
-        state.needsStatusHint = true;
-        state.needsStatusShake = true;
-        // 聚焦下拉
-        requestAnimationFrame(()=>{
-          const sel = document.getElementById('duStatus');
-          if(sel){ sel.focus(); }
-          setTimeout(()=>{ state.needsStatusShake=false; }, 400);
-        });
-        return;
-      }
-
-      state.submitting = true;
-      state.submitMsg = '';
-      state.submitOk = false;
-      state.uploadPct = 0;
-
-      try{
-        const isPlaceholder = !API_URL || /<你的-render-域名>/.test(API_URL);
-        if(isPlaceholder){
-          throw new Error(t('apiUrlMissing'));
-        }
-
-        const fd = new FormData();
-        fd.append('duId', state.last.text);
-        fd.append('status', state.duStatus);         // 依旧传中文值以兼容后端
-        fd.append('remark', state.remark || '');
-        if(state.photoFile) fd.append('photo', state.photoFile);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', API_URL, true);
-
-        // 上传进度
-        xhr.upload.onprogress = (e)=>{
-          if(e && e.lengthComputable){
-            state.uploadPct = Math.min(100, Math.round(e.loaded / e.total * 100));
-          }
-        };
-
-        xhr.onerror = ()=>{ state.submitOk = false; state.submitMsg = t('submitNetworkErr'); state.submitting = false; };
-        xhr.onabort = ()=>{ state.submitOk = false; state.submitMsg = t('submitCanceled'); state.submitting = false; };
-
-        xhr.onreadystatechange = ()=>{
-          if(xhr.readyState !== 4) return;
-          const status = xhr.status;
-          const text = xhr.responseText || '';
-          let data = null; try{ data = text ? JSON.parse(text) : null }catch{}
-
-          if(status >= 200 && status < 300){
-            // 若后端未返回 ok/success，则视为成功（与原逻辑一致）
-            const ok = (data && (data.ok===true || data.success===true)) || true;
-            state.submitOk = !!ok;
-            state.submitMsg = ok ? (data?.message || t('submitSuccess')) : (data?.message || (t('submitHttpErrPrefix') + 'unknown'));
-            state.uploadPct = 100;
-            if(ok){ setTimeout(()=>{ resume(); }, 600); }
-          }else{
-            const msg = (data && (data.detail || data.message)) || ('HTTP ' + status);
-            state.submitOk = false;
-            state.submitMsg = t('submitHttpErrPrefix') + msg;
-          }
-          state.submitting = false;
-        };
-
-        xhr.send(fd);
-      }catch(err){
-        console.error(err);
-        state.submitOk = false;
-        state.submitMsg = t('submitHttpErrPrefix') + (err?.message || err);
-        state.submitting = false;
-      }
-    };
-
-    onMounted(async ()=>{
-      // 默认语言：印尼语
-      setLang('id');
-
-      video.value?.setAttribute('playsinline','true');
-      video.value?.setAttribute('muted','muted');
-      document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop(); });
-      window.addEventListener('pagehide', stop);
-      await start(); // 打开页面自动开启摄像头
-    });
-
-    onBeforeUnmount(()=>{ stop(); });
-
-    return {
-      state, video,
-      t, setLang,
-      start, stop, resume,
-      toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn); },
-      submitUpdate, onPickPhoto, clearPhoto
-    };
-  }
-}).mount('#app');
-</script>
+  <!-- 业务脚本：使用 ES Modules，先加载 i18n，再加载 app -->
+  <script type="module" src="./i18n.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
