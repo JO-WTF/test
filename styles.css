@@ -72,3 +72,50 @@ input, select, textarea { font-size:16px; }
 .result-row{display:flex;align-items:center;gap:8px;margin:6px 0}
 .result-row .k{min-width:90px;color:#9fb0d6}
 .result-row .v{flex:1}
+
+/* 修复上传区横向溢出 */
+.uploader {
+  display: flex;
+  flex-wrap: wrap;              /* 小屏自动换行，避免一行挤爆 */
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 100%;
+  overflow: hidden;             /* 兜底隐藏溢出的像素 */
+}
+
+.uploader .thumb {
+  flex: 0 0 96px;               /* 固定缩略图占位 */
+  width: 96px;
+  height: 96px;
+}
+
+.uploader > div {
+  flex: 1 1 220px;              /* 右侧列可伸缩 */
+  min-width: 0;                 /* 关键：允许在 flex 中收缩，否则会把容器撑宽 */
+}
+
+/* 约束原生 file input 宽度与文本表现 */
+.uploader input[type="file"] {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;      /* 过长文件名省略 */
+  white-space: nowrap;
+}
+
+/* （可选）进一步限制说明文字防止超宽 */
+.uploader small.muted {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 兜底：整个页面禁用横向滚动（稳妥） */
+html, body, .wrap { overflow-x: hidden; }
+
+@media (max-width: 360px) {
+  .uploader .thumb { width: 80px; height: 80px; }
+}

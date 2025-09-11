@@ -20,9 +20,8 @@ export const translations = {
     submitHttpErrPrefix:"提交失败：",
     apiUrlMissing:"未配置后端 API_URL，请在页面顶部通过 window.API_URL 或直接改代码设置真实地址",
     submittedTitle:"提交结果", duIdLabel:"DU ID", statusLabel:"状态", remarkLabel:"备注", photoLabel:"照片",
-    didLabel: "手动输入单号（DID＋13位数字）",
+    didLabel: "扫码或手动输入单号（DID＋13位数字）",
     didPlaceholder: "仅输入后面的13位数字",
-    didHint: "可扫码或手动输入。识别成功或输入满13位后即可选择状态",
   },
   en: {
     scanTitle:"📷 Scan",
@@ -44,14 +43,13 @@ export const translations = {
     submitHttpErrPrefix:"Submission failed: ",
     apiUrlMissing:"API_URL not configured. Set it via window.API_URL or in code.",
     submittedTitle:"Submission Result", duIdLabel:"DU ID", statusLabel:"Status", remarkLabel:"Remark", photoLabel:"Photo",
-    didLabel: "Enter DID manually (DID + 13 digits)",
+    didLabel: "Scan barcode or enter DID manually (DID + 13 digits)",
     didPlaceholder: "Enter the 13 digits only",
-    didHint: "Scan or type. Once recognized or 13 digits entered, you can choose a status.",
   },
   id: {
     scanTitle:"📷 Pindai",
     torch:"Lampu", on:"Nyala", off:"Mati",
-    startScan:"Mulai Pindai", stop:"Berhenti", torchToggle:"Ubah Lampu",
+    startScan:"Pindai Kode Batang", stop:"Berhenti", torchToggle:"Ubah Lampu",
     rescan:"Pindai Ulang", result:"Hasil",
     updateStatus:"Perbarui Status DU", choose:"Silakan pilih",
     inTransit:"Dalam Perjalanan", arrived:"Tiba", overnight:"Menginap (tunda)",
@@ -68,9 +66,8 @@ export const translations = {
     submitHttpErrPrefix:"Gagal kirim: ",
     apiUrlMissing:"API_URL belum dikonfigurasi. Atur via window.API_URL atau di kode.",
     submittedTitle:"Hasil Pengiriman", duIdLabel:"DU ID", statusLabel:"Status", remarkLabel:"Catatan", photoLabel:"Foto",
-    didLabel: "Masukkan DID secara manual (DID + 13 digit)",
+    didLabel: "Pindai kode batang atau masukkan DID secara manual (DID + 13 digit)",
     didPlaceholder: "Masukkan 13 digit saja",
-    didHint: "Pindai atau ketik. Setelah dikenali atau 13 digit terisi, Anda dapat memilih status.",
   }
 };
 
