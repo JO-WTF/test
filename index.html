@@ -74,7 +74,6 @@
           style="flex:1"
         />
       </div>
-      <small class="muted">{{ t('didHint') }}</small>
     </div>
 
 
@@ -91,7 +90,6 @@
       <div class="row">
         <button class="primary" @click="resume">{{ t('rescan') }}</button>
       </div>
-      <div class="mono">{{ 'DID' + state.didDigits }}</div>
 
       <template v-if="state.isValid">
         <div class="status-box">
