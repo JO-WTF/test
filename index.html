@@ -87,10 +87,12 @@
       <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">{{ t('torchToggle') }}</button>
       <button class="ghost" @click="nextCamera" :disabled="!state.running">{{ t('switchCamera') || 'Switch Cam' }}</button>
     </div>
+    
     <div class="card" v-if="state.hasDid">
-    <div class="row">
+      <div class="row">
         <button class="primary" @click="resume">{{ t('rescan') }}</button>
-    </div>
+      </div>
+
       <template v-if="state.isValid">
         <div class="status-box">
           <div class="status-row" :class="{'shake': state.needsStatusShake}">
@@ -147,9 +149,8 @@
         </div>
 
         <!-- 提交成功后的结果展示 -->
-        <div class="result-box" ref="endAnchor v-if="state.showResult">
+        <div class="result-box" v-if="state.showResult">
           <h3>{{ t('submittedTitle') }}</h3>
-          {{ t('submit') }}
           <div class="result-row"><span class="k">{{ t('duIdLabel') }}:</span><span class="v mono">{{ state.submitView.duId }}</span></div>
           <div class="result-row"><span class="k">{{ t('statusLabel') }}:</span><span class="v">{{ statusLabel(state.submitView.status) }}</span></div>
           <div class="result-row"><span class="k">{{ t('remarkLabel') }}:</span><span class="v">{{ state.submitView.remark || '-' }}</span></div>
