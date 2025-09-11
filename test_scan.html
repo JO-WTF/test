@@ -1,73 +1,155 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>条形码扫描（无分辨率上限）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <title>条形码扫描（只显示后置/外接摄像头）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
-    body { font-family: sans-serif; margin: 0; text-align: center; background: #111; color: #fff; }
-    #video { width: 100%; height: auto; background: #000; }
-    #result { margin: 15px 0; font-size: 20px; color: #0f0; word-break: break-all; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin:0; background:#111; color:#fff; text-align:center; }
+    #controls { display:flex; gap:8px; padding:12px; justify-content:center; align-items:center; flex-wrap:wrap; }
+    select, button { font-size:16px; padding:8px 10px; }
+    #video { width:100%; height:auto; background:#000; }
+    #result { margin: 12px 0 18px; font-size:18px; color:#0f0; word-break:break-all; }
   </style>
 </head>
 <body>
-  <h2>📱 条形码扫描</h2>
+  <h2 style="margin:12px 0 0;">📱 条形码扫描（后置优先）</h2>
+  <div id="controls">
+    <select id="cameraSelect" title="选择摄像头"></select>
+    <button id="btnStart">开始扫描</button>
+  </div>
   <video id="video" autoplay playsinline></video>
   <div id="result">识别结果会显示在这里</div>
 
   <!-- ZXing-JS -->
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-
   <script>
-    let resultDiv = document.getElementById('result');
-    let lastResults = [];
+    const videoEl = document.getElementById('video');
+    const resultEl = document.getElementById('result');
+    const selectEl = document.getElementById('cameraSelect');
+    const btnStart = document.getElementById('btnStart');
 
-    async function startScanner() {
-      const codeReader = new ZXing.BrowserMultiFormatReader();
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    let currentDeviceId = undefined;
 
-      // 限定只扫 EAN13 和 Code39
+    // 过滤掉前置：label 含 front / user 的认为是前置
+    function isFrontFacingLabel(label='') {
+      return /front|user/i.test(label);
+    }
+    // 排序：更像主摄/后置的排前
+    function scoreLabel(label='') {
+      let score = 0;
+      if (/back|rear|environment/i.test(label)) score += 10;
+      if (/wide|main|default/i.test(label))     score += 5;
+      if (/tele|macro|ultra/i.test(label))      score += 1; // 次优先
+      if (isFrontFacingLabel(label))            score -= 100;
+      return score;
+    }
+
+    // 先申请一次权限以拿到设备名称
+    async function ensurePermission() {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            // 尝试启用连续对焦（部分浏览器支持）
+            focusMode: "continuous",
+            advanced: [{ focusMode: "continuous" }]
+          }
+        });
+        s.getTracks().forEach(t => t.stop());
+      } catch (e) {
+        console.warn("未能预获取权限（稍后开始扫描时再申请）：", e);
+      }
+    }
+
+    async function populateCameras() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      let videos = devices.filter(d => d.kind === 'videoinput');
+
+      // 先剔除明显的前置
+      let backOrExternal = videos.filter(d => !isFrontFacingLabel(d.label));
+
+      // 如果全被剔除了（有些浏览器不给清晰标签），就退回到全列表
+      if (backOrExternal.length === 0) backOrExternal = videos;
+
+      // 按“像后置主摄”的程度排序
+      backOrExternal.sort((a, b) => scoreLabel(b.label) - scoreLabel(a.label));
+
+      // 渲染下拉框
+      selectEl.innerHTML = '';
+      backOrExternal.forEach((d, i) => {
+        const opt = document.createElement('option');
+        opt.value = d.deviceId;
+        opt.text  = d.label || `摄像头 ${i + 1}`;
+        selectEl.appendChild(opt);
+      });
+
+      // 自动选择第一个（通常是后置主摄）
+      if (backOrExternal[0]) {
+        selectEl.value = backOrExternal[0].deviceId;
+        currentDeviceId = backOrExternal[0].deviceId;
+      }
+    }
+
+    function setHints() {
       const hints = new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
         ZXing.BarcodeFormat.EAN_13,
         ZXing.BarcodeFormat.CODE_39
       ]);
+      // 直接把 hints 赋给实例（兼容不同版本的 zxing-js）
+      codeReader.hints = hints;
+    }
 
-      // 去掉分辨率/帧率上限，只保留后置摄像头和自动对焦
-      let constraints = {
-        video: {
-          facingMode: "environment",
-          focusMode: "continuous",
-          advanced: [{ focusMode: "continuous" }]
-        }
-      };
+    async function start() {
+      resultEl.textContent = "正在启动摄像头...";
+      // 先重置，避免多次启动叠加
+      codeReader.reset();
+      setHints();
+
+      const deviceId = selectEl.value || currentDeviceId || undefined;
 
       try {
-        await codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-          if (result) {
-            handleResult(result.text);
+        await codeReader.decodeFromVideoDevice(
+          deviceId,
+          videoEl,
+          (result, err) => {
+            if (result && result.text) {
+              handleResult(result.text);
+            }
           }
-        }, hints, constraints);
-      } catch (err) {
-        console.error(err);
-        resultDiv.innerText = "摄像头初始化失败: " + err;
+        );
+        resultEl.textContent = "摄像头已启动，正在识别…";
+      } catch (e) {
+        console.error(e);
+        resultEl.textContent = "摄像头启动失败：" + e;
       }
     }
 
-    // 多帧投票，避免抖动误识别
+    // 简单的多帧投票（最近 5 帧，出现 ≥2 次就确认）
+    const last = [];
     function handleResult(text) {
-      lastResults.push(text);
-      if (lastResults.length > 5) lastResults.shift();
-
-      let counts = {};
-      lastResults.forEach(r => counts[r] = (counts[r] || 0) + 1);
-      let best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-
-      if (best[1] >= 2) {
-        resultDiv.innerText = "识别结果: " + best[0];
-      }
+      last.push(text);
+      if (last.length > 5) last.shift();
+      const counts = {};
+      last.forEach(x => counts[x] = (counts[x] || 0) + 1);
+      const [best, n] = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+      if (n >= 2) resultEl.textContent = "识别结果：" + best;
     }
 
-    startScanner();
+    // 选择变化时，立即切换摄像头
+    selectEl.addEventListener('change', () => {
+      currentDeviceId = selectEl.value;
+      start();
+    });
+    btnStart.addEventListener('click', start);
+
+    // 初始化
+    (async () => {
+      await ensurePermission();
+      await populateCameras();
+    })();
   </script>
 </body>
 </html>
