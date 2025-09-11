@@ -425,12 +425,9 @@ createApp({
                 remark: state.remark,
                 photo: state.photoPreview || ''
               };
-              // ✅ 等待 DOM 更新完成后滚动到底部
-              nextTick(() => {
-                window.scrollTo({
-                  top: document.body.scrollHeight,
-                  behavior: "smooth"
-                });
+              window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: "smooth"
               });
             }
           }else{
