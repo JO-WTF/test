@@ -1,9 +1,9 @@
-// app.js — 智能镜头切换版（清理与修复版）
+// app.js — 智能镜头切换 + iOS 变焦兜底 + 满13位收键盘停摄像头（稳定版）
 import { translations, tFactory } from './i18n.js';
 
 const { createApp, ref, reactive, onMounted, onBeforeUnmount } = window.Vue;
 
-// ====== ZXing Reader 工厂（与你现有保持一致）======
+// ====== ZXing Reader 工厂 ======
 function createReader(){
   try{
     const hints = new Map();
@@ -11,7 +11,9 @@ function createReader(){
     const H = ZXingBrowser.DecodeHintType;
     hints.set(H.POSSIBLE_FORMATS, [F.QR_CODE, F.CODE_128, F.CODE_39, F.EAN_13, F.EAN_8]);
     return new ZXingBrowser.BrowserMultiFormatReader(hints, 250);
-  }catch{ return new ZXingBrowser.BrowserMultiFormatReader(); }
+  }catch{
+    return new ZXingBrowser.BrowserMultiFormatReader();
+  }
 }
 
 // ====== 智能摄像头管理器 ======
@@ -22,7 +24,6 @@ class SmartCamManager {
     this.index = 0;
     this.bestId = localStorage.getItem(this.storageKey) || '';
   }
-
   async refreshDevices() {
     const all = await navigator.mediaDevices.enumerateDevices();
     this.devices = all.filter(d => d.kind === 'videoinput');
@@ -46,7 +47,6 @@ class SmartCamManager {
     this.devices = best ? [best, ...rest] : rest;
     this.index = 0;
   }
-
   current() { return this.devices[this.index] || null; }
   next() {
     if (!this.devices.length) return null;
@@ -70,7 +70,7 @@ class SmartCamManager {
 createApp({
   setup(){
     const video = ref(null);
-    const didInput = ref(null); // DID 输入框（可无 ref，会退化到按 id 获取）
+    const didInput = ref(null); // 可选：HTML 若未加 ref，将 fallback 到 id 查询
     const reader = createReader();
     const camMgr = new SmartCamManager();
 
@@ -106,11 +106,9 @@ createApp({
       if(val === '过夜') return t('overnight');
       return val;
     };
-
-    // 组合当前 duId
     const currentDuId = () => (state.didDigits ? ('DID' + state.didDigits) : '');
 
-    // ——— 键盘/输入框工具 ———
+    // ====== 输入/键盘工具 ======
     const getDidInputEl = () => didInput.value || document.getElementById('didInput');
     const blurKeyboard = () => {
       const el = getDidInputEl();
@@ -121,7 +119,7 @@ createApp({
       tryBlur(); requestAnimationFrame(tryBlur); setTimeout(tryBlur, 0);
     };
 
-    // 手动输入：满 13 位自动收键盘 + 停摄像头
+    // 手动输入：满 13 位自动收键盘 + 停摄像头 + 清理状态
     const onDidInput = () => {
       const digits = (state.didDigits || '').replace(/\D+/g, '').slice(0, 13);
       state.didDigits = digits;
@@ -131,7 +129,6 @@ createApp({
         blurKeyboard();
         stopIfRunning();
 
-        // 对齐扫码成功后的清理逻辑
         state.duStatus = "";
         state.remark = "";
         state.submitMsg = "";
@@ -142,10 +139,11 @@ createApp({
       }
     };
 
-    // ——— 摄像头/扫描 控制 ———
+    // ====== 摄像头/扫描控制 ======
     let controls = null;
     let inactivityTimer = null;
     let noHitTimer = null;
+    let zoomStage = 0; // iOS 单摄兜底使用
 
     const clearInactivity=()=>{ if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; } };
     const startInactivityCountdown=()=>{ clearInactivity(); inactivityTimer=setTimeout(()=>{ stop(); }, 2*60*1000); };
@@ -176,7 +174,7 @@ createApp({
           if(caps?.zoom){
             const z = caps.zoom;
             const min = z.min ?? 1, max = z.max ?? 1;
-            const target = Math.min(max, Math.max(min, min * 1.4));
+            const target = Math.min(max, Math.max(min, (z.min ?? 1) * 1.4));
             await track.applyConstraints({ advanced: [{ zoom: target }] });
           }
         }catch{}
@@ -195,11 +193,38 @@ createApp({
       state.torchOn = false; state.torchSupported = false;
     };
 
-    // 若正在扫描则停止摄像头（供手输满 13 位时调用）
     const stopIfRunning = async () => { if (state.running) await stop(); };
 
-    // 启动指定镜头并开始识别（start 与 nextCamera 复用）
+    // iOS 单摄兜底：按 1x → 2x → 0.5x 循环跳变焦，模拟换镜头
+    async function hopZoomTrack(){
+      const track = video.value?.srcObject?.getVideoTracks?.[0];
+      const caps = track?.getCapabilities?.();
+      if (!caps?.zoom) return false;
+
+      const min = caps.zoom.min ?? 1;
+      const max = caps.zoom.max ?? 1;
+      const oneX  = Math.min(max, Math.max(min, 1));
+      const twoX  = Math.min(max, Math.max(min, oneX * 2));
+      const halfX = Math.min(max, Math.max(min, oneX * 0.5));
+      const targets = [oneX, twoX, halfX];
+
+      const target = targets[zoomStage % targets.length];
+      zoomStage++;
+
+      try{
+        await track.applyConstraints({ advanced:[{ zoom: target }] });
+        console.info('[scan] hop zoom ->', target);
+        return true;
+      }catch(e){
+        console.warn('[scan] hop zoom failed', e);
+        return false;
+      }
+    }
+
+    // 启动指定镜头并开始识别（start / nextCamera 复用）
     async function tryDevice(device){
+      console.info('[scan] try device ->', device?.label || device?.deviceId || '(unknown)');
+
       // 停旧流
       try{ controls?.stop(); }catch{}
       try{ reader.reset(); }catch{}
@@ -243,8 +268,8 @@ createApp({
 
             // 记忆当前镜头
             try{
-              const track = video.value?.srcObject?.getVideoTracks?.()[0];
-              const devId = track?.getSettings?.().deviceId;
+              const tr = video.value?.srcObject?.getVideoTracks?.()[0];
+              const devId = tr?.getSettings?.().deviceId;
               if (devId) camMgr.rememberBest(devId);
             }catch{}
 
@@ -253,7 +278,7 @@ createApp({
             try{ reader.reset(); }catch{}
             await applyTorch(false);
             await detectTorchSupport();
-            state.running = false;
+            state.running = false;           // 仅在成功识别时置 false
             clearInactivity();
             clearNoHitTimer();
             try{ navigator.vibrate?.(30); }catch{}
@@ -270,21 +295,32 @@ createApp({
       clearNoHitTimer();
       noHitTimer = setTimeout(async ()=>{
         if (state.locked) return;
-        if (!camMgr.hasMultiple()) return;
-        const nextDev = camMgr.next();
-        state.locked = false;
-        await tryDevice(nextDev);
+
+        if (camMgr.hasMultiple()) {
+          console.info('[scan] no hit in 4s, switch to next *device*');
+          const nextDev = camMgr.next();
+          state.locked = false;
+          await tryDevice(nextDev);
+        } else {
+          // iOS 单摄兜底：变焦分档模拟换镜头
+          const hopped = await hopZoomTrack();
+          if (!hopped) {
+            console.info('[scan] no hit in 4s, but no multi-cam/zoom; stay');
+          }
+          // 变焦无需重启流，继续等待下一次 4s
+        }
         armNoHitTimer();
       }, 4000); // 可调 3000~6000
     }
 
-    // ====== 开始扫描（自适应切镜头）======
+    // ====== 开始/停止/重扫 ======
     const start = async ()=>{
       if (state.running) return;
       state.running = true;
       state.locked = false;
       clearInactivity();
       clearNoHitTimer();
+      zoomStage = 0; // 重置 zoom 兜底序列
       try{
         await camMgr.refreshDevices();
         await tryDevice(camMgr.current());
@@ -296,7 +332,6 @@ createApp({
       }
     };
 
-    // 停止扫描
     const stop = async ()=>{
       try{ controls?.stop(); }catch{}
       try{ reader.reset(); }catch{}
@@ -305,7 +340,6 @@ createApp({
       state.running=false; state.locked=false; clearInactivity(); clearNoHitTimer();
     };
 
-    // 重新扫描（保留已输 DID；如需清空可手动置空）
     const resume = async ()=>{
       state.locked=false;
       state.hasDid = state.didDigits.length === 13;
@@ -328,7 +362,7 @@ createApp({
       state.photoPreview = ''; state.photoFile = null;
     };
 
-    // 手动切换镜头（使用统一 tryDevice 回调，切完继续计时器）
+    // 手动切换镜头（用统一 tryDevice；切完继续计时）
     const nextCamera = async ()=>{
       if (!state.running) { await start(); return; }
       try{
