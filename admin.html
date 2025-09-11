@@ -90,6 +90,13 @@
 
 <script>
   const API_BASE = window.API_BASE || location.origin; // 默认同源
+  function toAbsUrl(u){
+    if(!u) return "";
+    if(/^https?:\/\//i.test(u)) return u;           // 已是绝对地址
+    const sep = u.startsWith("/") ? "" : "/";       // 相对路径 → 拼后端域名
+    return `${API_BASE}${sep}${u}`;
+  }
+
   const q = { page: 1, page_size: 20 };
 
   const el = id => document.getElementById(id);
@@ -134,7 +141,7 @@
       const items = Array.isArray(data?.items) ? data.items : [];
       tbody.innerHTML = items.map(it=>{
         const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
-        const link = it.photo_url ? `<a href="${it.photo_url}" target="_blank">查看</a>` : '';
+        const link = it.photo_url ? `<a href="${toAbsUrl(it.photo_url)}" target="_blank">查看</a>` : '';
         const remark = it.remark ? it.remark.replace(/[<>]/g,'') : '';
         return `<tr><td>${it.id}</td><td>${it.du_id}</td><td>${it.status}</td><td>${remark}</td><td>${link}</td><td>${t}</td></tr>`;
       }).join('');
