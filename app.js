@@ -107,6 +107,10 @@ createApp({
     state.isValid = digits.length === 13;  // 满 13 位即视为有效
     if (state.hasDid) {
         // 手输完成后，清理一些旧状态（与扫码成功时一致）
+        // ★ 收起键盘
+        blurKeyboard();
+        // ★ 若正在扫描则停止摄像头
+        stopIfRunning();
         state.duStatus = "";
         state.remark = "";
         state.submitMsg = "";
@@ -255,6 +259,9 @@ createApp({
                 state.hasDid = !!m;
                 state.isValid = !!m;
                 }
+                
+                if (state.hasDid) blurKeyboard(); // 扫码成功一般没有键盘，但有焦点时也一起收起
+
 
                 // 清理旧状态（与你已有一致）
                 state.duStatus = ""; 
@@ -428,6 +435,28 @@ createApp({
     });
 
     onBeforeUnmount(()=>{ stop() });
+
+    // 获取 DID 输入框元素（优先 ref，退化为按 id 查找）
+    const didInput = ref(null);
+    const getDidInputEl = () => didInput.value || document.getElementById('didInput');
+
+    // 收起键盘（blur 三连，兼容 iOS/Safari 的时序）
+    const blurKeyboard = () => {
+    const el = getDidInputEl();
+    const tryBlur = () => {
+        if (el && document.activeElement === el) el.blur();
+        else document.activeElement && document.activeElement.blur?.();
+    };
+    tryBlur();
+    requestAnimationFrame(tryBlur);
+    setTimeout(tryBlur, 0);
+    };
+
+    // 若正在扫描则停止摄像头
+    const stopIfRunning = async () => {
+    if (state.running) await stop();
+    };
+
 
     return { 
       state, video, t, setLang, statusLabel, 

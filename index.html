@@ -60,6 +60,7 @@
         <span class="prefix mono" aria-hidden="true">DID</span>
         <input
           id="didInput"
+          ref="didInput"
           class="mono"
           type="tel"
           inputmode="numeric"
@@ -69,6 +70,7 @@
           @input="onDidInput"
           :placeholder="t('didPlaceholder')"
           aria-label="DID digits"
+          enterkeyhint="done"
           style="flex:1"
         />
       </div>
