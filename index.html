@@ -52,6 +52,29 @@
         <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
       </div>
     </section>
+    
+    <!-- DID 手动输入区 -->
+    <div class="did-input card" style="margin-top:12px">
+      <label for="didInput" style="display:block;margin-bottom:6px">{{ t('didLabel') }}</label>
+      <div class="did-row" style="display:flex;align-items:center;gap:8px">
+        <span class="prefix mono" aria-hidden="true">DID</span>
+        <input
+          id="didInput"
+          class="mono"
+          type="tel"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="13"
+          v-model="state.didDigits"
+          @input="onDidInput"
+          :placeholder="t('didPlaceholder')"
+          aria-label="DID digits"
+          style="flex:1"
+        />
+      </div>
+      <small class="muted">{{ t('didHint') }}</small>
+    </div>
+
 
     <div class="tag" v-if="state.torchSupported">{{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b></div>
 
@@ -59,14 +82,15 @@
       <button class="primary" @click="start" :disabled="state.running">{{ t('startScan') }}</button>
       <button class="ghost" @click="stop" :disabled="!state.running">{{ t('stop') }}</button>
       <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">{{ t('torchToggle') }}</button>
+      <button class="ghost" @click="nextCamera" :disabled="!state.running">{{ t('switchCamera') || 'Switch Cam' }}</button>
     </div>
-
-    <div class="card" v-if="state.last">
+    
+    <div class="card" v-if="state.hasDid">
       <div class="row">
         <button class="primary" @click="resume">{{ t('rescan') }}</button>
       </div>
       <h2>{{ t('result') }}</h2>
-      <div class="mono">{{ state.last.text }}</div>
+      <div class="mono">{{ 'DID' + state.didDigits }}</div>
 
       <template v-if="state.isValid">
         <div class="status-box">
