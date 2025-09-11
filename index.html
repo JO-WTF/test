@@ -2,16 +2,51 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- 禁用缩放 + 全面屏适配 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>手机扫码 - 状态更新含备注/照片（Vue 3 + @zxing/browser）</title>
   <!-- Vue 3 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <!-- 仅使用 @zxing/browser（UMD 全局为 ZXingBrowser） -->
   <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+
+  <!-- 兜底：禁止捏合/双击缩放（放在最前面尽早生效） -->
+  <script>
+    // 禁用手势缩放（iOS Safari）
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    document.addEventListener('gestureend', e => e.preventDefault());
+
+    // 抑制双击放大（不影响输入/按钮等交互）
+    let __lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+      const now = Date.now();
+      if (now - __lastTouchEnd <= 300) {
+        const t = e.target;
+        if (!t.closest('input, textarea, select, a, button, label, [role="button"]')) {
+          e.preventDefault();
+        }
+      }
+      __lastTouchEnd = now;
+    }, { passive: false });
+
+    // 可选：阻止 Ctrl/Meta + 滚轮缩放（桌面端场景）
+    window.addEventListener('wheel', function(e){
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    }, { passive: false });
+  </script>
+
   <style>
     :root { --fg:#eaf2ff; --bg:#0b1020; --accent:#69a8ff; --muted:#8aa2c8; --ok:#66e6a4; --err:#ff9aa6; }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html,body{height:100%}
+
+    /* 关键：避免 iOS 自动放大文字/表单，禁用双击缩放 */
+    html,body{
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
+    }
+
     body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial}
     .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 40px;gap:16px}
     h1{font-size:18px;margin:0 0 4px;text-align:center;font-weight:600}
@@ -27,7 +62,7 @@
     .br{right:10px;bottom:10px;border-left:0;border-top:0;border-radius:0 0 12px 0}
 
     .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    button{appearance:none;border:0;border-radius:999px;padding:12px 16px;font-weight:600;background:#12182b;color:var(--fg)}
+    button{appearance:none;border:0;border-radius:999px;padding:12px 16px;font-weight:600;background:#12182b;color:var(--fg);font-size:16px}
     .primary{background:var(--accent);color:#07122b}
     .ghost{background:#12182b;color:var(--fg)}
     button[disabled]{opacity:.6}
@@ -45,13 +80,24 @@
 
     .flex-2{display:flex;gap:12px;flex-wrap:wrap}
     .flex-2 > .col{flex:1 1 300px}
-    textarea{width:100%;min-height:96px;resize:vertical;border-radius:12px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg);padding:10px 12px;font-size:14px}
+    textarea{width:100%;min-height:96px;resize:vertical;border-radius:12px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg);padding:10px 12px;font-size:16px}
+
     .uploader{border:1px dashed #2a3a66;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:flex-start}
-    .uploader input[type=file]{display:block}
+    .uploader input[type=file]{display:block;font-size:16px}
     .thumb{width:96px;height:96px;border-radius:10px;background:#081028;border:1px solid #20305a;object-fit:cover}
+
+    /* 关键：输入控件字号 >=16px，避免聚焦自动缩放 */
+    input, select, textarea { font-size:16px; }
 
     .ok{color:var(--ok)}
     .err{color:var(--err)}
+
+    /* —— 进度条 —— */
+    .progress{position:relative;height:10px;background:#0f1730;border:1px solid #1f2a4d;border-radius:999px;overflow:hidden}
+    .progress-bar{height:100%;background:var(--accent);transition:width .2s ease}
+    .progress.indeterminate .progress-bar{width:30%;animation:indet 1.2s infinite}
+    @keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+    .progress-text{margin-top:6px;font-size:12px;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -118,6 +164,16 @@
           {{ state.submitting ? '提交中…' : '提交' }}
         </button>
 
+        <!-- 提交进度条：有照片 => 百分比；无照片 => 不确定动画 -->
+        <div v-if="state.submitting">
+          <div class="progress" :class="{'indeterminate': !state.photoFile}">
+            <div class="progress-bar" :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"></div>
+          </div>
+          <div class="progress-text">
+            {{ state.photoFile ? ('上传中：' + state.uploadPct + '%') : '提交中…' }}
+          </div>
+        </div>
+
         <div v-if="state.submitMsg" :class="[state.submitOk ? 'ok' : 'err']">{{ state.submitMsg }}</div>
       </div>
     </template>
@@ -163,6 +219,7 @@ createApp({
       submitting:false,
       submitOk:false,
       submitMsg:"",
+      uploadPct: 0, // <—— 新增：上传百分比
     });
 
     let controls = null;
@@ -302,6 +359,7 @@ createApp({
       state.photoFile = null;
     }
 
+    // —— 使用 XHR 获取上传进度 —— //
     const submitUpdate = async ()=>{
       if(!state.isValid){ state.submitOk=false; state.submitMsg='无效的DU ID'; return }
       if(!state.duStatus){ state.submitOk=false; state.submitMsg='请选择要更新的状态'; return }
@@ -309,9 +367,9 @@ createApp({
       state.submitting = true;
       state.submitMsg = '';
       state.submitOk = false;
+      state.uploadPct = 0;
 
       try{
-        // 如果还没配置真实 API，会提示而不是静默成功
         const isPlaceholder = !API_URL || /<你的-render-域名>/.test(API_URL)
         if(isPlaceholder){
           throw new Error('未配置后端 API_URL，请在页面顶部通过 window.API_URL 或直接改代码设置真实地址')
@@ -323,28 +381,46 @@ createApp({
         fd.append('remark', state.remark || '');
         if(state.photoFile) fd.append('photo', state.photoFile);
 
-        const resp = await fetch(API_URL, { method:'POST', body: fd });
-        const raw = await resp.text();
-        let data = null; try{ data = raw ? JSON.parse(raw) : null }catch{}
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', API_URL, true);
 
-        if(!resp.ok){
-          const msg = (data && (data.detail || data.message)) || ('HTTP '+resp.status)
-          throw new Error(msg)
-        }
+        // 上传进度
+        xhr.upload.onprogress = (e)=>{
+          if(e && e.lengthComputable){
+            state.uploadPct = Math.min(100, Math.round(e.loaded / e.total * 100));
+          }
+        };
 
-        const ok = (data && (data.ok===true || data.success===true)) || resp.ok;
-        state.submitOk = !!ok;
-        state.submitMsg = ok ? (data?.message || '提交成功') : (data?.message || '提交失败');
+        xhr.onerror = ()=>{ state.submitOk = false; state.submitMsg = '提交失败：网络错误'; state.submitting = false; };
+        xhr.onabort = ()=>{ state.submitOk = false; state.submitMsg = '提交已取消'; state.submitting = false; };
 
-        if(ok){ setTimeout(()=>{ resume() }, 600) }
+        xhr.onreadystatechange = ()=>{
+          if(xhr.readyState !== 4) return;
+          const status = xhr.status;
+          const text = xhr.responseText || '';
+          let data = null; try{ data = text ? JSON.parse(text) : null }catch{}
+          if(status >= 200 && status < 300){
+            const ok = (data && (data.ok===true || data.success===true)) || true;
+            state.submitOk = !!ok;
+            state.submitMsg = ok ? (data?.message || '提交成功') : (data?.message || '提交失败');
+            state.uploadPct = 100;
+            if(ok){ setTimeout(()=>{ resume() }, 600); }
+          }else{
+            const msg = (data && (data.detail || data.message)) || ('HTTP ' + status);
+            state.submitOk = false;
+            state.submitMsg = '提交失败：' + msg;
+          }
+          state.submitting = false;
+        };
+
+        xhr.send(fd);
       }catch(err){
         console.error(err);
         state.submitOk = false;
         state.submitMsg = '提交失败：' + (err?.message || err);
-      }finally{
         state.submitting = false;
       }
-    }
+    };
 
     onMounted(async ()=>{
       video.value?.setAttribute('playsinline','true');
