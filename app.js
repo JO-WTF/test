@@ -342,11 +342,11 @@ createApp({
 
     const resume = async ()=>{
       state.locked=false;
-      state.hasDid = state.didDigits.length === 13;
-      state.isValid = state.hasDid;
+      state.didDigits=""; state.hasDid=false; state.isValid=false;
       state.duStatus=""; state.remark=""; clearPhoto();
       state.submitMsg=""; state.submitOk=false; state.showResult=false;
       state.needsStatusHint=false; state.needsStatusShake=false;
+
       await start();
     };
 
