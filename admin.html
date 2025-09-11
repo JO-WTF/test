@@ -67,6 +67,7 @@
         <button class="btn" id="btn-search">查询</button>
         <button class="btn ghost" id="btn-reset">重置</button>
         <button class="btn ghost" id="btn-export-all">导出全部</button>
+        <button class="btn ghost" id="btn-trust-backend-link">点击去信任后台系统</button>
       </div>
     </div>
   </div>
@@ -279,6 +280,10 @@ exportAllBtn.onclick = async () => {
   }
 };
 
+const trustBackendLinkBtn = el('btn-trust-backend-link');
+exportAllBtn.onclick = () => {
+  window.open("https://jakartabackend.onrender.com", "_blank"); 
+};
 
 </script>
 </body>
