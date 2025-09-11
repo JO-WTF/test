@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>手机扫码 - 状态更新含备注/照片（Vue 3 + @zxing/browser）</title>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- 仅使用 @zxing/browser（UMD 全局为 ZXingBrowser） -->
+  <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+  <style>
+    :root { --fg:#eaf2ff; --bg:#0b1020; --accent:#69a8ff; --muted:#8aa2c8; --ok:#66e6a4; --err:#ff9aa6; }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 40px;gap:16px}
+    h1{font-size:18px;margin:0 0 4px;text-align:center;font-weight:600}
+
+    /* 扫描框区域：16:9 */
+    .scan-area{position:relative;width:min(84vw,520px);aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#000}
+    video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .corners{position:absolute;inset:0;pointer-events:none}
+    .c{position:absolute;width:18%;height:40%;border:3px solid var(--accent)}
+    .tl{left:10px;top:10px;border-right:0;border-bottom:0;border-radius:12px 0 0 0}
+    .tr{right:10px;top:10px;border-left:0;border-bottom:0;border-radius:0 12px 0 0}
+    .bl{left:10px;bottom:10px;border-right:0;border-top:0;border-radius:0 0 0 12px}
+    .br{right:10px;bottom:10px;border-left:0;border-top:0;border-radius:0 0 12px 0}
+
+    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+    button{appearance:none;border:0;border-radius:999px;padding:12px 16px;font-weight:600;background:#12182b;color:var(--fg)}
+    .primary{background:var(--accent);color:#07122b}
+    .ghost{background:#12182b;color:var(--fg)}
+    button[disabled]{opacity:.6}
+    .tag{font-size:12px;padding:8px 10px;border-radius:999px;background:#0f1730;border:1px solid #1f2a4d}
+
+    .card{width:min(92vw,720px);background:#101831;border:1px solid #1f2a4d;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+    .card h2{font-size:16px;margin:0}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+
+    /* 状态更新区块 */
+    .status-box{padding:14px;border:2px solid var(--accent);border-radius:12px;background:#0b1327;display:flex;flex-direction:column;gap:12px}
+    .status-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .status-row label{font-weight:700}
+    select.status{min-width:180px;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg)}
+
+    .flex-2{display:flex;gap:12px;flex-wrap:wrap}
+    .flex-2 > .col{flex:1 1 300px}
+    textarea{width:100%;min-height:96px;resize:vertical;border-radius:12px;border:1px solid #2a3a66;background:#0e1631;color:var(--fg);padding:10px 12px;font-size:14px}
+    .uploader{border:1px dashed #2a3a66;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:flex-start}
+    .uploader input[type=file]{display:block}
+    .thumb{width:96px;height:96px;border-radius:10px;background:#081028;border:1px solid #20305a;object-fit:cover}
+
+    .ok{color:var(--ok)}
+    .err{color:var(--err)}
+  </style>
+</head>
+<body>
+<div id="app" class="wrap">
+  <div>
+    <h1>📷 扫码</h1>
+  </div>
+
+  <section class="scan-area">
+    <video ref="video" playsinline muted autoplay></video>
+    <div class="corners">
+      <div class="c tl"></div>
+      <div class="c tr"></div>
+      <div class="c bl"></div>
+      <div class="c br"></div>
+    </div>
+  </section>
+
+  <div class="tag" v-if="state.torchSupported">闪光灯：<b>{{ state.torchOn ? '开' : '关' }}</b></div>
+
+  <div class="row" v-if="!state.last">
+    <button class="primary" @click="start" :disabled="state.running">开始扫描</button>
+    <button class="ghost" @click="stop" :disabled="!state.running">停止</button>
+    <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">切换闪光灯</button>
+  </div>
+
+  <div class="card" v-if="state.last">
+    <div class="row">
+      <button class="primary" @click="resume">重新扫描</button>
+    </div>
+    <h2>识别结果</h2>
+    <div class="mono">{{ state.last.text }}</div>
+
+    <template v-if="state.isValid">
+      <div class="status-box">
+        <div class="status-row">
+          <label for="duStatus">更新 DU 状态：</label>
+          <select id="duStatus" class="status" v-model="state.duStatus">
+            <option value="" disabled>请选择</option>
+            <option value="运输中">运输中</option>
+            <option value="已到达">已到达</option>
+          </select>
+        </div>
+
+        <div class="flex-2">
+          <div class="col">
+            <label style="display:block;margin-bottom:6px">备注信息</label>
+            <textarea v-model="state.remark" placeholder="可填写额外说明…"></textarea>
+          </div>
+          <div class="col">
+            <label style="display:block;margin-bottom:6px">上传照片</label>
+            <div class="uploader">
+              <img v-if="state.photoPreview" :src="state.photoPreview" alt="预览" class="thumb" />
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <input type="file" accept="image/*" capture="environment" @change="onPickPhoto" />
+                <small class="muted">支持拍照或从相册选择</small>
+                <button v-if="state.photoFile" class="ghost" @click="clearPhoto">移除照片</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="primary" style="align-self:flex-start" @click="submitUpdate" :disabled="!state.duStatus || state.submitting">
+          {{ state.submitting ? '提交中…' : '提交' }}
+        </button>
+
+        <div v-if="state.submitMsg" :class="[state.submitOk ? 'ok' : 'err']">{{ state.submitMsg }}</div>
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="err">无效的DU ID</div>
+    </template>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted, onBeforeUnmount } = Vue;
+
+createApp({
+  setup(){
+    const video = ref(null);
+
+    const API_URL = (window.API_URL || 'https://backend-jwsj.onrender.com/api/du/update');
+
+    // 仅启用常见格式，减少误检提速
+    function createReader(){
+      try{
+        const hints = new Map();
+        const F = ZXingBrowser.BarcodeFormat;
+        const H = ZXingBrowser.DecodeHintType;
+        hints.set(H.POSSIBLE_FORMATS, [F.QR_CODE, F.CODE_128, F.CODE_39, F.EAN_13, F.EAN_8]);
+        return new ZXingBrowser.BrowserMultiFormatReader(hints, 250);
+      }catch{ return new ZXingBrowser.BrowserMultiFormatReader(); }
+    }
+    const reader = createReader();
+
+    const state = reactive({
+      running:false,
+      last:null,
+      locked:false,
+      torchSupported:false,
+      torchOn:false,
+      isValid:false,
+      duStatus:"",
+      remark:"",
+      photoFile:null,
+      photoPreview:"",
+      submitting:false,
+      submitOk:false,
+      submitMsg:"",
+    });
+
+    let controls = null;
+    let inactivityTimer = null;
+    const DIGIT_DU_RE = /^\d{10,20}$/;
+
+    function clearInactivity(){ if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; } }
+    function startInactivityCountdown(){
+      clearInactivity();
+      inactivityTimer = setTimeout(()=>{ stop(); }, 2*60*1000);
+    }
+
+    async function detectTorchSupport(){
+      try{
+        const stream = video.value?.srcObject;
+        const track = stream?.getVideoTracks?.()[0];
+        const caps = track?.getCapabilities?.();
+        state.torchSupported = !!(caps && 'torch' in caps);
+      }catch{ state.torchSupported = false; }
+    }
+
+    async function applyTorch(on){
+      try{
+        const stream = video.value?.srcObject;
+        const track = stream?.getVideoTracks?.()[0];
+        if(!track) return;
+        await track.applyConstraints({ advanced:[{ torch: !!on }] });
+        state.torchOn = !!on;
+      }catch{ state.torchOn = false; }
+    }
+
+    async function enhanceTrack(){
+      try{
+        const stream = video.value?.srcObject;
+        const track = stream?.getVideoTracks?.()[0];
+        if(!track) return;
+        // 连续对焦（部分机型支持）
+        try{ const ic = new ImageCapture(track); await ic.setOptions?.({ focusMode: 'continuous' }); }catch{}
+        // 适度变焦到约 1.3x（如支持）
+        try{ const caps = track.getCapabilities?.(); if(caps?.zoom){ const z=caps.zoom; const t=Math.min(z.max, Math.max(z.min||1,(z.min||1)*1.3)); await track.applyConstraints({ advanced: [{ zoom: t }] }); } }catch{}
+      }catch{}
+    }
+
+    async function buildBackCameraConstraints(){
+      const tries = [
+        { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+        { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+      ];
+      for(const c of tries){
+        try{ const s = await navigator.mediaDevices.getUserMedia(c); s.getTracks().forEach(t=>t.stop()); return c; }catch{}
+      }
+      try{ const devices = await navigator.mediaDevices.enumerateDevices(); const cams = devices.filter(d=>d.kind==='videoinput'); const back = cams.find(d=>!/front|user/i.test(d.label)) || cams[0]; if(back){ return { video: { deviceId: { exact: back.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false }; } }catch{}
+      return { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false };
+    }
+
+    const start = async ()=>{
+      if (state.running) return;
+      try{
+        state.running = true;
+        state.locked = false;
+        clearInactivity();
+        try{ controls?.stop(); }catch{}
+
+        let constraints = await buildBackCameraConstraints();
+        try{
+          controls = await reader.decodeFromConstraints(
+            constraints,
+            video.value,
+            async (result, err, _controls) => {
+              if (result && !state.locked) {
+                state.locked = true;
+                const text = result.getText();
+                const format = result.getBarcodeFormat();
+                state.isValid = DIGIT_DU_RE.test(text);
+                state.duStatus = "";
+                state.remark = "";
+                clearPhoto();
+                state.submitMsg = "";
+                state.submitOk = false;
+                state.last = { text, format };
+                try{ _controls.stop(); }catch{}
+                try{ reader.reset(); }catch{}
+                await applyTorch(false);
+                await detectTorchSupport();
+                state.running = false;
+                clearInactivity();
+                try{ navigator.vibrate?.(30); }catch{}
+              }
+            }
+          );
+        }catch(e){
+          if(e && (e.name==='OverconstrainedError' || e.name==='NotFoundError')){
+            constraints = { video: true, audio:false };
+            controls = await reader.decodeFromConstraints(constraints, video.value, ()=>{});
+          }else{ throw e; }
+        }
+
+        await enhanceTrack();
+        await detectTorchSupport();
+        startInactivityCountdown();
+      }catch(e){
+        console.error(e);
+        alert('无法启动摄像头或开始解码：' + (e?.name || '') + (e?.message ? (' - ' + e.message) : ''));
+        state.running = false;
+      }
+    }
+
+    const hardStopStream = ()=>{
+      const s = video.value?.srcObject;
+      if (s && s.getTracks) s.getTracks().forEach(t=>{ try{ t.stop(); }catch{} });
+      if (video.value) video.value.srcObject = null;
+      state.torchOn = false;
+      state.torchSupported = false;
+    }
+
+    const stop = async ()=>{
+      try{ controls?.stop(); }catch{}
+      try{ reader.reset(); }catch{}
+      try{ await applyTorch(false); }catch{}
+      hardStopStream();
+      state.running=false; state.locked=false;
+      clearInactivity();
+    }
+
+    const resume = async ()=>{ state.last=null; state.locked=false; state.isValid=false; state.duStatus=""; state.remark=""; clearPhoto(); state.submitMsg=""; state.submitOk=false; await start() }
+
+    const onPickPhoto = (e)=>{
+      const file = e.target.files?.[0];
+      if(!file) return;
+      state.photoFile = file;
+      try{ state.photoPreview = URL.createObjectURL(file); }catch{ state.photoPreview = ''; }
+    }
+
+    const clearPhoto = ()=>{
+      try{ state.photoPreview && URL.revokeObjectURL(state.photoPreview); }catch{}
+      state.photoPreview = '';
+      state.photoFile = null;
+    }
+
+    const submitUpdate = async ()=>{
+      if(!state.isValid){ state.submitOk=false; state.submitMsg='无效的DU ID'; return }
+      if(!state.duStatus){ state.submitOk=false; state.submitMsg='请选择要更新的状态'; return }
+
+      state.submitting = true;
+      state.submitMsg = '';
+      state.submitOk = false;
+
+      try{
+        // 如果还没配置真实 API，会提示而不是静默成功
+        const isPlaceholder = !API_URL || /<你的-render-域名>/.test(API_URL)
+        if(isPlaceholder){
+          throw new Error('未配置后端 API_URL，请在页面顶部通过 window.API_URL 或直接改代码设置真实地址')
+        }
+
+        const fd = new FormData();
+        fd.append('duId', state.last.text);
+        fd.append('status', state.duStatus);
+        fd.append('remark', state.remark || '');
+        if(state.photoFile) fd.append('photo', state.photoFile);
+
+        const resp = await fetch(API_URL, { method:'POST', body: fd });
+        const raw = await resp.text();
+        let data = null; try{ data = raw ? JSON.parse(raw) : null }catch{}
+
+        if(!resp.ok){
+          const msg = (data && (data.detail || data.message)) || ('HTTP '+resp.status)
+          throw new Error(msg)
+        }
+
+        const ok = (data && (data.ok===true || data.success===true)) || resp.ok;
+        state.submitOk = !!ok;
+        state.submitMsg = ok ? (data?.message || '提交成功') : (data?.message || '提交失败');
+
+        if(ok){ setTimeout(()=>{ resume() }, 600) }
+      }catch(err){
+        console.error(err);
+        state.submitOk = false;
+        state.submitMsg = '提交失败：' + (err?.message || err);
+      }finally{
+        state.submitting = false;
+      }
+    }
+
+    onMounted(async ()=>{
+      video.value?.setAttribute('playsinline','true');
+      video.value?.setAttribute('muted','muted');
+      document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop() });
+      window.addEventListener('pagehide', stop);
+      await start(); // 打开页面自动开启摄像头
+    })
+
+    onBeforeUnmount(()=>{ stop() })
+
+    return { state, video, start, stop, resume, toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) }, submitUpdate, onPickPhoto, clearPhoto }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
