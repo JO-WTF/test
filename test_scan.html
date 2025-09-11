@@ -2,39 +2,35 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>开源条形码识别对比（含自动对焦）</title>
+  <title>手机端条形码扫描</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    body { font-family: sans-serif; text-align: center; }
-    video { width: 320px; height: 240px; border: 1px solid #ccc; }
-    canvas { display: none; }
-    #result { margin-top: 20px; font-size: 18px; color: green; }
+    body { font-family: sans-serif; margin: 0; text-align: center; background: #111; color: #fff; }
+    #video { width: 100%; height: auto; background: #000; }
+    #controls { margin: 10px; }
+    select, button { font-size: 18px; padding: 10px; margin: 5px; }
+    #result { margin: 15px 0; font-size: 20px; color: #0f0; word-break: break-all; }
   </style>
 </head>
 <body>
-  <h2>开源条形码识别对比</h2>
-  <p>
+  <h2>📱 条形码扫描</h2>
+  <div id="controls">
     <select id="library">
       <option value="zxing">ZXing-JS</option>
-      <option value="jsqr">jsQR</option>
       <option value="quagga">Quagga2</option>
     </select>
     <button onclick="startScanner()">开始扫描</button>
-  </p>
+  </div>
   <video id="video" autoplay playsinline></video>
-  <canvas id="canvas"></canvas>
   <div id="result">识别结果会显示在这里</div>
 
   <!-- ZXing-JS -->
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <!-- jsQR -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
   <!-- Quagga2 -->
   <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.js"></script>
 
   <script>
     let video = document.getElementById('video');
-    let canvas = document.getElementById('canvas');
-    let ctx = canvas.getContext('2d');
     let resultDiv = document.getElementById('result');
     let stream;
 
@@ -51,7 +47,7 @@
           facingMode: "environment",
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          focusMode: "continuous", // 尝试开启自动对焦
+          focusMode: "continuous",
           advanced: [{ focusMode: "continuous" }]
         }
       };
@@ -59,70 +55,63 @@
       try {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (e) {
-        console.warn("不支持 focusMode，使用默认约束", e);
+        console.warn("设备不支持 focusMode，回退默认摄像头", e);
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       }
-
       video.srcObject = stream;
 
       if (library === "zxing") {
         startZXing();
-      } else if (library === "jsqr") {
-        startJsQR();
-      } else if (library === "quagga") {
+      } else {
         startQuagga();
       }
     }
 
-    // ZXing
+    // ZXing 识别条形码
     function startZXing() {
       const codeReader = new ZXing.BrowserMultiFormatReader();
+      const hints = new Map();
+      const formats = [
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.ITF
+      ];
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+
       codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
         if (result) resultDiv.innerText = "ZXing 识别结果: " + result.text;
-      });
+      }, hints);
     }
 
-    // jsQR
-    function startJsQR() {
-      function tick() {
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          let code = jsQR(imageData.data, canvas.width, canvas.height);
-          if (code) {
-            resultDiv.innerText = "jsQR 识别结果: " + code.data;
-          }
-        }
-        requestAnimationFrame(tick);
-      }
-      tick();
-    }
-
-    // Quagga2
+    // Quagga2 识别条形码
     function startQuagga() {
       Quagga.init({
         inputStream: {
           type: "LiveStream",
           target: video,
-          constraints: {
-            facingMode: "environment",
-            focusMode: "continuous"
-          }
+          constraints: { facingMode: "environment", focusMode: "continuous" }
         },
         decoder: {
-          readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader", "qr_reader"]
+          readers: [
+            "code_128_reader",
+            "code_39_reader",
+            "ean_reader",
+            "ean_8_reader",
+            "upc_reader",
+            "itf_reader"
+          ]
         }
       }, function (err) {
-        if (err) {
-          console.error(err);
-          return;
-        }
+        if (err) { console.error(err); return; }
         Quagga.start();
       });
       Quagga.onDetected(data => {
-        resultDiv.innerText = "Quagga2 识别结果: " + data.codeResult.code;
+        if (data && data.codeResult) {
+          resultDiv.innerText = "Quagga2 识别结果: " + data.codeResult.code;
+        }
       });
     }
   </script>
