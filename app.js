@@ -1,4 +1,4 @@
-// app.js — 智能镜头切换版
+// app.js — 智能镜头切换版（清理与修复版）
 import { translations, tFactory } from './i18n.js';
 
 const { createApp, ref, reactive, onMounted, onBeforeUnmount } = window.Vue;
@@ -48,13 +48,11 @@ class SmartCamManager {
   }
 
   current() { return this.devices[this.index] || null; }
-
   next() {
     if (!this.devices.length) return null;
     this.index = (this.index + 1) % this.devices.length;
     return this.current();
   }
-
   rememberBest(deviceId) {
     if (!deviceId) return;
     this.bestId = deviceId;
@@ -66,23 +64,22 @@ class SmartCamManager {
       this.index = 0;
     }
   }
-
   hasMultiple() { return this.devices.length > 1; }
 }
 
 createApp({
   setup(){
     const video = ref(null);
+    const didInput = ref(null); // DID 输入框（可无 ref，会退化到按 id 获取）
     const reader = createReader();
     const camMgr = new SmartCamManager();
 
     const API_URL = (window.API_URL || 'https://jakartabackend.onrender.com/api/du/update');
-    // 新校验：DID + 13位数字
-    const DIGIT_DU_RE = /^DID\d{13}$/;
+    const DIGIT_DU_RE = /^DID\d{13}$/; // DID + 13位数字
 
     const state = reactive({
       lang: 'id',
-      running:false, last:null, locked:false,
+      running:false, locked:false,
       torchSupported:false, torchOn:false,
       duStatus:"", remark:"",
       photoFile:null, photoPreview:"",
@@ -90,46 +87,19 @@ createApp({
       uploadPct:0, needsStatusHint:false, needsStatusShake:false,
       showResult:false,
       submitView:{ duId:'', status:'', remark:'', photo:'' },
-      didDigits: "",       // 仅 13 位数字
-      hasDid: false,       // 是否已具备一个可用 DID（扫码或手输）
-      isValid: false,      // 仍保留：DID + 13 位数字是否满足 ^DID\d{13}$
-
+      didDigits: "",   // 仅 13 位数字
+      hasDid: false,   // 是否已有可用 DID（扫码或手输）
+      isValid: false,  // 是否满足 DID + 13 位
+      last: null       // 原始识别内容（调试/记录）
     });
 
-    // 组合 DID 的 getter（随用随取，不用写回）
-    const currentDuId = () => (state.didDigits ? ('DID' + state.didDigits) : '');
-
-    // 手输处理：只保留数字，最多 13 位；满 13 位即进入可选状态
-    const onDidInput = () => {
-    let digits = (state.didDigits || '').replace(/\D+/g, '').slice(0, 13);
-    state.didDigits = digits;
-    state.hasDid = digits.length === 13;
-    state.isValid = digits.length === 13;  // 满 13 位即视为有效
-    if (state.hasDid) {
-        // 手输完成后，清理一些旧状态（与扫码成功时一致）
-        // ★ 收起键盘
-        blurKeyboard();
-        // ★ 若正在扫描则停止摄像头
-        stopIfRunning();
-        state.duStatus = "";
-        state.remark = "";
-        state.submitMsg = "";
-        state.submitOk = false;
-        state.needsStatusHint = false;
-        state.needsStatusShake = false;
-        state.showResult = false;
-    }
-    };
-
-
+    // i18n
     const t = tFactory(state);
-
     const setLang = (l)=>{
       state.lang = l; document.documentElement.lang = l;
       const titleMap = { zh:'手机扫码 - 状态更新', en:'Scanner - Status Update', id:'Pemindaian - Pembaruan Status' };
       document.title = titleMap[l] || 'DU Status Update';
     };
-
     const statusLabel = (val)=>{
       if(val === '运输中') return t('inTransit');
       if(val === '已到达') return t('arrived');
@@ -137,27 +107,60 @@ createApp({
       return val;
     };
 
-    let controls = null; 
+    // 组合当前 duId
+    const currentDuId = () => (state.didDigits ? ('DID' + state.didDigits) : '');
+
+    // ——— 键盘/输入框工具 ———
+    const getDidInputEl = () => didInput.value || document.getElementById('didInput');
+    const blurKeyboard = () => {
+      const el = getDidInputEl();
+      const tryBlur = () => {
+        if (el && document.activeElement === el) el.blur();
+        else document.activeElement && document.activeElement.blur?.();
+      };
+      tryBlur(); requestAnimationFrame(tryBlur); setTimeout(tryBlur, 0);
+    };
+
+    // 手动输入：满 13 位自动收键盘 + 停摄像头
+    const onDidInput = () => {
+      const digits = (state.didDigits || '').replace(/\D+/g, '').slice(0, 13);
+      state.didDigits = digits;
+      state.hasDid = digits.length === 13;
+      state.isValid = state.hasDid;
+      if (state.hasDid) {
+        blurKeyboard();
+        stopIfRunning();
+
+        // 对齐扫码成功后的清理逻辑
+        state.duStatus = "";
+        state.remark = "";
+        state.submitMsg = "";
+        state.submitOk = false;
+        state.needsStatusHint = false;
+        state.needsStatusShake = false;
+        state.showResult = false;
+      }
+    };
+
+    // ——— 摄像头/扫描 控制 ———
+    let controls = null;
     let inactivityTimer = null;
-    let noHitTimer = null; // 无命中超时定时器（用于自动切镜头）
+    let noHitTimer = null;
 
     const clearInactivity=()=>{ if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; } };
     const startInactivityCountdown=()=>{ clearInactivity(); inactivityTimer=setTimeout(()=>{ stop(); }, 2*60*1000); };
-
     const clearNoHitTimer = ()=>{ if(noHitTimer){ clearTimeout(noHitTimer); noHitTimer=null; } };
 
     async function detectTorchSupport(){
       try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
+        const track = video.value?.srcObject?.getVideoTracks?.()[0];
         const caps = track?.getCapabilities?.();
         state.torchSupported = !!(caps && 'torch' in caps);
       }catch{ state.torchSupported=false; }
     }
     async function applyTorch(on){
       try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
+        const track = video.value?.srcObject?.getVideoTracks?.()[0];
         if(!track) return;
         await track.applyConstraints({ advanced:[{ torch: !!on }] });
         state.torchOn = !!on;
@@ -165,29 +168,26 @@ createApp({
     }
     async function enhanceTrack(){
       try{
-        const stream = video.value?.srcObject;
-        const track = stream?.getVideoTracks?.()[0];
+        const track = video.value?.srcObject?.getVideoTracks?.()[0];
         if(!track) return;
         try{ const ic = new ImageCapture(track); await ic.setOptions?.({ focusMode: 'continuous' }); }catch{}
-        try{ 
-          const caps = track.getCapabilities?.(); 
+        try{
+          const caps = track.getCapabilities?.();
           if(caps?.zoom){
             const z = caps.zoom;
             const min = z.min ?? 1, max = z.max ?? 1;
-            const target = Math.min(max, Math.max(min, min * 1.4)); // 稍微更激进一点
-            await track.applyConstraints({ advanced: [{ zoom: target }] }); 
-          } 
+            const target = Math.min(max, Math.max(min, min * 1.4));
+            await track.applyConstraints({ advanced: [{ zoom: target }] });
+          }
         }catch{}
       }catch{}
     }
-
     async function buildConstraintsFor(device){
       if (device && device.deviceId) {
         return { audio:false, video:{ deviceId: { exact: device.deviceId }, width:{ ideal:1280 }, height:{ ideal:720 } } };
       }
       return { audio:false, video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } } };
     }
-
     const hardStopStream = ()=>{
       const s = video.value?.srcObject;
       if (s && s.getTracks) s.getTracks().forEach(t=>{ try{ t.stop(); }catch{} });
@@ -195,6 +195,108 @@ createApp({
       state.torchOn = false; state.torchSupported = false;
     };
 
+    // 若正在扫描则停止摄像头（供手输满 13 位时调用）
+    const stopIfRunning = async () => { if (state.running) await stop(); };
+
+    // 启动指定镜头并开始识别（start 与 nextCamera 复用）
+    async function tryDevice(device){
+      // 停旧流
+      try{ controls?.stop(); }catch{}
+      try{ reader.reset(); }catch{}
+      hardStopStream();
+
+      const constraints = await buildConstraintsFor(device);
+      controls = await reader.decodeFromConstraints(
+        constraints,
+        video.value,
+        async (result, err, _controls) => {
+          if (result && !state.locked) {
+            state.locked = true;
+            const text = result.getText();
+            const format = result.getBarcodeFormat();
+
+            // 识别 DID
+            if (DIGIT_DU_RE.test(text)) {
+              const digits = text.slice(3);
+              state.didDigits = digits.replace(/\D+/g, '').slice(0, 13);
+              state.hasDid = state.didDigits.length === 13;
+              state.isValid = state.hasDid;
+            } else {
+              const m = (text.match(/(\d{13})/) || [])[1] || "";
+              state.didDigits = m;
+              state.hasDid = !!m;
+              state.isValid = !!m;
+            }
+
+            if (state.hasDid) blurKeyboard(); // 扫码成功也顺手收键盘
+
+            // 清理状态
+            state.duStatus = "";
+            state.remark = "";
+            clearPhoto();
+            state.submitMsg = "";
+            state.submitOk = false;
+            state.needsStatusHint = false;
+            state.needsStatusShake = false;
+            state.showResult = false;
+            state.last = { text, format };
+
+            // 记忆当前镜头
+            try{
+              const track = video.value?.srcObject?.getVideoTracks?.()[0];
+              const devId = track?.getSettings?.().deviceId;
+              if (devId) camMgr.rememberBest(devId);
+            }catch{}
+
+            // 停止当前识别流
+            try{ _controls.stop(); }catch{}
+            try{ reader.reset(); }catch{}
+            await applyTorch(false);
+            await detectTorchSupport();
+            state.running = false;
+            clearInactivity();
+            clearNoHitTimer();
+            try{ navigator.vibrate?.(30); }catch{}
+          }
+        }
+      );
+
+      await enhanceTrack();
+      await detectTorchSupport();
+      startInactivityCountdown();
+    }
+
+    function armNoHitTimer(){
+      clearNoHitTimer();
+      noHitTimer = setTimeout(async ()=>{
+        if (state.locked) return;
+        if (!camMgr.hasMultiple()) return;
+        const nextDev = camMgr.next();
+        state.locked = false;
+        await tryDevice(nextDev);
+        armNoHitTimer();
+      }, 4000); // 可调 3000~6000
+    }
+
+    // ====== 开始扫描（自适应切镜头）======
+    const start = async ()=>{
+      if (state.running) return;
+      state.running = true;
+      state.locked = false;
+      clearInactivity();
+      clearNoHitTimer();
+      try{
+        await camMgr.refreshDevices();
+        await tryDevice(camMgr.current());
+        armNoHitTimer();
+      }catch(e){
+        console.error(e);
+        alert('Camera error: ' + (e?.name || '') + (e?.message ? (' - ' + e.message) : ''));
+        state.running = false; clearNoHitTimer();
+      }
+    };
+
+    // 停止扫描
     const stop = async ()=>{
       try{ controls?.stop(); }catch{}
       try{ reader.reset(); }catch{}
@@ -203,168 +305,47 @@ createApp({
       state.running=false; state.locked=false; clearInactivity(); clearNoHitTimer();
     };
 
+    // 重新扫描（保留已输 DID；如需清空可手动置空）
     const resume = async ()=>{
-      state.last=null; state.locked=false; state.isValid=false;
+      state.locked=false;
+      state.hasDid = state.didDigits.length === 13;
+      state.isValid = state.hasDid;
       state.duStatus=""; state.remark=""; clearPhoto();
       state.submitMsg=""; state.submitOk=false; state.showResult=false;
       state.needsStatusHint=false; state.needsStatusShake=false;
       await start();
     };
 
+    // 选图/清图
     const onPickPhoto = (e)=>{
       const file = e.target.files?.[0];
       if(!file) return;
       state.photoFile = file;
       try{ state.photoPreview = URL.createObjectURL(file); }catch{ state.photoPreview = ''; }
     };
-
     const clearPhoto = ()=>{
       try{ state.photoPreview && URL.revokeObjectURL(state.photoPreview); }catch{}
       state.photoPreview = ''; state.photoFile = null;
     };
 
-    // ====== 智能开扫（支持无命中自动切镜头）======
-    const start = async ()=>{
-      if (state.running) return;
-      state.running = true; state.locked = false; clearInactivity(); clearNoHitTimer();
-      try{
-        await camMgr.refreshDevices();
-
-        const tryDevice = async (device)=>{
-          // 先停掉旧的
-          try{ controls?.stop(); }catch{}
-          try{ reader.reset(); }catch{}
-          hardStopStream();
-
-          const constraints = await buildConstraintsFor(device);
-          controls = await reader.decodeFromConstraints(
-            constraints,
-            video.value,
-            async (result, err, _controls) => {
-              if (result && !state.locked) {
-                state.locked = true;
-                const text = result.getText();
-                const format = result.getBarcodeFormat();
-
-                // 若匹配 DID + 13 位数字，则提取后 13 位写入输入框
-                if (DIGIT_DU_RE.test(text)) {
-                const digits = text.slice(3); // 去掉 "DID"
-                state.didDigits = digits.replace(/\D+/g, '').slice(0, 13);
-                state.hasDid = state.didDigits.length === 13;
-                state.isValid = state.hasDid;
-                } else {
-                // 扫到非预期内容，仍可填入输入框（只提取其中的连续 13 位数字，若没有就当无效）
-                const m = (text.match(/(\d{13})/) || [])[1] || "";
-                state.didDigits = m;
-                state.hasDid = !!m;
-                state.isValid = !!m;
-                }
-                
-                if (state.hasDid) blurKeyboard(); // 扫码成功一般没有键盘，但有焦点时也一起收起
-
-
-                // 清理旧状态（与你已有一致）
-                state.duStatus = ""; 
-                state.remark = "";
-                clearPhoto();
-                state.submitMsg = ""; 
-                state.submitOk = false;
-                state.needsStatusHint = false; 
-                state.needsStatusShake = false;
-                state.showResult = false;
-
-                // （可保留 last 作为“最近原始识别内容”的记录，但 UI 显示统一用 currentDuId）
-                state.last = { text, format };
-
-                // 记忆当前镜头
-                try{
-                  const track = video.value?.srcObject?.getVideoTracks?.()[0];
-                  const devId = track?.getSettings?.().deviceId;
-                  if (devId) camMgr.rememberBest(devId);
-                }catch{}
-
-                try{ _controls.stop(); }catch{}
-                try{ reader.reset(); }catch{}
-                await applyTorch(false);
-                await detectTorchSupport();
-                state.running = false; clearInactivity(); clearNoHitTimer();
-                try{ navigator.vibrate?.(30); }catch{}
-              }
-            }
-          );
-
-          await enhanceTrack(); await detectTorchSupport(); startInactivityCountdown();
-        };
-
-        // 无命中 4s 自动切镜头（仅当存在多摄像头）
-        const armNoHitTimer = ()=>{
-          clearNoHitTimer();
-          noHitTimer = setTimeout(async ()=>{
-            if (state.locked) return;
-            if (!camMgr.hasMultiple()) return;
-            const nextDev = camMgr.next();
-            await tryDevice(nextDev);
-            armNoHitTimer(); // 继续下一轮
-          }, 4000); // 可调范围 3000~6000
-        };
-
-        await tryDevice(camMgr.current());
-        armNoHitTimer();
-
-      }catch(e){
-        console.error(e);
-        alert('Camera error: ' + (e?.name || '') + (e?.message ? (' - ' + e.message) : ''));
-        state.running = false; clearNoHitTimer();
-      }
-    };
-
-    // 手动切换镜头（可选按钮会用到）
+    // 手动切换镜头（使用统一 tryDevice 回调，切完继续计时器）
     const nextCamera = async ()=>{
-      if (!state.running) {
-        await start(); // 若未运行则直接启动
-        return;
-      }
-      // 运行中：切到下一颗并重新布防
+      if (!state.running) { await start(); return; }
       try{
         const dev = camMgr.next();
         if (!dev) return;
-        // 轻量重启当前扫描（复用 start 的内部方式）
-        try{ controls?.stop(); }catch{}
-        try{ reader.reset(); }catch{}
-        hardStopStream();
-
-        const constraints = await buildConstraintsFor(dev);
-        controls = await reader.decodeFromConstraints(
-          constraints,
-          video.value,
-          ()=>{}
-        );
-        await enhanceTrack(); await detectTorchSupport();
+        state.locked = false;
         clearNoHitTimer();
-        // 切完后重新开启无命中倒计时
-        noHitTimer = setTimeout(async ()=>{
-          if (state.locked) return;
-          if (!camMgr.hasMultiple()) return;
-          const nextDev = camMgr.next();
-          // 用 start 的 tryDevice 逻辑更稳，这里简单处理：
-          try{ controls?.stop(); }catch{}
-          try{ reader.reset(); }catch{}
-          hardStopStream();
-          const c2 = await buildConstraintsFor(nextDev);
-          controls = await reader.decodeFromConstraints(c2, video.value, ()=>{});
-          await enhanceTrack();
-          await detectTorchSupport();
-        }, 4000);
+        await tryDevice(dev);
+        armNoHitTimer();
       }catch(err){ console.error(err); }
     };
 
+    // 提交
     const submitUpdate = async ()=>{
       if(!state.isValid){
-        state.submitOk=false; 
-        state.submitMsg=t('invalidId');
-        return;
-        }
-
+        state.submitOk=false; state.submitMsg=t('invalidId'); return;
+      }
       if(!state.duStatus){
         state.submitOk=false; state.submitMsg=t('needSelectStatus');
         state.needsStatusHint = true; state.needsStatusShake = true;
@@ -433,36 +414,13 @@ createApp({
       window.addEventListener('pagehide', stop);
       await start();
     });
-
     onBeforeUnmount(()=>{ stop() });
 
-    // 获取 DID 输入框元素（优先 ref，退化为按 id 查找）
-    const didInput = ref(null);
-    const getDidInputEl = () => didInput.value || document.getElementById('didInput');
-
-    // 收起键盘（blur 三连，兼容 iOS/Safari 的时序）
-    const blurKeyboard = () => {
-    const el = getDidInputEl();
-    const tryBlur = () => {
-        if (el && document.activeElement === el) el.blur();
-        else document.activeElement && document.activeElement.blur?.();
-    };
-    tryBlur();
-    requestAnimationFrame(tryBlur);
-    setTimeout(tryBlur, 0);
-    };
-
-    // 若正在扫描则停止摄像头
-    const stopIfRunning = async () => {
-    if (state.running) await stop();
-    };
-
-
-    return { 
-      state, video, t, setLang, statusLabel, 
-      start, stop, resume, 
-      toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) }, 
-      nextCamera, // 手动切换
+    return {
+      state, video, didInput, t, setLang, statusLabel,
+      start, stop, resume,
+      toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) },
+      nextCamera,
       submitUpdate, onPickPhoto, clearPhoto, onDidInput
     };
   }
