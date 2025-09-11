@@ -1,4 +1,3 @@
-// app.js
 import { translations, tFactory } from './i18n.js';
 
 const { createApp, ref, reactive, onMounted, onBeforeUnmount } = window.Vue;
@@ -19,16 +18,19 @@ createApp({
     const reader = createReader();
 
     const API_URL = (window.API_URL || 'https://jakartabackend.onrender.com/api/du/update');
-    const DIGIT_DU_RE = /^\d{10,20}$/;
+    // 新校验：DID + 13位数字
+    const DIGIT_DU_RE = /^DID\d{13}$/;
 
     const state = reactive({
-      lang: 'id', // 默认印尼语
+      lang: 'id',
       running:false, last:null, locked:false,
       torchSupported:false, torchOn:false, isValid:false,
       duStatus:"", remark:"",
       photoFile:null, photoPreview:"",
       submitting:false, submitOk:false, submitMsg:"",
       uploadPct:0, needsStatusHint:false, needsStatusShake:false,
+      showResult:false,
+      submitView:{ duId:'', status:'', remark:'', photo:'' }
     });
 
     const t = tFactory(state);
@@ -37,6 +39,13 @@ createApp({
       state.lang = l; document.documentElement.lang = l;
       const titleMap = { zh:'手机扫码 - 状态更新', en:'Scanner - Status Update', id:'Pemindaian - Pembaruan Status' };
       document.title = titleMap[l] || 'DU Status Update';
+    };
+
+    const statusLabel = (val)=>{
+      if(val === '运输中') return t('inTransit');
+      if(val === '已到达') return t('arrived');
+      if(val === '过夜') return t('overnight');
+      return val;
     };
 
     let controls = null; let inactivityTimer = null;
@@ -78,7 +87,14 @@ createApp({
       for(const c of tries){
         try{ const s = await navigator.mediaDevices.getUserMedia(c); s.getTracks().forEach(t=>t.stop()); return c; }catch{}
       }
-      try{ const devices = await navigator.mediaDevices.enumerateDevices(); const cams = devices.filter(d=>d.kind==='videoinput'); const back = cams.find(d=>!/front|user/i.test(d.label)) || cams[0]; if(back){ return { video: { deviceId: { exact: back.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false }; } }catch{}
+      try{
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d=>d.kind==='videoinput');
+        const back = cams.find(d=>!/front|user/i.test(d.label)) || cams[0];
+        if(back){
+          return { video: { deviceId: { exact: back.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false };
+        }
+      }catch{}
       return { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false };
     }
 
@@ -99,9 +115,11 @@ createApp({
                 const text = result.getText();
                 const format = result.getBarcodeFormat();
                 state.isValid = DIGIT_DU_RE.test(text);
-                state.duStatus = ""; state.remark = ""; clearPhoto();
+                state.duStatus = ""; state.remark = "";
+                clearPhoto(); // 开始新扫描时清掉旧缩略图
                 state.submitMsg = ""; state.submitOk = false;
                 state.needsStatusHint = false; state.needsStatusShake = false;
+                state.showResult = false;
                 state.last = { text, format };
                 try{ _controls.stop(); }catch{}
                 try{ reader.reset(); }catch{}
@@ -144,7 +162,7 @@ createApp({
     const resume = async ()=>{
       state.last=null; state.locked=false; state.isValid=false;
       state.duStatus=""; state.remark=""; clearPhoto();
-      state.submitMsg=""; state.submitOk=false;
+      state.submitMsg=""; state.submitOk=false; state.showResult=false;
       state.needsStatusHint=false; state.needsStatusShake=false;
       await start();
     };
@@ -181,7 +199,7 @@ createApp({
 
         const fd = new FormData();
         fd.append('duId', state.last.text);
-        fd.append('status', state.duStatus); // 提交中文值以兼容现有后端
+        fd.append('status', state.duStatus); // 保持中文值
         fd.append('remark', state.remark || '');
         if(state.photoFile) fd.append('photo', state.photoFile);
 
@@ -199,7 +217,16 @@ createApp({
             const ok = (data && (data.ok===true || data.success===true)) || true;
             state.submitOk = !!ok;
             state.submitMsg = ok ? (data?.message || t('submitSuccess')) : (data?.message || (t('submitHttpErrPrefix') + 'unknown'));
-            state.uploadPct = 100; if(ok){ setTimeout(()=>{ resume() }, 600); }
+            state.uploadPct = 100;
+            if(ok){
+              state.showResult = true;
+              state.submitView = {
+                duId: state.last.text,
+                status: state.duStatus,
+                remark: state.remark,
+                photo: state.photoPreview || ''
+              };
+            }
           }else{
             const msg = (data && (data.detail || data.message)) || ('HTTP ' + status);
             state.submitOk = false; state.submitMsg = t('submitHttpErrPrefix') + msg;
@@ -215,7 +242,7 @@ createApp({
     };
 
     onMounted(async ()=>{
-      setLang('id');
+      setLang('id'); // 默认印尼语
       video.value?.setAttribute('playsinline','true');
       video.value?.setAttribute('muted','muted');
       document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop() });
@@ -225,6 +252,6 @@ createApp({
 
     onBeforeUnmount(()=>{ stop() });
 
-    return { state, video, t, setLang, start, stop, resume, toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) }, submitUpdate, onPickPhoto, clearPhoto };
+    return { state, video, t, setLang, statusLabel, start, stop, resume, toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) }, submitUpdate, onPickPhoto, clearPhoto };
   }
 }).mount('#app');

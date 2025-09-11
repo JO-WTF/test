@@ -65,3 +65,10 @@ input, select, textarea { font-size:16px; }
 .hint{font-size:12px;color:var(--err)}
 .shake{animation:shake .25s linear 2}
 @keyframes shake{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+
+/* 提交结果展示 */
+.result-box{margin-top:8px;padding:14px;border:2px dashed #2a3a66;border-radius:12px;background:#0b1327}
+.result-box h3{margin:0 0 8px;font-size:15px}
+.result-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.result-row .k{min-width:90px;color:#9fb0d6}
+.result-row .v{flex:1}

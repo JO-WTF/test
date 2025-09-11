@@ -9,11 +9,11 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
 
-  <!-- 可选：在 HTML 里覆盖后端地址，无需改代码 -->
+  <!-- 可选：在 HTML 里覆盖后端地址 -->
   <!-- <script>window.API_URL = "https://your-backend-service.com/api/du/update";</script> -->
 
-  <!-- 兜底：禁用缩放（保持和原版一致） -->
   <script>
+    // 禁用缩放
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
     document.addEventListener('gestureend', e => e.preventDefault());
@@ -22,15 +22,11 @@
       const now = Date.now();
       if (now - __lastTouchEnd <= 300) {
         const t = e.target;
-        if (!t.closest('input, textarea, select, a, button, label, [role="button"]')) {
-          e.preventDefault();
-        }
+        if (!t.closest('input, textarea, select, a, button, label, [role="button"]')) e.preventDefault();
       }
       __lastTouchEnd = now;
     }, { passive: false });
-    window.addEventListener('wheel', function(e){
-      if (e.ctrlKey || e.metaKey) e.preventDefault();
-    }, { passive: false });
+    window.addEventListener('wheel', function(e){ if (e.ctrlKey || e.metaKey) e.preventDefault(); }, { passive: false });
   </script>
 </head>
 <body>
@@ -48,17 +44,12 @@
       </button>
     </div>
 
-    <div>
-      <h1>{{ t('scanTitle') }}</h1>
-    </div>
+    <div><h1>{{ t('scanTitle') }}</h1></div>
 
     <section class="scan-area">
       <video ref="video" playsinline muted autoplay></video>
       <div class="corners">
-        <div class="c tl"></div>
-        <div class="c tr"></div>
-        <div class="c bl"></div>
-        <div class="c br"></div>
+        <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
       </div>
     </section>
 
@@ -90,8 +81,9 @@
               @change="state.needsStatusHint=false; state.needsStatusShake=false"
             >
               <option value="" disabled>{{ t('choose') }}</option>
-              <!-- 仍然向后端提交中文值以兼容现有 API -->
+              <!-- 后端仍收中文值 -->
               <option value="运输中">{{ t('inTransit') }}</option>
+              <option value="过夜">{{ t('overnight') }}</option>
               <option value="已到达">{{ t('arrived') }}</option>
             </select>
           </div>
@@ -130,6 +122,18 @@
 
           <div v-if="state.submitMsg" :class="[state.submitOk ? 'ok' : 'err']">{{ state.submitMsg }}</div>
         </div>
+
+        <!-- 提交成功后的结果展示 -->
+        <div class="result-box" v-if="state.showResult">
+          <h3>{{ t('submittedTitle') }}</h3>
+          <div class="result-row"><span class="k">{{ t('duIdLabel') }}:</span><span class="v mono">{{ state.submitView.duId }}</span></div>
+          <div class="result-row"><span class="k">{{ t('statusLabel') }}:</span><span class="v">{{ statusLabel(state.submitView.status) }}</span></div>
+          <div class="result-row"><span class="k">{{ t('remarkLabel') }}:</span><span class="v">{{ state.submitView.remark || '-' }}</span></div>
+          <div class="result-row" v-if="state.submitView.photo">
+            <span class="k">{{ t('photoLabel') }}:</span>
+            <img :src="state.submitView.photo" class="thumb" alt="thumb" />
+          </div>
+        </div>
       </template>
 
       <template v-else>
@@ -138,7 +142,7 @@
     </div>
   </div>
 
-  <!-- 业务脚本：使用 ES Modules，先加载 i18n，再加载 app -->
+  <!-- 业务脚本：使用 ES Modules -->
   <script type="module" src="./i18n.js"></script>
   <script type="module" src="./app.js"></script>
 </body>

@@ -6,7 +6,7 @@ export const translations = {
     startScan:"开始扫描", stop:"停止", torchToggle:"切换闪光灯",
     rescan:"重新扫描", result:"识别结果",
     updateStatus:"更新 DU 状态", choose:"请选择",
-    inTransit:"运输中", arrived:"已到达",
+    inTransit:"运输中", arrived:"已到达", overnight:"过夜",
     remark:"备注信息", remarkPlaceholder:"可填写额外说明…",
     uploadPhoto:"上传照片", photoTip:"支持拍照或从相册选择",
     removePhoto:"移除照片",
@@ -18,7 +18,8 @@ export const translations = {
     submitCanceled:"提交已取消",
     submitNetworkErr:"提交失败：网络错误",
     submitHttpErrPrefix:"提交失败：",
-    apiUrlMissing:"未配置后端 API_URL，请在页面顶部通过 window.API_URL 或直接改代码设置真实地址"
+    apiUrlMissing:"未配置后端 API_URL，请在页面顶部通过 window.API_URL 或直接改代码设置真实地址",
+    submittedTitle:"提交结果", duIdLabel:"DU ID", statusLabel:"状态", remarkLabel:"备注", photoLabel:"照片"
   },
   en: {
     scanTitle:"📷 Scan",
@@ -26,7 +27,7 @@ export const translations = {
     startScan:"Start Scan", stop:"Stop", torchToggle:"Toggle Torch",
     rescan:"Rescan", result:"Result",
     updateStatus:"Update DU Status", choose:"Please select",
-    inTransit:"In Transit", arrived:"Arrived",
+    inTransit:"In Transit", arrived:"Arrived", overnight:"Overnight (hold)",
     remark:"Remark", remarkPlaceholder:"Optional notes…",
     uploadPhoto:"Upload Photo", photoTip:"Take or choose from gallery",
     removePhoto:"Remove Photo",
@@ -38,7 +39,8 @@ export const translations = {
     submitCanceled:"Submission canceled",
     submitNetworkErr:"Submission failed: Network error",
     submitHttpErrPrefix:"Submission failed: ",
-    apiUrlMissing:"API_URL not configured. Set it via window.API_URL or in code."
+    apiUrlMissing:"API_URL not configured. Set it via window.API_URL or in code.",
+    submittedTitle:"Submission Result", duIdLabel:"DU ID", statusLabel:"Status", remarkLabel:"Remark", photoLabel:"Photo"
   },
   id: {
     scanTitle:"📷 Pindai",
@@ -46,7 +48,7 @@ export const translations = {
     startScan:"Mulai Pindai", stop:"Berhenti", torchToggle:"Ubah Lampu",
     rescan:"Pindai Ulang", result:"Hasil",
     updateStatus:"Perbarui Status DU", choose:"Silakan pilih",
-    inTransit:"Dalam Perjalanan", arrived:"Tiba",
+    inTransit:"Dalam Perjalanan", arrived:"Tiba", overnight:"Menginap (tunda)",
     remark:"Catatan", remarkPlaceholder:"Tambahkan keterangan…",
     uploadPhoto:"Unggah Foto", photoTip:"Dukung kamera atau galeri",
     removePhoto:"Hapus Foto",
@@ -58,7 +60,8 @@ export const translations = {
     submitCanceled:"Pengiriman dibatalkan",
     submitNetworkErr:"Gagal kirim: Kesalahan jaringan",
     submitHttpErrPrefix:"Gagal kirim: ",
-    apiUrlMissing:"API_URL belum dikonfigurasi. Atur via window.API_URL atau di kode."
+    apiUrlMissing:"API_URL belum dikonfigurasi. Atur via window.API_URL atau di kode.",
+    submittedTitle:"Hasil Pengiriman", duIdLabel:"DU ID", statusLabel:"Status", remarkLabel:"Catatan", photoLabel:"Foto"
   }
 };
 
