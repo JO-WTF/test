@@ -66,7 +66,6 @@
       <div>
         <button class="btn" id="btn-search">查询</button>
         <button class="btn ghost" id="btn-reset">重置</button>
-        <button class="btn ghost" id="btn-export">导出本页</button>
         <button class="btn ghost" id="btn-export-all">导出全部</button>
       </div>
     </div>
@@ -182,9 +181,6 @@
   el('prev').onclick = ()=>{ if(q.page>1){ q.page--; fetchList(); }};
   el('next').onclick = ()=>{ q.page++; fetchList(); };
 
-  // 记录最近一次查询结果，便于“导出本页”
-  let lastItems = [];
-
   // CSV 工具：转义单元格
   function csvEscape(val){
     if(val === null || val === undefined) return '';
@@ -221,16 +217,6 @@
       rows.push([it.id, it.du_id, it.status || '', remark, photo, t]);
     }
     return rows;
-  }
-
-  // 导出“本页”——基于最近一次 fetch 的 items
-  function exportCurrentPage(){
-    if(!lastItems.length){
-      alert('没有可导出的数据，请先查询。');
-      return;
-    }
-    const rows = toCsvRows(lastItems);
-    downloadCSV(rows, 'du_current_page.csv');
   }
 
   // 拉取“全部结果”并导出（遵循当前筛选条件）
@@ -282,15 +268,17 @@
     }
   }
 
-  // —— 将导出按钮与函数绑定 —— //
-  el('btn-export').onclick = exportCurrentPage;
-  el('btn-export-all').onclick = exportAll;
+// —— 将导出按钮与函数绑定 —— //
+const exportAllBtn = el('btn-export-all');
+exportAllBtn.onclick = async () => {
+  try{
+    exportAllBtn.disabled = true;
+    await exportAll();
+  } finally {
+    exportAllBtn.disabled = false;
+  }
+};
 
-  // 对现有 fetchList 做一个小改动：保存 lastItems
-  const _fetchList_orig = fetchList;
-  fetchList = async function(){
-    await _fetchList_orig();
-  };
 
 </script>
 </body>
