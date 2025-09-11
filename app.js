@@ -425,9 +425,11 @@ createApp({
                 remark: state.remark,
                 photo: state.photoPreview || ''
               };
-              window.scrollTo({
-                top: document.body.scrollHeight,
-                behavior: "smooth"
+              nextTick(() => {
+                window.scrollTo({
+                  top: document.body.scrollHeight,
+                  behavior: "smooth"
+                });
               });
             }
           }else{
