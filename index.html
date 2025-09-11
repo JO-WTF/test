@@ -87,13 +87,11 @@
       <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">{{ t('torchToggle') }}</button>
       <button class="ghost" @click="nextCamera" :disabled="!state.running">{{ t('switchCamera') || 'Switch Cam' }}</button>
     </div>
-    
-    <div class="card" v-if="state.hasDid">
-      <div class="row">
+    <div class="row">
         <button class="primary" @click="resume">{{ t('rescan') }}</button>
-      </div>
-
-      <template v-if="state.isValid">
+    </div>
+    <div class="card" v-if="state.hasDid">
+      <template v-if="state.isValid && !state.showResult">
         <div class="status-box">
           <div class="status-row" :class="{'shake': state.needsStatusShake}">
             <label for="duStatus">{{ t('updateStatus') }}：</label>
