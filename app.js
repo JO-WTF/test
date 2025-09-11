@@ -83,7 +83,7 @@ createApp({
     const state = reactive({
       lang: 'id',
       running:false, last:null, locked:false,
-      torchSupported:false, torchOn:false, isValid:false,
+      torchSupported:false, torchOn:false,
       duStatus:"", remark:"",
       photoFile:null, photoPreview:"",
       submitting:false, submitOk:false, submitMsg:"",
@@ -434,7 +434,7 @@ createApp({
       start, stop, resume, 
       toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) }, 
       nextCamera, // 手动切换
-      submitUpdate, onPickPhoto, clearPhoto 
+      submitUpdate, onPickPhoto, clearPhoto, onDidInput
     };
   }
 }).mount('#app');
