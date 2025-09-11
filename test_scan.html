@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>开源条形码识别对比（含自动对焦）</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; }
+    video { width: 320px; height: 240px; border: 1px solid #ccc; }
+    canvas { display: none; }
+    #result { margin-top: 20px; font-size: 18px; color: green; }
+  </style>
+</head>
+<body>
+  <h2>开源条形码识别对比</h2>
+  <p>
+    <select id="library">
+      <option value="zxing">ZXing-JS</option>
+      <option value="jsqr">jsQR</option>
+      <option value="quagga">Quagga2</option>
+    </select>
+    <button onclick="startScanner()">开始扫描</button>
+  </p>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+  <div id="result">识别结果会显示在这里</div>
+
+  <!-- ZXing-JS -->
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <!-- jsQR -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+  <!-- Quagga2 -->
+  <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.js"></script>
+
+  <script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+    let resultDiv = document.getElementById('result');
+    let stream;
+
+    async function startScanner() {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      let library = document.getElementById('library').value;
+      resultDiv.innerText = "正在使用 " + library + " 扫描...";
+
+      // 自动对焦约束
+      let constraints = {
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          focusMode: "continuous", // 尝试开启自动对焦
+          advanced: [{ focusMode: "continuous" }]
+        }
+      };
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (e) {
+        console.warn("不支持 focusMode，使用默认约束", e);
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      }
+
+      video.srcObject = stream;
+
+      if (library === "zxing") {
+        startZXing();
+      } else if (library === "jsqr") {
+        startJsQR();
+      } else if (library === "quagga") {
+        startQuagga();
+      }
+    }
+
+    // ZXing
+    function startZXing() {
+      const codeReader = new ZXing.BrowserMultiFormatReader();
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) resultDiv.innerText = "ZXing 识别结果: " + result.text;
+      });
+    }
+
+    // jsQR
+    function startJsQR() {
+      function tick() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          let code = jsQR(imageData.data, canvas.width, canvas.height);
+          if (code) {
+            resultDiv.innerText = "jsQR 识别结果: " + code.data;
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    // Quagga2
+    function startQuagga() {
+      Quagga.init({
+        inputStream: {
+          type: "LiveStream",
+          target: video,
+          constraints: {
+            facingMode: "environment",
+            focusMode: "continuous"
+          }
+        },
+        decoder: {
+          readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader", "qr_reader"]
+        }
+      }, function (err) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        Quagga.start();
+      });
+      Quagga.onDetected(data => {
+        resultDiv.innerText = "Quagga2 识别结果: " + data.codeResult.code;
+      });
+    }
+  </script>
+</body>
+</html>
