@@ -426,10 +426,7 @@ createApp({
                 photo: state.photoPreview || ''
               };
               nextTick(() => {
-                window.scrollTo({
-                  top: document.body.scrollHeight,
-                  behavior: "smooth"
-                });
+                endAnchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
               });
             }
           }else{
