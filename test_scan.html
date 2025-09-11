@@ -2,64 +2,78 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>条形码扫描（只显示后置/外接摄像头）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>条形码扫描（后置优先/高清/对焦/变焦/手电）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin:0; background:#111; color:#fff; text-align:center; }
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background:#111; color:#fff; text-align:center; }
+    h2 { margin:12px 0 6px; }
     #controls { display:flex; gap:8px; padding:12px; justify-content:center; align-items:center; flex-wrap:wrap; }
     select, button { font-size:16px; padding:8px 10px; }
     #video { width:100%; height:auto; background:#000; }
-    #result { margin: 12px 0 18px; font-size:18px; color:#0f0; word-break:break-all; }
+    #result { margin: 12px 0 18px; font-size:18px; color:#0f0; word-break:break-all; min-height:1.5em; }
+    #meta { font-size:12px; opacity:.8; padding:0 12px 12px; word-break:break-all; }
+    .row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
   </style>
 </head>
 <body>
-  <h2 style="margin:12px 0 0;">📱 条形码扫描（后置优先）</h2>
+  <h2>📱 条形码扫描（后置优先）</h2>
+
   <div id="controls">
     <select id="cameraSelect" title="选择摄像头"></select>
-    <button id="btnStart">开始扫描</button>
+    <div class="row">
+      <button id="btnStart">开始扫描</button>
+      <button id="btnTorch">手电: 关</button>
+      <button id="btnZoomIn">放大</button>
+      <button id="btnZoomOut">缩小</button>
+    </div>
   </div>
+
   <video id="video" autoplay playsinline></video>
   <div id="result">识别结果会显示在这里</div>
+  <div id="meta"></div>
 
   <!-- ZXing-JS -->
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <script>
     const videoEl = document.getElementById('video');
     const resultEl = document.getElementById('result');
+    const metaEl   = document.getElementById('meta');
     const selectEl = document.getElementById('cameraSelect');
     const btnStart = document.getElementById('btnStart');
+    const btnTorch = document.getElementById('btnTorch');
+    const btnZoomIn= document.getElementById('btnZoomIn');
+    const btnZoomOut= document.getElementById('btnZoomOut');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
-    let currentDeviceId = undefined;
+    let last = [];
+    let torchOn = false;
+    let zoomLevel = null;
 
-    // 过滤掉前置：label 含 front / user 的认为是前置
-    function isFrontFacingLabel(label='') {
-      return /front|user/i.test(label);
-    }
-    // 排序：更像主摄/后置的排前
-    function scoreLabel(label='') {
-      let score = 0;
-      if (/back|rear|environment/i.test(label)) score += 10;
-      if (/wide|main|default/i.test(label))     score += 5;
-      if (/tele|macro|ultra/i.test(label))      score += 1; // 次优先
-      if (isFrontFacingLabel(label))            score -= 100;
-      return score;
-    }
+    // —— 工具：判断/评分摄像头标签 —— //
+    const isFront = (label='') => /front|user/i.test(label);
+    const scoreLabel = (label='') => {
+      let s = 0;
+      if (/back|rear|environment/i.test(label)) s += 10;
+      if (/main|wide|default/i.test(label))     s += 5;
+      if (/tele|macro|ultra/i.test(label))      s += 1;
+      if (isFront(label))                        s -= 100;
+      return s;
+    };
 
-    // 先申请一次权限以拿到设备名称
-    async function ensurePermission() {
+    // 先尝试一次权限，这样 enumerateDevices 才有名称
+    async function preWarmPermission() {
       try {
         const s = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },
-            // 尝试启用连续对焦（部分浏览器支持）
-            focusMode: "continuous",
+            // 尽力连续自动对焦（并非所有浏览器支持）
             advanced: [{ focusMode: "continuous" }]
           }
         });
         s.getTracks().forEach(t => t.stop());
       } catch (e) {
-        console.warn("未能预获取权限（稍后开始扫描时再申请）：", e);
+        console.warn("预获取权限失败（稍后开始时再申请）：", e);
       }
     }
 
@@ -67,68 +81,89 @@
       const devices = await navigator.mediaDevices.enumerateDevices();
       let videos = devices.filter(d => d.kind === 'videoinput');
 
-      // 先剔除明显的前置
-      let backOrExternal = videos.filter(d => !isFrontFacingLabel(d.label));
-
-      // 如果全被剔除了（有些浏览器不给清晰标签），就退回到全列表
-      if (backOrExternal.length === 0) backOrExternal = videos;
+      // 屏蔽前置；若全被屏蔽则回退到全列表
+      let filtered = videos.filter(d => !isFront(d.label));
+      if (filtered.length === 0) filtered = videos;
 
       // 按“像后置主摄”的程度排序
-      backOrExternal.sort((a, b) => scoreLabel(b.label) - scoreLabel(a.label));
+      filtered.sort((a, b) => scoreLabel(b.label) - scoreLabel(a.label));
 
-      // 渲染下拉框
+      // 渲染下拉框并默认选中第一项
       selectEl.innerHTML = '';
-      backOrExternal.forEach((d, i) => {
+      filtered.forEach((d, i) => {
         const opt = document.createElement('option');
         opt.value = d.deviceId;
-        opt.text  = d.label || `摄像头 ${i + 1}`;
+        opt.text  = d.label || `摄像头 ${i+1}`;
         selectEl.appendChild(opt);
       });
-
-      // 自动选择第一个（通常是后置主摄）
-      if (backOrExternal[0]) {
-        selectEl.value = backOrExternal[0].deviceId;
-        currentDeviceId = backOrExternal[0].deviceId;
-      }
     }
 
+    // 设置仅识别 EAN-13 / Code39
     function setHints() {
       const hints = new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
         ZXing.BarcodeFormat.EAN_13,
         ZXing.BarcodeFormat.CODE_39
       ]);
-      // 直接把 hints 赋给实例（兼容不同版本的 zxing-js）
       codeReader.hints = hints;
     }
 
+    // 启动并尽量开启对焦/变焦/手电
     async function start() {
       resultEl.textContent = "正在启动摄像头...";
-      // 先重置，避免多次启动叠加
+      metaEl.textContent = "";
+      last = [];
+      torchOn = false;
+      btnTorch.textContent = "手电: 关";
+
       codeReader.reset();
       setHints();
 
-      const deviceId = selectEl.value || currentDeviceId || undefined;
+      const deviceId = selectEl.value || undefined;
 
+      // decodeFromVideoDevice 内部会 getUserMedia；我们用 ideal 方式请求更高分辨率
+      // 一些版本不支持直接传 constraints，这里依赖浏览器的默认协商结果。
       try {
-        await codeReader.decodeFromVideoDevice(
-          deviceId,
-          videoEl,
-          (result, err) => {
-            if (result && result.text) {
-              handleResult(result.text);
-            }
-          }
-        );
+        await codeReader.decodeFromVideoDevice(deviceId, videoEl, (result, err) => {
+          if (result && result.text) handleResult(result.text);
+        });
+
         resultEl.textContent = "摄像头已启动，正在识别…";
+
+        // 等待 video 帧元数据就绪后，尝试控制 torch / zoom，并打印实际分辨率
+        videoEl.addEventListener('loadedmetadata', applyTrackControls, { once: true });
       } catch (e) {
         console.error(e);
         resultEl.textContent = "摄像头启动失败：" + e;
       }
     }
 
-    // 简单的多帧投票（最近 5 帧，出现 ≥2 次就确认）
-    const last = [];
+    async function applyTrackControls() {
+      const stream = videoEl.srcObject;
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0];
+      if (!track) return;
+
+      // 打印实际分辨率/设备能力
+      const settings = track.getSettings?.() || {};
+      const caps = track.getCapabilities?.() || {};
+      metaEl.textContent = `实际分辨率: ${videoEl.videoWidth} x ${videoEl.videoHeight}
+settings: ${JSON.stringify(settings)}
+capabilities: ${JSON.stringify(Object.keys(caps))}`;
+
+      // 保存初始 zoom
+      if (caps.zoom) {
+        const mid = Math.min(caps.zoom.max, Math.max(caps.zoom.min, (caps.zoom.min + caps.zoom.max)/2));
+        zoomLevel = mid;
+        try { await track.applyConstraints({ advanced: [{ zoom: zoomLevel }] }); } catch {}
+      }
+
+      // 默认不开手电，按钮可切换
+      // 对焦（continuous）大多在 getUserMedia 阶段由浏览器自行处理，部分浏览器可再次尝试：
+      try { await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }); } catch {}
+    }
+
+    // 多帧投票（最近 5 帧，出现 ≥2 次即确认）
     function handleResult(text) {
       last.push(text);
       if (last.length > 5) last.shift();
@@ -138,16 +173,36 @@
       if (n >= 2) resultEl.textContent = "识别结果：" + best;
     }
 
-    // 选择变化时，立即切换摄像头
-    selectEl.addEventListener('change', () => {
-      currentDeviceId = selectEl.value;
-      start();
+    // —— 手电/变焦控制 —— //
+    btnTorch.addEventListener('click', async () => {
+      const track = videoEl.srcObject?.getVideoTracks?.()[0];
+      const caps = track?.getCapabilities?.();
+      if (!track || !caps?.torch) { alert('此设备或浏览器不支持手电控制'); return; }
+      torchOn = !torchOn;
+      try {
+        await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+        btnTorch.textContent = `手电: ${torchOn ? '开' : '关'}`;
+      } catch (e) { console.warn(e); }
     });
+
+    async function adjustZoom(step) {
+      const track = videoEl.srcObject?.getVideoTracks?.()[0];
+      const caps = track?.getCapabilities?.();
+      if (!track || !caps?.zoom) { alert('此设备或浏览器不支持变焦'); return; }
+      if (zoomLevel == null) zoomLevel = caps.zoom.min || 1;
+      zoomLevel = Math.min(caps.zoom.max, Math.max(caps.zoom.min, zoomLevel + step));
+      try { await track.applyConstraints({ advanced: [{ zoom: zoomLevel }] }); } catch (e) { console.warn(e); }
+    }
+    btnZoomIn.addEventListener('click', () => adjustZoom(+0.2));
+    btnZoomOut.addEventListener('click', () => adjustZoom(-0.2));
+
+    // 选择变化即切换摄像头
+    selectEl.addEventListener('change', start);
     btnStart.addEventListener('click', start);
 
-    // 初始化
+    // 初始化：尝试权限 -> 列设备
     (async () => {
-      await ensurePermission();
+      await preWarmPermission();
       await populateCameras();
     })();
   </script>
