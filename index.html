@@ -91,7 +91,7 @@
         <button class="primary" @click="resume">{{ t('rescan') }}</button>
     </div>
     <div class="card" v-if="state.hasDid">
-      <template v-if="state.isValid && !state.showResult">
+      <template v-if="state.isValid">
         <div class="status-box">
           <div class="status-row" :class="{'shake': state.needsStatusShake}">
             <label for="duStatus">{{ t('updateStatus') }}：</label>
