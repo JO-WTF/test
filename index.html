@@ -46,12 +46,14 @@
 
     <div><h1>{{ t('scanTitle') }}</h1></div>
 
-    <section class="scan-area">
+    <!-- 只有在还没有有效 DID 的时候才显示扫码框 -->
+    <section class="scan-area" v-if="!state.hasDid">
       <video ref="video" playsinline muted autoplay></video>
       <div class="corners">
         <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
       </div>
     </section>
+
     
     <!-- DID 手动输入区 -->
     <div class="did-input card" style="margin-top:12px">
