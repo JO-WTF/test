@@ -3,12 +3,10 @@ const { createApp, reactive, ref, onMounted, computed } = window.Vue;
 // --- i18n 初始化（扁平 JSON + 显式 ns）---
 const i18n = I18NCore.createI18n({
   namespaces: ["index"],
-  lang: I18NCore.detectLang("zh"),
-  fallbackLang: "zh"
+  lang: I18NCore.detectLang("id"),
+  fallbackLang: "id"
 });
 await i18n.init();
-
-await i18n.setLang("zh");
 
 // --- 全局状态 ---
 const state = reactive({
