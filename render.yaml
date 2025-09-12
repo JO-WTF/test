@@ -1,0 +1,15 @@
+services:
+  - type: static
+    name: your-static-site
+    envVars:
+      - key: API_BASE        # 在 Render 仪表盘里设置这个变量
+        sync: false          # 若你想手动在控制台管理它
+    buildCommand: |
+      mkdir -p public
+      # 生成前端可读的配置文件
+      cat > public/config.js <<EOF
+      window.APP_CONFIG = {
+        API_BASE: "${API_BASE}"
+      };
+      EOF
+    staticPublishPath: public
