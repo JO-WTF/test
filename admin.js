@@ -1,5 +1,4 @@
-// admin.js — 管理页脚本（单/多 DU 自动识别 + DID 自动脚手架 + 高亮不重影 + 自动换行 + 粘贴合并 + 删除不强填）
-// 仅依赖 admin.html 中的 DOM；无需第三方库。
+// admin.js — 管理页脚本（高亮不重影 + 自动换行 + 粘贴合并 + 删除不强填 + DID 占位激活逻辑）
 
 (function () {
   const API_BASE = window.API_BASE || location.origin;
@@ -24,7 +23,8 @@
   let editingId = 0;
 
   // ====== 常量 / 状态 ======
-  const DU_RE = /^DID\d{13}$/; // 合法：DID + 13 位数字
+  const DU_RE_FULL = /^DID\d{13}$/;        // 完整合法：DID + 13 位数字
+  const DU_RE_HEAD = /^DID\d{0,13}$/;      // 仅头部检查（含 0~13 位数字）
   const q = { page: 1, page_size: 20, mode: "single", lastParams: "" };
 
   // ====== 工具 ======
@@ -40,56 +40,96 @@
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  // 规范：大写 + 清理零宽/BOM。可选是否“强制脚手架 DID”（在非删除时）
-  function normalizeRaw(raw, { scaffold = true } = {}) {
-    let s = (raw || "").toUpperCase().replace(/\u200B|\uFEFF/g, "");
-    if (!scaffold) return s;
-    if (!s) return "DID";
-    if (!s.startsWith("DID")) s = "DID" + s;
-    // 在分隔符（逗号/空白）后若不是 DID 开头，自动补 DID
-    s = s.replace(/([,\s]+)(?!DID)/g, "$1DID");
-    return s;
+  // 仅做：大写 + 去零宽/BOM（不做自动注入 DID，除非在“自动换行种子”逻辑里）
+  function normalizeRawSoft(raw) {
+    return (raw || "").toUpperCase().replace(/\u200B|\uFEFF/g, "");
   }
 
-  // 高亮层：只渲染背景，不渲染文字颜色，避免与 textarea 叠加重影
+  // 构造高亮 HTML（只画背景，不画文字颜色，避免重影）
+  // 规则：
+  // - 完整合法 DID13：整段绿色背景 (.hl-ok)
+  // - 以 DID 开头但位数不足：红背景 (.hl-bad)
+  // - 仅有 D / DI / DID 三种占位（无数字）：逐字渲染：
+  //     已输入的字母 => .hl-did-act（透明背景，露出上层白字）
+  //     未输入占位的字母 => .hl-did-inact（浅灰背景，表示不会提交）
   function buildDuHighlightHTML(raw) {
     const s = raw || "";
     if (!s) return "";
+
+    // 分段：保留分隔符
     const parts = s.split(/([,\s;]+)/g);
     const out = [];
+
     for (const chunk of parts) {
       if (!chunk) continue;
+
+      // 分隔符：透明占位
       if (/^[,\s;]+$/.test(chunk)) {
         out.push(`<span class="hl-sep">${escapeHtml(chunk)}</span>`);
-      } else {
-        const token = chunk.trim();
-        const ok = DU_RE.test(token);
-        out.push(`<span class="${ok ? "hl-ok" : "hl-bad"}">${escapeHtml(chunk)}</span>`);
+        continue;
       }
+
+      const token = chunk.trim();
+
+      // 完整合法
+      if (DU_RE_FULL.test(token)) {
+        out.push(`<span class="hl-ok">${escapeHtml(chunk)}</span>`);
+        continue;
+      }
+
+      // 头部形式（DID + 0~13位数字）
+      if (DU_RE_HEAD.test(token)) {
+        const digits = token.slice(3); // 可能为 ""、1..13 位
+        if (digits.length === 0) {
+          // 只有 "D" / "DI" / "DID"
+          const letters = token.slice(0, Math.min(3, token.length));
+          // 逐字渲染：按 D I D 顺序，已输入的字母用 hl-did-act，未输入用 hl-did-inact
+          const want = "DID";
+          let html = "";
+          for (let i = 0; i < 3; i++) {
+            const ch = want[i];
+            const active = i < letters.length && letters[i] === ch;
+            html += `<span class="${active ? "hl-did-act" : "hl-did-inact"}">${ch}</span>`;
+          }
+          out.push(html);
+        } else if (digits.length < 13) {
+          // 数位不足，非法（红底）
+          out.push(`<span class="hl-bad">${escapeHtml(chunk)}</span>`);
+        } else {
+          // 13 位会在最前面的 FULL 分支被捕获；这里理论不会进
+          out.push(`<span class="hl-ok">${escapeHtml(chunk)}</span>`);
+        }
+        continue;
+      }
+
+      // 否则，非法
+      out.push(`<span class="hl-bad">${escapeHtml(chunk)}</span>`);
     }
-    // 占位换行，帮助底层高度对齐
+
+    // 底部占位，帮助高度对齐
     out.push('<span class="hl-sep">\n</span>');
     return out.join("");
   }
 
-  // 解析为去重后的 token 列表（DIDxxxx...）
+  // 把原始输入拆为 token（按换行/空格/逗号），去重
   function toTokenList(raw) {
-    const s = normalizeRaw(raw, { scaffold: true });
+    const s = normalizeRawSoft(raw);
     const arr = s.split(/[\s,;]+/g).map(v => v.trim()).filter(Boolean);
     return Array.from(new Set(arr));
   }
 
-  // 将 token 列表渲染到输入框（按换行拼接）
+  // 渲染 tokens -> textarea + 高亮
   function renderTokens(tokens) {
     duInput.value = (tokens || []).join("\n");
     duHilite.innerHTML = buildDuHighlightHTML(duInput.value);
   }
 
-  // ====== 自动换行：当光标在末尾，并且最后一个 token 已满足 DU_RE，则补 "\nDID"
-  function autoBreakAndSeedDidIfNeeded() {
+  // 自动换行 + 种子：当“最后一个非空 token”为完整合法 DID13，则追加换行 + "DID"
+  function autoSeedNextDidIfNeeded() {
     const val = duInput.value;
-    const caretAtEnd = duInput.selectionStart === val.length && duInput.selectionEnd === val.length;
-    if (!caretAtEnd) return; // 仅在末尾输入时触发
+    // 只在光标末尾时执行，避免中间编辑时插入
+    const atEnd = duInput.selectionStart === val.length && duInput.selectionEnd === val.length;
+    if (!atEnd) return;
 
     // 找到最后一个非空 token
     const parts = val.split(/([,\s;]+)/g);
@@ -102,23 +142,22 @@
     }
     if (!lastToken) return;
 
-    if (DU_RE.test(lastToken)) {
-      // 末尾如果已经有分隔符或另一个 DID 就不重复插入
-      if (!/(?:[,\s]|^)$/.test(val.slice(-1))) {
-        duInput.value = val + "\nDID";
-        try { duInput.selectionStart = duInput.selectionEnd = duInput.value.length; } catch {}
-      }
+    if (DU_RE_FULL.test(lastToken)) {
+      // 避免重复插入：末尾已经有换行/空白/逗号则先补换行
+      const tail = val.slice(-1);
+      const needNL = !/[\n\r]$/.test(tail);
+      duInput.value = val + (needNL ? "\n" : "") + "DID";
+      try { duInput.selectionStart = duInput.selectionEnd = duInput.value.length; } catch {}
     }
   }
 
-  // ====== 输入事件：区分“删除/退格”与“插入/输入”
+  // ====== 输入：区分删除与插入；不对删除做自动脚手架 ======
   duInput.addEventListener("input", (e) => {
     const isDelete = (e && typeof e.inputType === "string" && e.inputType.startsWith("delete"));
+
+    // 统一做：大写 + 清理零宽/BOM（不自动注入 DID）
     const before = duInput.value;
-
-    // 删除时：不做脚手架（防止强制回填），只做大写和清理零宽
-    let after = normalizeRaw(before, { scaffold: !isDelete });
-
+    const after  = normalizeRawSoft(before);
     if (after !== before) {
       const atEnd = duInput.selectionStart === before.length && duInput.selectionEnd === before.length;
       duInput.value = after;
@@ -127,37 +166,37 @@
       }
     }
 
-    // 非删除输入：检查是否需要自动换行并续写 DID
-    if (!isDelete) autoBreakAndSeedDidIfNeeded();
+    // 非删除：检查是否需要换行并种下新 DID
+    if (!isDelete) autoSeedNextDidIfNeeded();
 
-    // 更新高亮
+    // 刷新高亮
     duHilite.innerHTML = buildDuHighlightHTML(duInput.value);
   });
 
-  // ====== 粘贴合并：把剪贴板里的内容解析成 token，与现有合并去重
+  // 粘贴：合并、去重
   duInput.addEventListener("paste", (e) => {
     try {
       const text = (e.clipboardData || window.clipboardData).getData("text");
       if (text != null) {
         e.preventDefault();
         const current = toTokenList(duInput.value);
-        const pasted = toTokenList(text);        // 粘贴时自带 DID 也会被识别
-        const merged = Array.from(new Set(current.concat(pasted)));
+        const pasted  = toTokenList(text);
+        const merged  = Array.from(new Set(current.concat(pasted)));
         renderTokens(merged);
         try { duInput.selectionStart = duInput.selectionEnd = duInput.value.length; } catch {}
       }
     } catch {
-      /* 忽略粘贴异常，走默认行为 */
+      /* ignore */
     }
   });
 
-  // 同步滚动：textarea 滚动 -> 高亮层跟随
+  // 同步滚动（textarea -> 高亮层）
   duInput.addEventListener("scroll", () => {
     duHilite.scrollTop  = duInput.scrollTop;
     duHilite.scrollLeft = duInput.scrollLeft;
   });
 
-  // ====== 查询参数构建（自动单/多模式）======
+  // ====== 查询参数构建（自动单/多）======
   function parseDuInput() {
     return toTokenList(duInput.value);
   }
@@ -394,7 +433,7 @@
     ["f-status","f-remark","f-has","f-from","f-to","f-ps2"].forEach(id => {
       const n = el(id); n.value = (id==="f-ps2") ? "20" : "";
     });
-    renderTokens(["DID"]);          // 重置默认显示 DID 并刷新高亮
+    renderTokens(["DID"]);          // 重置后默认显示 DID（浅灰占位）
     q.page = 1;
     fetchList();
   };
@@ -411,7 +450,7 @@
 
   // ====== 初始 ======
   window.addEventListener("load", () => {
-    if (!duInput.value.trim()) renderTokens(["DID"]);
+    if (!duInput.value.trim()) renderTokens(["DID"]); // 初始显示 DID 浅灰占位
     hint.textContent = "输入条件后点击查询。";
   });
 })();
