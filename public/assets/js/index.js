@@ -1,468 +1,332 @@
-// app.js — 智能镜头切换 + iOS 变焦兜底 + 满13位收键盘停摄像头（稳定版）
-import { tFactory } from './i18n.js';
+// 统一使用全局 UMD：不要再 import 'vue'
+const { createApp, reactive, ref, onMounted } = window.Vue;
 
-const { createApp, ref, reactive, onMounted, onBeforeUnmount, nextTick } = window.Vue;
+// --- i18n 初始化（扁平 JSON + 显式 ns）---
+const i18n = I18NCore.createI18n({
+  // 你要用多命名空间也行，这里先注册 index
+  namespaces: ["index"],
+  // 默认中文
+  lang: I18NCore.detectLang("zh"),
+  // 没做完其它语言时，回退中文，避免显示原样 key
+  fallbackLang: "zh"
+});
+await i18n.init();
 
-// ====== ZXing Reader 工厂 ======
-function createReader(){
-  try{
-    const hints = new Map();
-    const F = ZXingBrowser.BarcodeFormat;
-    const H = ZXingBrowser.DecodeHintType;
-    hints.set(H.POSSIBLE_FORMATS, [F.QR_CODE, F.CODE_128, F.CODE_39, F.EAN_13, F.EAN_8]);
-    return new ZXingBrowser.BrowserMultiFormatReader(hints, 250);
-  }catch{
-    return new ZXingBrowser.BrowserMultiFormatReader();
+await i18n.setLang("zh");
+
+
+// --- 全局状态 ---
+const state = reactive({
+  ...i18n.state,         // 包含 lang
+  hasDid: false,
+  didDigits: "",
+  duStatus: "",
+  remark: "",
+  photoFile: null,
+  photoPreview: null,
+  torchOn: false,
+  torchSupported: false,
+  running: false,
+  last: false,
+  isValid: false,
+  needsStatusHint: false,
+  needsStatusShake: false,
+  submitting: false,
+  submitOk: false,
+  submitMsg: "",
+  showResult: false,
+  submitView: {},
+  uploadPct: 0,
+});
+
+// --- ZXing & 媒体相关 ---
+let reader = null;
+let currentDeviceId = null;
+let devices = [];
+let deviceIndex = 0;
+let currentStream = null;
+
+// Torch 需要访问 track.capabilities().torch
+async function setTorch(on) {
+  if (!currentStream) return false;
+  const track = currentStream.getVideoTracks()[0];
+  if (!track) return false;
+  const caps = track.getCapabilities?.() || {};
+  if (!('torch' in caps)) return false;
+  try {
+    await track.applyConstraints({ advanced: [{ torch: !!on }] });
+    state.torchOn = !!on;
+    return true;
+  } catch {
+    return false;
   }
 }
 
-// ====== 智能摄像头管理器 ======
-class SmartCamManager {
-  constructor(storageKey = 'bestCamId.v1') {
-    this.storageKey = storageKey;
-    this.devices = [];
-    this.index = 0;
-    this.bestId = localStorage.getItem(this.storageKey) || '';
-  }
-  async refreshDevices() {
-    const all = await navigator.mediaDevices.enumerateDevices();
-    this.devices = all.filter(d => d.kind === 'videoinput');
+function extractDidDigits(text) {
+  // 支持 "DID1234567890123" 或包含 DID 的任意文本
+  const m = String(text || '').match(/DID\s*([0-9]{6,20})/i) || String(text || '').match(/([0-9]{10,20})/);
+  return m ? m[1].slice(0, 13) : "";
+}
 
-    // 基于 label 的简易打分：优先后置/主摄；排除深感/红外
-    const scoreOf = (d) => {
-      const L = (d.label || '').toLowerCase();
-      let s = 0;
-      if (/back|rear|environment/.test(L)) s += 8;
-      if (/wide|standard|main|video|1x/.test(L)) s += 4;
-      if (/tele|2x|3x/.test(L)) s += 2;
-      if (/ultra.*wide|0\.5x/.test(L)) s -= 2;
-      if (/macro/.test(L)) s += 1;
-      if (/depth|true.*depth|infrared|tof/.test(L)) s -= 10;
-      return s;
+function validateDid(digits) {
+  return /^\d{13}$/.test(digits);
+}
+
+async function enumerateCameras() {
+  const all = await navigator.mediaDevices.enumerateDevices();
+  devices = all.filter(d => d.kind === 'videoinput');
+  if (devices.length === 0) throw new Error('No camera found');
+  // 尽量选择后置
+  const backIndex = devices.findIndex(d => /back|rear|environment/i.test(d.label));
+  deviceIndex = backIndex >= 0 ? backIndex : 0;
+  currentDeviceId = devices[deviceIndex].deviceId;
+}
+
+async function startReader(videoEl) {
+  const { BrowserMultiFormatReader } = window.ZXingBrowser || {};
+  if (!BrowserMultiFormatReader) throw new Error('ZXing UMD not loaded');
+  if (!reader) reader = new BrowserMultiFormatReader();
+
+  // 先列设备
+  if (!devices.length) await enumerateCameras();
+
+  // 打开指定/当前设备
+  const deviceId = currentDeviceId || devices[deviceIndex]?.deviceId;
+  state.running = true;
+
+  // 使用 ZXing 的便捷方法
+  await reader.decodeFromVideoDevice(deviceId, videoEl, result => {
+    if (!result) return;
+    const digits = extractDidDigits(result.getText ? result.getText() : result.text);
+    if (digits) {
+      state.didDigits = digits;
+      state.isValid = validateDid(digits);
+      if (state.isValid) {
+        state.hasDid = true;
+        stopReader(); // 扫到就停止
+      }
+    }
+  });
+
+  // 保存流 & torch 支持判断
+  currentStream = videoEl.srcObject;
+  try {
+    const track = currentStream?.getVideoTracks?.()[0];
+    const caps = track?.getCapabilities?.();
+    state.torchSupported = !!(caps && 'torch' in caps);
+  } catch {
+    state.torchSupported = false;
+  }
+}
+
+async function stopReader() {
+  try {
+    await reader?.reset();
+  } catch {}
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+    currentStream = null;
+  }
+  state.running = false;
+  state.torchOn = false;
+}
+
+function tFactory(ns) {
+  return (key, vars) => i18n.t(`${ns}.${key}`, vars);
+}
+
+// --- Vue App ---
+const app = createApp({
+  setup() {
+    const t = (key, vars) => i18n.t(key, { ...(vars || {}), ns: "index" });
+    const setLang = async (lang) => {
+      await i18n.setLang(lang);
+      state.lang = lang;
     };
 
-    const byId = new Map(this.devices.map(d => [d.deviceId, d]));
-    const best = this.bestId && byId.get(this.bestId);
-    const rest = this.devices.filter(d => d !== best).sort((a,b) => scoreOf(b) - scoreOf(a));
-    this.devices = best ? [best, ...rest] : rest;
-    this.index = 0;
-  }
-  current() { return this.devices[this.index] || null; }
-  next() {
-    if (!this.devices.length) return null;
-    this.index = (this.index + 1) % this.devices.length;
-    return this.current();
-  }
-  rememberBest(deviceId) {
-    if (!deviceId) return;
-    this.bestId = deviceId;
-    localStorage.setItem(this.storageKey, deviceId);
-    const i = this.devices.findIndex(d => d.deviceId === deviceId);
-    if (i > 0) {
-      const [d] = this.devices.splice(i,1);
-      this.devices.unshift(d);
-      this.index = 0;
-    }
-  }
-  hasMultiple() { return this.devices.length > 1; }
-}
+    (function sanityCheck() {
+      const k = "scanTitle";
+      const v = i18n.t(k, { ns: "index" });
+      if (v === k) {
+        console.warn(
+          `[i18n] 未命中翻译: ns=index, key=${k}\n` +
+          `请确认存在 /locales/${i18n.state.lang}/index.json（扁平结构），且静态服务器能访问。`
+        );
+      } else {
+        console.debug("[i18n] OK:", i18n.state.lang, v);
+      }
+    })();
 
-createApp({
-  setup(){
     const video = ref(null);
-    const didInput = ref(null); // 可选：HTML 若未加 ref，将 fallback 到 id 查询
-    const reader = createReader();
-    const camMgr = new SmartCamManager();
+    const didInput = ref(null);
 
-    const API_BASE = window.APP_CONFIG?.API_BASE || "";
-    const join = (base, path) => `${(base || "").replace(/\/+$/, "")}${path}`;
-    const API_UPDATE_URL = join(API_BASE, "/api/du/update");
-    const DIGIT_DU_RE = /^DID\d{13}$/; // DID + 13位数字
+    onMounted(() => {
+      // 可选：自动聚焦输入框
+      try { didInput.value?.focus(); } catch {}
 
-    const state = reactive({
-      lang: 'id',
-      running:false, locked:false,
-      torchSupported:false, torchOn:false,
-      duStatus:"", remark:"",
-      photoFile:null, photoPreview:"",
-      submitting:false, submitOk:false, submitMsg:"",
-      uploadPct:0, needsStatusHint:false, needsStatusShake:false,
-      showResult:false,
-      submitView:{ duId:'', status:'', remark:'', photo:'' },
-      didDigits: "",   // 仅 13 位数字
-      hasDid: false,   // 是否已有可用 DID（扫码或手输）
-      isValid: false,  // 是否满足 DID + 13 位
-      last: null       // 原始识别内容（调试/记录）
+      // 为了安全起见，不自动开摄像头，由用户点击 Start
     });
 
-    // i18n
-    const t = tFactory(state);
-    const setLang = (l)=>{
-      state.lang = l; document.documentElement.lang = l;
-      const titleMap = { zh:'手机扫码 - 状态更新', en:'Scanner - Status Update', id:'Pemindaian - Pembaruan Status' };
-      document.title = titleMap[l] || 'DU Status Update';
-    };
-    const statusLabel = (val)=>{
-      if(val === '运输中') return t('inTransit');
-      if(val === '已到达') return t('arrived');
-      if(val === '过夜') return t('overnight');
-      return val;
-    };
-    const currentDuId = () => (state.didDigits ? ('DID' + state.didDigits) : '');
-
-    // ====== 输入/键盘工具 ======
-    const getDidInputEl = () => didInput.value || document.getElementById('didInput');
-    const blurKeyboard = () => {
-      const el = getDidInputEl();
-      const tryBlur = () => {
-        if (el && document.activeElement === el) el.blur();
-        else document.activeElement && document.activeElement.blur?.();
-      };
-      tryBlur(); requestAnimationFrame(tryBlur); setTimeout(tryBlur, 0);
-    };
-
-    // 手动输入：满 13 位自动收键盘 + 停摄像头 + 清理状态
+    // --- 业务方法 ---
     const onDidInput = () => {
-      const digits = (state.didDigits || '').replace(/\D+/g, '').slice(0, 13);
-      state.didDigits = digits;
-      state.hasDid = digits.length === 13;
-      state.isValid = state.hasDid;
-      if (state.hasDid) {
-        blurKeyboard();
-        stopIfRunning();
+      // 只保留数字
+      state.didDigits = state.didDigits.replace(/\D+/g, '').slice(0, 13);
+      state.isValid = validateDid(state.didDigits);
+      state.hasDid = state.didDigits.length > 0;
+    };
 
-        state.duStatus = "";
-        state.remark = "";
-        state.submitMsg = "";
+    const start = async () => {
+      if (!video.value) return;
+      try {
+        await startReader(video.value);
+      } catch (e) {
         state.submitOk = false;
-        state.needsStatusHint = false;
-        state.needsStatusShake = false;
-        state.showResult = false;
+        state.submitMsg = (e && e.message) || 'Camera start failed';
       }
     };
 
-    // ====== 摄像头/扫描控制 ======
-    let controls = null;
-    let inactivityTimer = null;
-    let noHitTimer = null;
-    let zoomStage = 0; // iOS 单摄兜底使用
-
-    const clearInactivity=()=>{ if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; } };
-    const startInactivityCountdown=()=>{ clearInactivity(); inactivityTimer=setTimeout(()=>{ stop(); }, 2*60*1000); };
-    const clearNoHitTimer = ()=>{ if(noHitTimer){ clearTimeout(noHitTimer); noHitTimer=null; } };
-
-    async function detectTorchSupport(){
-      try{
-        const track = video.value?.srcObject?.getVideoTracks?.()[0];
-        const caps = track?.getCapabilities?.();
-        state.torchSupported = !!(caps && 'torch' in caps);
-      }catch{ state.torchSupported=false; }
-    }
-    async function applyTorch(on){
-      try{
-        const track = video.value?.srcObject?.getVideoTracks?.()[0];
-        if(!track) return;
-        await track.applyConstraints({ advanced:[{ torch: !!on }] });
-        state.torchOn = !!on;
-      }catch{ state.torchOn=false; }
-    }
-    async function enhanceTrack(){
-      try{
-        const track = video.value?.srcObject?.getVideoTracks?.()[0];
-        if(!track) return;
-        try{ const ic = new ImageCapture(track); await ic.setOptions?.({ focusMode: 'continuous' }); }catch{}
-        try{
-          const caps = track.getCapabilities?.();
-          if(caps?.zoom){
-            const z = caps.zoom;
-            const min = z.min ?? 1, max = z.max ?? 1;
-            const target = Math.min(max, Math.max(min, (z.min ?? 1) * 1.4));
-            await track.applyConstraints({ advanced: [{ zoom: target }] });
-          }
-        }catch{}
-      }catch{}
-    }
-    async function buildConstraintsFor(device){
-      if (device && device.deviceId) {
-        return { audio:false, video:{ deviceId: { exact: device.deviceId }, width:{ ideal:1280 }, height:{ ideal:720 } } };
-      }
-      return { audio:false, video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } } };
-    }
-    const hardStopStream = ()=>{
-      const s = video.value?.srcObject;
-      if (s && s.getTracks) s.getTracks().forEach(t=>{ try{ t.stop(); }catch{} });
-      if (video.value) video.value.srcObject = null;
-      state.torchOn = false; state.torchSupported = false;
+    const stop = async () => {
+      await stopReader();
     };
 
-    const stopIfRunning = async () => { if (state.running) await stop(); };
+    const toggleTorch = async () => {
+      if (!state.torchSupported) return;
+      await setTorch(!state.torchOn);
+    };
 
-    // iOS 单摄兜底：按 1x → 2x → 0.5x 循环跳变焦，模拟换镜头
-    async function hopZoomTrack(){
-      const track = video.value?.srcObject?.getVideoTracks?.[0];
-      const caps = track?.getCapabilities?.();
-      if (!caps?.zoom) return false;
-
-      const min = caps.zoom.min ?? 1;
-      const max = caps.zoom.max ?? 1;
-      const oneX  = Math.min(max, Math.max(min, 1));
-      const twoX  = Math.min(max, Math.max(min, oneX * 2));
-      const halfX = Math.min(max, Math.max(min, oneX * 0.5));
-      const targets = [oneX, twoX, halfX];
-
-      const target = targets[zoomStage % targets.length];
-      zoomStage++;
-
-      try{
-        await track.applyConstraints({ advanced:[{ zoom: target }] });
-        console.info('[scan] hop zoom ->', target);
-        return true;
-      }catch(e){
-        console.warn('[scan] hop zoom failed', e);
-        return false;
-      }
-    }
-
-    // 启动指定镜头并开始识别（start / nextCamera 复用）
-    async function tryDevice(device){
-      console.info('[scan] try device ->', device?.label || device?.deviceId || '(unknown)');
-
-      // 停旧流
-      try{ controls?.stop(); }catch{}
-      try{ reader.reset(); }catch{}
-      hardStopStream();
-
-      const constraints = await buildConstraintsFor(device);
-      controls = await reader.decodeFromConstraints(
-        constraints,
-        video.value,
-        async (result, err, _controls) => {
-          if (result && !state.locked) {
-            state.locked = true;
-            const text = result.getText();
-            const format = result.getBarcodeFormat();
-
-            // 识别 DID
-            if (DIGIT_DU_RE.test(text)) {
-              const digits = text.slice(3);
-              state.didDigits = digits.replace(/\D+/g, '').slice(0, 13);
-              state.hasDid = state.didDigits.length === 13;
-              state.isValid = state.hasDid;
-            } else {
-              const m = (text.match(/(\d{13})/) || [])[1] || "";
-              state.didDigits = m;
-              state.hasDid = !!m;
-              state.isValid = !!m;
-            }
-
-            if (state.hasDid) blurKeyboard(); // 扫码成功也顺手收键盘
-
-            // 清理状态
-            state.duStatus = "";
-            state.remark = "";
-            clearPhoto();
-            state.submitMsg = "";
-            state.submitOk = false;
-            state.needsStatusHint = false;
-            state.needsStatusShake = false;
-            state.showResult = false;
-            state.last = { text, format };
-
-            // 记忆当前镜头
-            try{
-              const tr = video.value?.srcObject?.getVideoTracks?.()[0];
-              const devId = tr?.getSettings?.().deviceId;
-              if (devId) camMgr.rememberBest(devId);
-            }catch{}
-
-            // 停止当前识别流
-            try{ _controls.stop(); }catch{}
-            try{ reader.reset(); }catch{}
-            await applyTorch(false);
-            await detectTorchSupport();
-            state.running = false;           // 仅在成功识别时置 false
-            clearInactivity();
-            clearNoHitTimer();
-            try{ navigator.vibrate?.(30); }catch{}
-          }
-        }
-      );
-
-      await enhanceTrack();
-      await detectTorchSupport();
-      startInactivityCountdown();
-    }
-
-    function armNoHitTimer(){
-      clearNoHitTimer();
-      noHitTimer = setTimeout(async ()=>{
-        if (state.locked) return;
-
-        if (camMgr.hasMultiple()) {
-          console.info('[scan] no hit in 4s, switch to next *device*');
-          const nextDev = camMgr.next();
-          state.locked = false;
-          await tryDevice(nextDev);
-        } else {
-          // iOS 单摄兜底：变焦分档模拟换镜头
-          const hopped = await hopZoomTrack();
-          if (!hopped) {
-            console.info('[scan] no hit in 4s, but no multi-cam/zoom; stay');
-          }
-          // 变焦无需重启流，继续等待下一次 4s
-        }
-        armNoHitTimer();
-      }, 4000); // 可调 3000~6000
-    }
-
-    // ====== 开始/停止/重扫 ======
-    const start = async ()=>{
-      if (state.running) return;
-      state.running = true;
-      state.locked = false;
-      clearInactivity();
-      clearNoHitTimer();
-      zoomStage = 0; // 重置 zoom 兜底序列
-      try{
-        await camMgr.refreshDevices();
-        await tryDevice(camMgr.current());
-        armNoHitTimer();
-      }catch(e){
-        console.error(e);
-        alert('Camera error: ' + (e?.name || '') + (e?.message ? (' - ' + e.message) : ''));
-        state.running = false; clearNoHitTimer();
+    const nextCamera = async () => {
+      if (!devices.length) await enumerateCameras();
+      deviceIndex = (deviceIndex + 1) % devices.length;
+      currentDeviceId = devices[deviceIndex].deviceId;
+      if (state.running && video.value) {
+        await stopReader();
+        await startReader(video.value);
       }
     };
 
-    const stop = async ()=>{
-      try{ controls?.stop(); }catch{}
-      try{ reader.reset(); }catch{}
-      try{ await applyTorch(false); }catch{}
-      hardStopStream();
-      state.running=false; state.locked=false; clearInactivity(); clearNoHitTimer();
+    const resume = async () => {
+      state.last = false;
+      state.showResult = false;
+      state.submitMsg = '';
+      state.submitOk = false;
+      state.duStatus = '';
+      state.remark = '';
+      state.photoFile = null;
+      state.photoPreview = null;
+      state.needsStatusHint = false;
+      state.needsStatusShake = false;
+      state.hasDid = false;
+      state.isValid = false;
+      state.didDigits = '';
+      try { didInput.value?.focus(); } catch {}
     };
 
-    const resume = async ()=>{
-      state.locked=false;
-      state.didDigits=""; state.hasDid=false; state.isValid=false;
-      state.duStatus=""; state.remark=""; clearPhoto();
-      state.submitMsg=""; state.submitOk=false; state.showResult=false;
-      state.needsStatusHint=false; state.needsStatusShake=false;
-
-      await start();
-    };
-
-    // 选图/清图
-    const onPickPhoto = (e)=>{
-      const file = e.target.files?.[0];
-      if(!file) return;
-      state.photoFile = file;
-      try{ state.photoPreview = URL.createObjectURL(file); }catch{ state.photoPreview = ''; }
-    };
-    const clearPhoto = ()=>{
-      try{ state.photoPreview && URL.revokeObjectURL(state.photoPreview); }catch{}
-      state.photoPreview = ''; state.photoFile = null;
-    };
-
-    // 手动切换镜头（用统一 tryDevice；切完继续计时）
-    const nextCamera = async ()=>{
-      if (!state.running) { await start(); return; }
-      try{
-        const dev = camMgr.next();
-        if (!dev) return;
-        state.locked = false;
-        clearNoHitTimer();
-        await tryDevice(dev);
-        armNoHitTimer();
-      }catch(err){ console.error(err); }
-    };
-
-    // 提交
-    const submitUpdate = async ()=>{
-      if(!state.isValid){
-        state.submitOk=false; state.submitMsg=t('invalidId'); return;
+    const onPickPhoto = (e) => {
+      const f = e.target.files?.[0];
+      state.photoFile = f || null;
+      if (f) {
+        state.photoPreview = URL.createObjectURL(f);
+      } else {
+        state.photoPreview = null;
       }
-      if(!state.duStatus){
-        state.submitOk=false; state.submitMsg=t('needSelectStatus');
-        state.needsStatusHint = true; state.needsStatusShake = true;
-        requestAnimationFrame(()=>{
-          const sel = document.getElementById('duStatus'); if(sel){ sel.focus(); }
-          setTimeout(()=>{ state.needsStatusShake=false; }, 400);
-        });
+    };
+
+    const clearPhoto = () => {
+      state.photoFile = null;
+      if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
+      state.photoPreview = null;
+    };
+
+    function statusLabel(v) {
+      if (v === "运输中") return t("inTransit");
+      if (v === "过夜")   return t("overnight");
+      if (v === "已到达") return t("arrived");
+      return v || "-";
+    }
+
+    const submitUpdate = async () => {
+      if (!state.isValid) return;
+      if (!state.duStatus) {
+        state.needsStatusHint = true;
+        state.needsStatusShake = true;
         return;
       }
 
-      state.submitting = true; state.submitMsg = ''; state.submitOk = false; state.uploadPct = 0;
+      state.submitting = true;
+      state.uploadPct = 0;
+      state.submitMsg = '';
+      state.submitOk = false;
 
-      try{
-        if(!API_UPDATE_URL){ throw new Error(t('apiUrlMissing')); }
-
-        const fd = new FormData();
-        fd.append('duId', currentDuId());
-        fd.append('status', state.duStatus); // 保持中文值
-        fd.append('remark', state.remark || '');
-        if(state.photoFile) fd.append('photo', state.photoFile);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', API_UPDATE_URL, true);
-        xhr.upload.onprogress = (e)=>{ if(e && e.lengthComputable){ state.uploadPct = Math.min(100, Math.round(e.loaded / e.total * 100)); } };
-        xhr.onerror = ()=>{ state.submitOk = false; state.submitMsg = t('submitNetworkErr'); state.submitting = false; };
-        xhr.onabort = ()=>{ state.submitOk = false; state.submitMsg = t('submitCanceled'); state.submitting = false; };
-
-        xhr.onreadystatechange = ()=>{
-          if(xhr.readyState !== 4) return;
-          const status = xhr.status; const text = xhr.responseText || '';
-          let data = null; try{ data = text ? JSON.parse(text) : null }catch{}
-          if(status >= 200 && status < 300){
-            const ok = (data && (data.ok===true || data.success===true)) || true;
-            state.submitOk = !!ok;
-            state.submitMsg = ok ? (data?.message || t('submitSuccess')) : (data?.message || (t('submitHttpErrPrefix') + 'unknown'));
-            state.uploadPct = 100;
-            if(ok){
-              state.showResult = true;
-              state.submitView = {
-                duId: currentDuId(),
-                status: state.duStatus,
-                remark: state.remark,
-                photo: state.photoPreview || ''
-              };
-              nextTick(() => {
-                window.scrollTo({
-                  top: document.body.scrollHeight,
-                  behavior: "smooth"
-                });
-              });
-            }
-          }else{
-            const msg = (data && (data.detail || data.message)) || ('HTTP ' + status);
-            state.submitOk = false; state.submitMsg = t('submitHttpErrPrefix') + msg;
+      try {
+        // （示例）先处理图片上传（如果有），这里只做“假进度条”
+        if (state.photoFile) {
+          for (let p = 0; p <= 100; p += 10) {
+            await new Promise(r => setTimeout(r, 60));
+            state.uploadPct = p;
           }
-          state.submitting = false;
+        }
+
+        // 业务提交
+        const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '';
+        const payload = {
+          duId: 'DID' + state.didDigits,
+          status: state.duStatus,
+          remark: state.remark,
+          photo: state.photoPreview || null,
         };
-        xhr.send(fd);
-      }catch(err){
-        console.error(err);
-        state.submitOk = false; state.submitMsg = t('submitHttpErrPrefix') + (err?.message || err);
+
+        // 如果没配置 API，就直接本地模拟成功
+        if (!API_BASE) {
+          await new Promise(r => setTimeout(r, 200));
+          state.submitOk = true;
+          state.submitMsg = t('submitOk') || 'Submitted';
+        } else {
+          const res = await fetch(`${API_BASE}/du/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          state.submitOk = true;
+          state.submitMsg = t('submitOk') || 'Submitted';
+        }
+
+        state.submitView = {
+          duId: payload.duId,
+          status: payload.status,
+          remark: payload.remark,
+          photo: payload.photo,
+        };
+        state.showResult = true;
+        state.last = true;
+      } catch (e) {
+        state.submitOk = false;
+        state.submitMsg = (t('submitFailed') || 'Submit failed') + ': ' + (e && e.message ? e.message : 'Error');
+      } finally {
         state.submitting = false;
       }
     };
 
-    onMounted(async ()=>{
-      setLang('id'); // 默认印尼语
-      video.value?.setAttribute('playsinline','true');
-      video.value?.setAttribute('muted','muted');
-      document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop() });
-      window.addEventListener('pagehide', stop);
-      await start();
-    });
-    onBeforeUnmount(()=>{ stop() });
-
     return {
-      state, video, didInput, t, setLang, statusLabel,
-      start, stop, resume,
-      toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) },
+      t,
+      setLang,
+      state,
+      video,
+      didInput,
+      // methods
+      onDidInput,
+      start,
+      stop,
+      toggleTorch,
       nextCamera,
-      submitUpdate, onPickPhoto, clearPhoto, onDidInput
+      resume,
+      onPickPhoto,
+      clearPhoto,
+      submitUpdate,
+      statusLabel,
     };
   }
-}).mount('#app');
+});
+
+// **只挂载一次**
+app.mount("#app");

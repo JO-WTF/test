@@ -11,12 +11,12 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
 
-  <!-- 公共配置 & i18n 核心 -->
+  <!-- 公共配置 & i18n 核心（提供全局 I18NCore） -->
   <script src="/config.js"></script>
   <script src="/assets/js/i18n/core.js"></script>
 
+  <!--（可选）禁用缩放，避免 iOS 放大 -->
   <script>
-    // 禁用缩放（防止 iOS 双击/捏合放大）
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
     document.addEventListener('gestureend', e => e.preventDefault());
@@ -168,55 +168,7 @@
     </div>
   </div>
 
-  <!-- Vue 逻辑 -->
-  <script type="module">
-    import { createApp, reactive } from "vue";
-
-    // 初始化 i18n
-    const i18n = I18NCore.createI18n({
-      ns: "index",
-      lang: I18NCore.detectLang("zh"),
-      fallbackLang: "en"
-    });
-    await i18n.init();
-
-    // 响应式 state
-    const state = reactive({
-      ...i18n.state, // lang
-      hasDid: false,
-      didDigits: "",
-      duStatus: "",
-      remark: "",
-      photoFile: null,
-      photoPreview: null,
-      torchOn: false,
-      torchSupported: false,
-      running: false,
-      last: false,
-      isValid: false,
-      needsStatusHint: false,
-      needsStatusShake: false,
-      submitting: false,
-      submitOk: false,
-      submitMsg: "",
-      showResult: false,
-      submitView: {}
-    });
-
-    // 绑定 Vue 应用
-    createApp({
-      setup() {
-        const t = i18n.t;
-        const setLang = async (lang) => {
-          await i18n.setLang(lang);
-          state.lang = lang;
-        };
-        return { t, setLang, state };
-      }
-    }).mount("#app");
-  </script>
-
-  <!-- 业务逻辑 -->
+  <!-- 仅保留这一个入口脚本（唯一挂载） -->
   <script type="module" src="/assets/js/index.js"></script>
 </body>
 </html>
