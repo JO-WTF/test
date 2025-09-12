@@ -38,6 +38,23 @@
     .field{display:flex;flex-direction:column;gap:6px}
     .field.grow{flex:1;min-width:220px}
     .w120{width:120px}
+    .modal-mask {
+      position: fixed;
+      inset: 0; /* 顶、右、底、左全覆盖 */
+      background: rgba(0,0,0,.35);
+      display: none;              /* 默认不显示 */
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .modal {
+      background: #0f1730;
+      border: 1px solid #283760;
+      border-radius: 14px;
+      max-width: 520px;
+      width: 92%;
+      padding: 14px;
+    }
   </style>
   <script>
     // 按需改为你的后端域名；注释掉则默认同源
