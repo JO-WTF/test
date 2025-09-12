@@ -244,6 +244,41 @@ const app = createApp({
       return v || "-";
     }
 
+    // 可复用的小工具：XHR 上传（带进度、超时）
+    function uploadWithProgress({ url, formData, onProgress, timeoutMs = 15000 }) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+
+        // 真实上传进度
+        xhr.upload.onprogress = (evt) => {
+          if (evt.lengthComputable && typeof onProgress === 'function') {
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            onProgress(pct);
+          }
+        };
+
+        // 超时
+        xhr.timeout = timeoutMs;
+        xhr.ontimeout = () => reject(new Error('Request timeout'));
+
+        // 完成
+        xhr.onload = () => {
+          const ok = xhr.status >= 200 && xhr.status < 300;
+          if (!ok) {
+            // 返回文本以便调试
+            return reject(new Error(`HTTP ${xhr.status} - ${xhr.responseText || ''}`));
+          }
+          resolve(xhr.responseText);
+        };
+
+        xhr.onerror = () => reject(new Error('Network error'));
+
+        // 发送（不要自己设置 Content-Type）
+        xhr.send(formData);
+      });
+    }
+
     const submitUpdate = async () => {
       if (!state.isValid) return;
       if (!state.duStatus) {
@@ -258,50 +293,76 @@ const app = createApp({
       state.submitOk = false;
 
       try {
-        // （示例）先处理图片上传（如果有），这里只做“假进度条”
-        if (state.photoFile) {
-          for (let p = 0; p <= 100; p += 10) {
-            await new Promise(r => setTimeout(r, 60));
-            state.uploadPct = p;
-          }
+        const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '';
+
+        // 无 API：本地模拟成功
+        if (!API_BASE) {
+          await new Promise(r => setTimeout(r, 300));
+          state.uploadPct = 100;
+          state.submitOk = true;
+          state.submitMsg = t('submitOk') || 'Submitted';
+
+          state.submitView = {
+            duId: 'DID' + state.didDigits,
+            status: state.duStatus,
+            remark: state.remark,
+            photo: state.photoPreview || null,
+          };
+          state.showResult = true;
+          state.last = true;
+          return;
         }
 
-        // 业务提交
-        const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '';
-        const payload = {
+        // 目标地址（避免尾斜杠问题）
+        const url = API_BASE.replace(/\/+$/, '') + '/api/du/update';
+
+        // 组装 FormData（字段名需与后端一致）
+        const fd = new FormData();
+        fd.append('duId', 'DID' + state.didDigits);
+        fd.append('status', state.duStatus ?? '');
+        fd.append('remark', state.remark ?? '');
+
+        if (state.photoFile instanceof File) {
+          // 真文件就按文件传
+          fd.append('photo', state.photoFile, state.photoFile.name || 'photo');
+        } else if (typeof state.photoPreview === 'string' && state.photoPreview) {
+          // 也可传字符串（如 dataURL/URL），看后端是否支持
+          fd.append('photo', state.photoPreview);
+        } else {
+          fd.append('photo', '');
+        }
+
+        // 真·上传进度（用 XHR）
+        await uploadWithProgress({
+          url,
+          formData: fd,
+          onProgress: (pct) => {
+            // 避免偶发 100% 后服务器还未返回的抖动：最多显示到 99%，成功后再置 100
+            state.uploadPct = Math.min(99, pct);
+          },
+          timeoutMs: 15000,
+        });
+
+        // 成功：补齐到 100%
+        state.uploadPct = 100;
+        state.submitOk = true;
+        state.submitMsg = t('submitOk') || 'Submitted';
+
+        state.submitView = {
           duId: 'DID' + state.didDigits,
           status: state.duStatus,
           remark: state.remark,
           photo: state.photoPreview || null,
         };
-
-        // 如果没配置 API，就直接本地模拟成功
-        if (!API_BASE) {
-          await new Promise(r => setTimeout(r, 200));
-          state.submitOk = true;
-          state.submitMsg = t('submitOk') || 'Submitted';
-        } else {
-          const res = await fetch(`${API_BASE}/api/du/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          state.submitOk = true;
-          state.submitMsg = t('submitOk') || 'Submitted';
-        }
-
-        state.submitView = {
-          duId: payload.duId,
-          status: payload.status,
-          remark: payload.remark,
-          photo: payload.photo,
-        };
         state.showResult = true;
         state.last = true;
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (t('submitFailed') || 'Submit failed') + ': ' + (e && e.message ? e.message : 'Error');
+        state.submitMsg =
+          (t('submitFailed') || 'Submit failed') +
+          ': ' +
+          (e && e.message ? e.message : 'Error');
+        console.error('submit error', e);
       } finally {
         state.submitting = false;
       }
