@@ -225,7 +225,7 @@ a {
 .hl-did-act {
     background: rgba(148, 163, 184, .22);
     border-radius: 4px;
-    padding: 0 2px;
+    padding: 0;
 }
 
 .hl-did-inact {
@@ -233,3 +233,13 @@ a {
     border-radius: 4px;
     padding: 0 2px;
 }
+
+.lang-switch{
+    display:flex; gap:8px; align-items:center; margin:14px 0 10px;
+  }
+  .lang-switch button{
+    border:1px solid #2a3a66; background:#0e1631; color:#eaf2ff;
+    border-radius:10px; padding:6px 10px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  }
+  .lang-switch button.active{ outline:2px solid #5b8cff; }
+  .lang-switch img{ width:18px; height:12px; border-radius:2px; }

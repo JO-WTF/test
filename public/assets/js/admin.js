@@ -28,9 +28,14 @@
   let editingId = 0;
 
   // ====== 常量 / 状态 ======
-  const DU_RE_FULL = /^DID\d{13}$/;        // 完整合法：DID + 13 位数字
-  const DU_RE_HEAD = /^DID\d{0,13}$/;      // 仅头部检查（含 0~13 位数字）
+  const DU_RE_FULL = /^DID\d{13}$/;
+  const DU_RE_HEAD = /^DID\d{0,13}$/;
   const q = { page: 1, page_size: 20, mode: "single", lastParams: "" };
+
+  // 通过 ?actions=1 临时打开编辑
+  const usp = new URLSearchParams(location.search);
+  const actionsParam = usp.get("actions");
+  const SHOW_ACTIONS_FINAL = actionsParam === "1" ? true : false;
 
   // ====== 工具 ======
   function toAbsUrl(u) {
@@ -94,9 +99,6 @@
         } else if (digits.length < 13) {
           // 数位不足，非法（红底）
           out.push(`<span class="hl-bad">${escapeHtml(chunk)}</span>`);
-        } else {
-          // 13 位会在最前面的 FULL 分支被捕获；这里理论不会进
-          out.push(`<span class="hl-ok">${escapeHtml(chunk)}</span>`);
         }
         continue;
       }
@@ -149,8 +151,7 @@
 
     if (DU_RE_FULL.test(lastToken)) {
       // 避免重复插入：末尾已经有换行/空白/逗号则先补换行
-      const tail = val.slice(-1);
-      const needNL = !/[\n\r]$/.test(tail);
+      const needNL = !val.endsWith("\n");
       duInput.value = val + (needNL ? "\n" : "") + "DID";
       try { duInput.selectionStart = duInput.selectionEnd = duInput.value.length; } catch {}
     }
@@ -202,12 +203,9 @@
   });
 
   // ====== 查询参数构建（自动单/多）======
-  function parseDuInput() {
-    return toTokenList(duInput.value);
-  }
   function buildParamsAuto() {
     const p = new URLSearchParams();
-    const ids = parseDuInput();
+    const ids = toTokenList(duInput.value);
     const ps = Number(el("f-ps2").value) || 20;
     q.page_size = ps;
 
@@ -241,11 +239,13 @@
       const t = it.created_at ? new Date(it.created_at).toLocaleString() : "";
       const link = it.photo_url ? `<a href="${toAbsUrl(it.photo_url)}" target="_blank">查看</a>` : "";
       const remark = it.remark ? String(it.remark).replace(/[<>]/g,"") : "";
-      const act = `
-        <div class="actions">
-          <button class="btn" data-act="edit" data-id="${it.id}" data-du="${it.du_id}" data-status="${it.status||''}" data-remark="${escapeHtml(remark)}">编辑</button>
-          <button class="btn danger" data-act="del" data-id="${it.id}">删除</button>
-        </div>`;
+      const act = SHOW_ACTIONS_FINAL ? (
+        `<div class="actions">
+           <button class="btn" data-act="edit" data-id="${it.id}" data-du="${it.du_id}" data-status="${it.status||''}" data-remark="${escapeHtml(remark)}">编辑</button>
+           <button class="btn danger" data-act="del" data-id="${it.id}">删除</button>
+         </div>`
+      ) : "";
+      
       return `<tr>
         <td>${it.id}</td>
         <td>${it.du_id}</td>
@@ -458,5 +458,6 @@
   window.addEventListener("load", () => {
     if (!duInput.value.trim()) renderTokens(["DID"]); // 初始显示 DID 浅灰占位
     hint.textContent = "输入条件后点击查询。";
+    fetchList();
   });
 })();
