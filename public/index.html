@@ -15,7 +15,6 @@
   <script src="/config.js"></script>
   <script src="/assets/js/i18n/core.js"></script>
 
-  <!--（可选）禁用缩放，避免 iOS 放大 -->
   <script>
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
@@ -80,16 +79,24 @@
       </div>
     </div>
 
-    <div class="tag" v-if="state.torchSupported">{{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b></div>
+    <!-- 闪光灯状态条 -->
+    <button
+      class="tag"
+      v-if="torchTagVisible"
+      @click="toggleTorch"
+      :aria-pressed="state.torchOn"
+      style="cursor:pointer; user-select:none;"
+    >
+      {{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b>
+    </button>
 
     <!-- 操作按钮 -->
-    <div class="row" v-if="!state.last">
+    <div class="row" v-if="showScanControls">
       <button class="primary" @click="start" :disabled="state.running">{{ t('startScan') }}</button>
       <button class="ghost" @click="stop" :disabled="!state.running">{{ t('stop') }}</button>
-      <button class="ghost" @click="toggleTorch" :disabled="!state.running || !state.torchSupported">{{ t('torchToggle') }}</button>
       <button class="ghost" @click="nextCamera" :disabled="!state.running">{{ t('switchCamera') }}</button>
     </div>
-    
+
     <!-- 提交结果 -->
     <div class="card" v-if="state.hasDid">
       <div class="row">
