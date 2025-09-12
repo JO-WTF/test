@@ -55,6 +55,61 @@
       width: 92%;
       padding: 14px;
     }
+    /* 包裹容器：把高亮层垫底，textarea 盖在上面 */
+    .du-wrap{
+      position: relative;
+      width: 100%;
+      min-height: 140px;
+    }
+    .du-wrap textarea,
+    .du-wrap .du-hilite{
+      font: inherit;
+      line-height: 1.5;
+      padding: 8px 10px;
+      border-radius: 10px;
+      min-height: 140px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow: auto;
+    }
+
+    /* 高亮层：与 textarea 同尺寸、同内边距，放底层显示颜色 */
+    .du-hilite{
+      position: absolute;
+      inset: 0;
+      color: transparent;          /* 让非高亮文字不可见，只显示背景块 */
+      background: transparent;
+      border: 1px solid #2a3a66;   /* 让“看起来像输入框” */
+      pointer-events: none;        /* 点击落到 textarea 上 */
+      z-index: 0;
+    }
+
+    /* 让 textarea 透明并盖在上面，负责输入 */
+    .du-wrap textarea{
+      position: relative;
+      background: transparent;
+      border: 1px solid #2a3a66;
+      z-index: 1;
+      resize: none;                /* 保持与你之前的固定高度一致 */
+    }
+
+    /* token 着色：ok=合法，bad=非法 */
+    .hl-ok{
+      background: rgba(34,197,94,.25);    /* 绿 */
+      color: #eaf2ff;
+      border-radius: 4px;
+      padding: 0 2px;
+    }
+    .hl-bad{
+      background: rgba(239,68,68,.28);    /* 红 */
+      color: #eaf2ff;
+      border-radius: 4px;
+      padding: 0 2px;
+    }
+
+    /* 分隔符（换行/逗号/空格）保持透明，仅用于占位 */
+    .hl-sep{ background: transparent; color: transparent; }
+
   </style>
   <script>
     // 按需改为你的后端域名；注释掉则默认同源
@@ -71,9 +126,18 @@
         <!-- 左列：DU 输入 -->
         <div class="du-col">
           <label>DU ID（支持多行/逗号/空格分隔；多于1个则批量查询）</label>
-          <textarea id="f-du" placeholder="示例：&#10;DID123...&#10;DID456...&#10;或：DID123..., DID456..."></textarea>
-          <div class="muted" style="margin-top:6px">提示：当输入多个 DU 时，会自动使用批量查询接口。</div>
+
+          <!-- 包裹：高亮层 + 文本域 -->
+          <div class="du-wrap">
+            <div id="du-hilite" class="du-hilite" aria-hidden="true"></div>
+            <textarea id="f-du" placeholder="示例：&#10;DID123...&#10;DID456...&#10;或：DID123..., DID456..."></textarea>
+          </div>
+
+          <div class="muted" style="margin-top:6px">
+            提示：输入小写 did 会自动转为 DID；合法格式为 <code>DID + 13位数字</code>。
+          </div>
         </div>
+
 
         <!-- 右列 -->
         <div class="rhs">
