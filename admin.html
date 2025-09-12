@@ -12,7 +12,7 @@
     label{font-size:12px;color:#8aa2c8}
     input,select,textarea{background:#0e1631;color:#eaf2ff;border:1px solid #2a3a66;border-radius:10px;padding:8px 10px}
     input[type="date"]{min-width:180px}
-    textarea{min-width:280px;min-height:80px}
+    textarea{min-width:280px;min-height:42px;max-height:300px;resize:none;line-height:1.4}
     .btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-weight:700;background:#69a8ff;color:#07122b;cursor:pointer}
     .ghost{background:#12182b;color:#eaf2ff}
     .danger{background:#ff6b6b;color:#07122b}
@@ -38,37 +38,12 @@
   <div class="container">
     <h2>DU 提交记录管理</h2>
 
-    <!-- 批量查询（多个 DU） -->
+    <!-- 条件筛选（复用一个多行 DU 输入框，自动识别单/多） -->
     <div class="card">
       <div class="row">
         <div style="flex:1;min-width:320px">
-          <label>批量 DU ID（可换行/逗号/空格分隔）</label><br>
-          <textarea id="f-du-multi" placeholder="例如：&#10;DID123...&#10;DID456...&#10;或：DID123..., DID456..."></textarea>
-        </div>
-        <div class="field">
-          <label>每页数量</label><br>
-          <input id="f-ps" type="number" min="1" max="100" value="20" style="width:120px">
-        </div>
-        <div class="field">
-          <button class="btn" id="btn-batch">批量查询</button>
-        </div>
-        <div class="field" style="flex:1"></div>
-        <div class="field">
-          <button class="btn ghost" id="btn-export-all">导出全部</button>
-        </div>
-        <div class="field">
-          <button class="btn ghost" id="btn-trust-backend-link">点击去信任后台系统</button>
-        </div>
-      </div>
-      <div class="muted" style="margin-top:6px">提示：批量查询会忽略下方的单个条件筛选。</div>
-    </div>
-
-    <!-- 条件筛选（单 DU / 条件） -->
-    <div class="card">
-      <div class="row">
-        <div>
-          <label>DU ID（单个）</label><br>
-          <input id="f-du" placeholder="DID + 13位数字">
+          <label>DU ID（支持多行/逗号/空格分隔；多于1个则批量查询）</label><br>
+          <textarea id="f-du" placeholder="示例：&#10;DID123...&#10;DID456...&#10;或：DID123..., DID456..."></textarea>
         </div>
         <div>
           <label>状态</label><br>
@@ -106,8 +81,11 @@
         <div>
           <button class="btn" id="btn-search">查询</button>
           <button class="btn ghost" id="btn-reset">重置</button>
+          <button class="btn ghost" id="btn-export-all">导出全部</button>
+          <button class="btn ghost" id="btn-trust-backend-link">点击去信任后台系统</button>
         </div>
       </div>
+      <div class="muted" style="margin-top:6px">提示：当输入多个 DU 时，会自动使用批量查询接口。</div>
     </div>
 
     <div class="card">

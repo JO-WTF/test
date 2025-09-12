@@ -1,4 +1,4 @@
-// admin 管理脚本（编辑 / 删除 / 批量查询 / 导出）
+// 管理页脚本：单/多 DU 自动识别 + 编辑/删除/导出 + 自适应多行输入
 (function(){
   const API_BASE = window.API_BASE || location.origin; // 默认同源
   const el = id => document.getElementById(id);
@@ -8,10 +8,11 @@
   const hint = el('hint');
   const pager = el('pager');
   const pginfo = el('pginfo');
+  const duInput = el('f-du');
 
-  // 查询上下文（复用分页）
-  const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
-  // mode: 'single' 使用 /api/du/search，'batch' 使用 /api/du/batch
+  // 查询上下文
+  const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' }; 
+  // mode: 'single' => /api/du/search, 'batch' => /api/du/batch
 
   function toAbsUrl(u){
     if(!u) return "";
@@ -20,48 +21,60 @@
     return `${API_BASE}${sep}${u}`;
   }
 
-  // ============ 单条件查询参数 ============
-  function buildParamsSingle(){
-    const p = new URLSearchParams();
-    const du = el('f-du').value.trim();
-    const st = el('f-status').value;
-    const rk = el('f-remark').value.trim();
-    const hp = el('f-has').value;
-    const df = el('f-from').value;
-    const dt = el('f-to').value;
-    const ps = Number(el('f-ps2').value) || 20;
-
-    if(du) p.set('du_id', du);
-    if(st) p.set('status', st);
-    if(rk) p.set('remark', rk);
-    if(hp) p.set('has_photo', hp);
-    if(df){ p.set('date_from', new Date(df + "T00:00:00").toISOString()); }
-    if(dt){ p.set('date_to', new Date(dt + "T23:59:59").toISOString()); }
-    q.page_size = ps;
-    p.set('page', q.page);
-    p.set('page_size', q.page_size);
-    return p.toString();
+  // ===== 自适应高度的多行输入 =====
+  function autoresizeTextarea(node){
+    if(!node) return;
+    node.style.height = 'auto';
+    const h = Math.min(node.scrollHeight, 300);
+    node.style.height = h + 'px';
   }
+  duInput.addEventListener('input', ()=>autoresizeTextarea(duInput));
+  window.addEventListener('load', ()=>autoresizeTextarea(duInput));
 
-  // ============ 批量查询参数 ============
-  function parseMultiDu(){
-    const raw = el('f-du-multi').value || '';
+  // ===== 解析 DU 输入（支持换行/逗号/空格；去重）=====
+  function parseDuInput(){
+    const raw = (duInput.value || '').trim();
+    if(!raw) return [];
     const list = raw.split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean);
-    return Array.from(new Set(list)); // 去重
+    return Array.from(new Set(list));
   }
-  function buildParamsBatch(){
+
+  // ===== 根据输入构建参数并自动选择接口 =====
+  function buildParamsAuto(){
     const p = new URLSearchParams();
-    const ids = parseMultiDu();
-    const ps = Number(el('f-ps').value) || 20;
+    const ids = parseDuInput();
+
+    // 分页大小
+    const ps = Number(el('f-ps2').value) || 20;
     q.page_size = ps;
-    if(!ids.length){ return ''; }
-    for(const id of ids){ p.append('du_id', id); }
+
+    if (ids.length > 1) {
+      // 批量：只依赖 du_ids，不使用其它筛选项（与后端 /batch 对齐）
+      ids.forEach(id => p.append('du_id', id));
+      q.mode = 'batch';
+    } else {
+      // 单个：使用原有条件筛选
+      q.mode = 'single';
+      const st = el('f-status').value;
+      const rk = el('f-remark').value.trim();
+      const hp = el('f-has').value;
+      const df = el('f-from').value;
+      const dt = el('f-to').value;
+
+      if (ids.length === 1) p.set('du_id', ids[0]);
+      if (st) p.set('status', st);
+      if (rk) p.set('remark', rk);
+      if (hp) p.set('has_photo', hp);
+      if (df) p.set('date_from', new Date(df + "T00:00:00").toISOString());
+      if (dt) p.set('date_to', new Date(dt + "T23:59:59").toISOString());
+    }
+
     p.set('page', q.page);
     p.set('page_size', q.page_size);
     return p.toString();
   }
 
-  // ============ 通用渲染 ============
+  // ===== 渲染表格行 =====
   function renderRows(items){
     tbody.innerHTML = items.map(it=>{
       const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
@@ -101,22 +114,24 @@
     });
   }
 
-  // ============ 拉取数据 ============
+  // ===== 拉取数据 =====
   async function fetchList(){
     try{
       hint.textContent = '加载中…';
       tbl.style.display = 'none';
       pager.style.display = 'none';
 
+      const params = buildParamsAuto();
+      q.lastParams = params;
+
       let url = '';
       if(q.mode === 'batch'){
-        const params = buildParamsBatch();
-        if(!params){ hint.textContent = '请先填写批量 DU ID'; return; }
-        q.lastParams = params;
+        // 批量
+        const ids = parseDuInput();
+        if(!ids.length){ hint.textContent = '请先输入 DU ID'; return; }
         url = `${API_BASE}/api/du/batch?${params}`;
       }else{
-        const params = buildParamsSingle();
-        q.lastParams = params;
+        // 单个/条件
         url = `${API_BASE}/api/du/search?${params}`;
       }
 
@@ -145,7 +160,7 @@
     }
   }
 
-  // ============ 编辑弹窗 ============
+  // ===== 编辑弹窗 =====
   const mask = el('modal-mask');
   const mId = el('modal-id');
   const mStatus = el('m-status');
@@ -188,7 +203,7 @@
     }
   };
 
-  // ============ 删除 ============
+  // ===== 删除 =====
   async function onDelete(id){
     if(!id) return;
     if(!confirm(`确认要删除记录 #${id} 吗？`)) return;
@@ -205,7 +220,7 @@
     }
   }
 
-  // ============ 导出全部 ============
+  // ===== 导出全部（遵循当前筛选/批量条件）=====
   function csvEscape(val){
     if(val === null || val === undefined) return '';
     const s = String(val);
@@ -235,22 +250,16 @@
     }
     return rows;
   }
+
   async function exportAll(){
     try{
       hint.textContent = '正在导出全部数据，请稍候…';
 
       const per = q.page_size || 20;
       // 先取首页
-      let firstUrl = '';
-      if(q.mode === 'batch'){
-        const p = new URLSearchParams(q.lastParams);
-        p.set('page','1'); p.set('page_size', String(per));
-        firstUrl = `${API_BASE}/api/du/batch?${p.toString()}`;
-      }else{
-        const p = new URLSearchParams(q.lastParams);
-        p.set('page','1'); p.set('page_size', String(per));
-        firstUrl = `${API_BASE}/api/du/search?${p.toString()}`;
-      }
+      const p1 = new URLSearchParams(q.lastParams);
+      p1.set('page','1'); p1.set('page_size', String(per));
+      const firstUrl = `${API_BASE}${q.mode==='batch'?'/api/du/batch?':'/api/du/search?'}${p1.toString()}`;
 
       const fResp = await fetch(firstUrl);
       const fRaw = await fResp.text();
@@ -284,19 +293,18 @@
     }
   }
 
-  // ============ 事件绑定 ============
-  el('btn-search').onclick = ()=>{ q.mode='single'; q.page=1; fetchList(); };
+  // ===== 事件绑定 =====
+  el('btn-search').onclick = ()=>{ q.page=1; fetchList(); };
   el('btn-reset').onclick = ()=>{
-    ['f-du','f-status','f-remark','f-has','f-from','f-to','f-ps2'].forEach(id=>{
-      const n = el(id);
-      n.value = (id==='f-ps2') ? '20' : '';
+    ['f-status','f-remark','f-has','f-from','f-to','f-ps2'].forEach(id=>{
+      const n = el(id); n.value = (id==='f-ps2') ? '20' : '';
     });
-    q.mode='single'; q.page=1; fetchList();
+    duInput.value = '';
+    autoresizeTextarea(duInput);
+    q.page=1; fetchList();
   };
   el('prev').onclick = ()=>{ if(q.page>1){ q.page--; fetchList(); }};
   el('next').onclick = ()=>{ q.page++; fetchList(); };
-
-  el('btn-batch').onclick = ()=>{ q.mode='batch'; q.page=1; fetchList(); };
 
   const exportAllBtn = el('btn-export-all');
   exportAllBtn.onclick = async () => { exportAllBtn.disabled=true; try{ await exportAll(); } finally { exportAllBtn.disabled=false; } };
@@ -304,6 +312,6 @@
   const trustBackendLinkBtn = el('btn-trust-backend-link');
   trustBackendLinkBtn.onclick = () => window.open(API_BASE.replace(/\/+$/,''), "_blank");
 
-  // 初始进入展示空态
+  // 初始空态
   hint.textContent = '输入条件后点击查询。';
 })();
