@@ -60,14 +60,12 @@
     const s = raw || "";
     if (!s) return "";
 
-    // 分段：保留分隔符
     const parts = s.split(/([,\s;]+)/g);
     const out = [];
 
     for (const chunk of parts) {
       if (!chunk) continue;
 
-      // 分隔符：透明占位
       if (/^[,\s;]+$/.test(chunk)) {
         out.push(`<span class="hl-sep">${escapeHtml(chunk)}</span>`);
         continue;
@@ -75,19 +73,15 @@
 
       const token = chunk.trim();
 
-      // 完整合法
       if (DU_RE_FULL.test(token)) {
         out.push(`<span class="hl-ok">${escapeHtml(chunk)}</span>`);
         continue;
       }
 
-      // 头部形式（DID + 0~13位数字）
       if (DU_RE_HEAD.test(token)) {
-        const digits = token.slice(3); // 可能为 ""、1..13 位
+        const digits = token.slice(3);
         if (digits.length === 0) {
-          // 只有 "D" / "DI" / "DID"
           const letters = token.slice(0, Math.min(3, token.length));
-          // 逐字渲染：按 D I D 顺序，已输入的字母用 hl-did-act，未输入用 hl-did-inact
           const want = "DID";
           let html = "";
           for (let i = 0; i < 3; i++) {
@@ -97,17 +91,14 @@
           }
           out.push(html);
         } else if (digits.length < 13) {
-          // 数位不足，非法（红底）
           out.push(`<span class="hl-bad">${escapeHtml(chunk)}</span>`);
         }
         continue;
       }
 
-      // 否则，非法
       out.push(`<span class="hl-bad">${escapeHtml(chunk)}</span>`);
     }
 
-    // 底部占位，帮助高度对齐
     out.push('<span class="hl-sep">\n</span>');
     return out.join("");
   }
@@ -118,10 +109,7 @@
     const arr = s.split(/[\s,;]+/g)
       .map(v => v.trim())
       .filter(Boolean);
-
-    // 过滤掉仅有 "DID" 没数字的占位符
     const valid = arr.filter(v => !/^DID$/i.test(v));
-
     return Array.from(new Set(valid));
   }
 
@@ -131,14 +119,12 @@
     duHilite.innerHTML = buildDuHighlightHTML(duInput.value);
   }
 
-  // 自动换行 + 种子：当“最后一个非空 token”为完整合法 DID13，则追加换行 + "DID"
+  // 自动换行 + 种子
   function autoSeedNextDidIfNeeded() {
     const val = duInput.value;
-    // 只在光标末尾时执行，避免中间编辑时插入
     const atEnd = duInput.selectionStart === val.length && duInput.selectionEnd === val.length;
     if (!atEnd) return;
 
-    // 找到最后一个非空 token
     const parts = val.split(/([,\s;]+)/g);
     let lastToken = "";
     for (let i = parts.length - 1; i >= 0; i--) {
@@ -150,18 +136,16 @@
     if (!lastToken) return;
 
     if (DU_RE_FULL.test(lastToken)) {
-      // 避免重复插入：末尾已经有换行/空白/逗号则先补换行
       const needNL = !val.endsWith("\n");
       duInput.value = val + (needNL ? "\n" : "") + "DID";
       try { duInput.selectionStart = duInput.selectionEnd = duInput.value.length; } catch {}
     }
   }
 
-  // ====== 输入：区分删除与插入；不对删除做自动脚手架 ======
+  // ====== 输入事件 ======
   duInput.addEventListener("input", (e) => {
     const isDelete = (e && typeof e.inputType === "string" && e.inputType.startsWith("delete"));
 
-    // 统一做：大写 + 清理零宽/BOM（不自动注入 DID）
     const before = duInput.value;
     const after  = normalizeRawSoft(before);
     if (after !== before) {
@@ -172,10 +156,8 @@
       }
     }
 
-    // 非删除：检查是否需要换行并种下新 DID
     if (!isDelete) autoSeedNextDidIfNeeded();
 
-    // 刷新高亮
     duHilite.innerHTML = buildDuHighlightHTML(duInput.value);
   });
 
@@ -233,11 +215,59 @@
     return p.toString();
   }
 
+  // ====== Viewer（按需加载原图）======
+  let __viewer = null;
+  const __viewerHost = document.createElement("div");
+  __viewerHost.id = "viewer-host";
+  __viewerHost.style.cssText = "position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;overflow:hidden;";
+  document.addEventListener("DOMContentLoaded", () => {
+    document.body.appendChild(__viewerHost);
+  });
+
+  function openViewerWithUrl(url) {
+    if (!url) return;
+  
+    // 容器里放一个“未设置 src”的 img，只挂上 data-src，避免浏览器抢先加载
+    __viewerHost.innerHTML = `<img id="__vimg" alt="photo" data-src="${url}">`;
+    const img = __viewerHost.querySelector("#__vimg");
+  
+    // 旧实例清理
+    if (__viewer) { try { __viewer.destroy(); } catch {} __viewer = null; }
+  
+    // 关键点：
+    // 1) 通过 url 回调返回 data-src，避免在 show 之前就加载
+    // 2) 立即 show()，此时图片未完成→会显示 loading 动画
+    __viewer = new Viewer(img, {
+      navbar: false,
+      title: false,
+      toolbar: false,
+      fullscreen: false,
+      movable: true,
+      zoomRatio: 0.4,
+      loading: true,       // 显示加载动画
+      backdrop: true,
+      url(image) {
+        return image.getAttribute('data-src');  // 告诉 Viewer 真正的原图地址
+      },
+      hidden() {
+        try { __viewer.destroy(); } catch {}
+        __viewer = null;
+      }
+    });
+  
+    // 立刻打开，此时 Viewer 会开始按 url() 去加载原图 → 出现 loading
+    try { __viewer.show(); } catch {}
+  }
+  
+
   // ====== 列表渲染与请求 ======
   function renderRows(items) {
     tbody.innerHTML = items.map(it => {
       const t = it.created_at ? new Date(it.created_at).toLocaleString() : "";
-      const link = it.photo_url ? `<a href="${toAbsUrl(it.photo_url)}" target="_blank">查看</a>` : "";
+      // 改动点：不放 <img>，只放一个“查看”链接，点击时才去加载原图
+      const photoCell = it.photo_url
+        ? `<a href="#" class="view-link" data-url="${toAbsUrl(it.photo_url)}">查看</a>`
+        : "";
       const remark = it.remark ? String(it.remark).replace(/[<>]/g,"") : "";
       const act = SHOW_ACTIONS_FINAL ? (
         `<div class="actions">
@@ -245,19 +275,21 @@
            <button class="btn danger" data-act="del" data-id="${it.id}">删除</button>
          </div>`
       ) : "";
-      
+
       return `<tr>
         <td>${it.id}</td>
         <td>${it.du_id}</td>
         <td>${it.status||''}</td>
         <td>${remark}</td>
-        <td>${link}</td>
+        <td>${photoCell}</td>
         <td>${t}</td>
         <td>${act}</td>
       </tr>`;
     }).join('');
   }
+
   function bindRowActions() {
+    // 编辑/删除按钮
     tbody.querySelectorAll("button[data-act]").forEach(btn => {
       const act = btn.getAttribute("data-act");
       const id = Number(btn.getAttribute("data-id"));
@@ -271,6 +303,15 @@
       } else if (act === "del") {
         btn.onclick = () => onDelete(id);
       }
+    });
+
+    // 查看原图（按需加载 + Viewer 打开）
+    tbody.querySelectorAll('a.view-link[data-url]').forEach(a => {
+      a.onclick = (e) => {
+        e.preventDefault();
+        const url = a.getAttribute('data-url');
+        openViewerWithUrl(url);
+      };
     });
   }
 
@@ -438,7 +479,7 @@
     ["f-status","f-remark","f-has","f-from","f-to","f-ps2"].forEach(id => {
       const n = el(id); n.value = (id==="f-ps2") ? "20" : "";
     });
-    renderTokens(["DID"]);          // 重置后默认显示 DID（浅灰占位）
+    renderTokens(["DID"]);
     q.page = 1;
     fetchList();
   };
@@ -456,7 +497,7 @@
 
   // ====== 初始 ======
   window.addEventListener("load", () => {
-    if (!duInput.value.trim()) renderTokens(["DID"]); // 初始显示 DID 浅灰占位
+    if (!duInput.value.trim()) renderTokens(["DID"]);
     hint.textContent = "输入条件后点击查询。";
     fetchList();
   });
