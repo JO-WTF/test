@@ -3,290 +3,255 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DU 提交记录查询</title>
+  <title>DU 提交记录管理</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0;background:#0b1020;color:#eaf2ff}
     .container{max-width:1100px;margin:0 auto;padding:16px}
     .card{background:#101831;border:1px solid #1f2a4d;border-radius:14px;padding:14px;margin-top:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
     label{font-size:12px;color:#8aa2c8}
-    input,select{background:#0e1631;color:#eaf2ff;border:1px solid #2a3a66;border-radius:10px;padding:8px 10px}
-    input[type="date"]{min-width:220px}
-    .btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-weight:700;background:#69a8ff;color:#07122b}
+    input,select,textarea{background:#0e1631;color:#eaf2ff;border:1px solid #2a3a66;border-radius:10px;padding:8px 10px}
+    input[type="date"]{min-width:180px}
+    textarea{min-height:140px;resize:none;line-height:1.5} /* 固定高度，由父级网格拉伸匹配右列总高 */
+
+    .btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-weight:700;background:#69a8ff;color:#07122b;cursor:pointer}
     .ghost{background:#12182b;color:#eaf2ff}
+    .danger{background:#ff6b6b;color:#07122b}
     table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:8px;border-bottom:1px solid #1f2a4d;text-align:left;font-size:14px}
+    th,td{padding:8px;border-bottom:1px solid #1f2a4d;text-align:left;font-size:14px;vertical-align:top}
     a{color:#69a8ff}
     .muted{color:#8aa2c8;font-size:12px}
     .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px}
-  </style>
-</head>
-<body>
-<div class="container">
-  <h2>DU 提交记录查询</h2>
+    .actions{display:flex;gap:8px}
 
+    /* 顶部筛选区：两列网格 */
+    .grid-2col{
+      display:grid;
+      grid-template-columns: 1fr 1.6fr; /* 左：DU输入；右：条件区 */
+      gap:12px;
+      align-items:stretch; /* 让两列等高 */
+    }
+    .du-col{display:flex;flex-direction:column}
+    .du-col textarea{flex:1} /* 占满左列高度 */
+
+    .rhs{display:grid;grid-template-rows:auto auto;gap:12px}
+    .row-line{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field.grow{flex:1;min-width:220px}
+    .w120{width:120px}
+    .modal-mask {
+      position: fixed;
+      inset: 0; /* 顶、右、底、左全覆盖 */
+      background: rgba(0,0,0,.35);
+      display: none;              /* 默认不显示 */
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .modal {
+      background: #0f1730;
+      border: 1px solid #283760;
+      border-radius: 14px;
+      max-width: 520px;
+      width: 92%;
+      padding: 14px;
+    }
+
+    /* 包裹容器：让高亮层与 textarea 完全同宽同高 */
+    .du-wrap{
+      position: relative;
+      width: 100%;
+      min-height: 140px;
+      box-sizing: border-box;
+    }
+    .du-wrap textarea,
+    .du-wrap .du-hilite{
+      font: inherit;
+      line-height: 1.5;
+      padding: 8px 10px;
+      border-radius: 10px;
+      min-height: 140px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      box-sizing: border-box;     /* 关键：一致的盒模型 */
+    }
+
+    /* 高亮层：只显示背景色，不显示文字；不滚动 */
+    .du-hilite{
+      position: absolute;
+      inset: 0;
+      color: transparent;         /* 容器默认透明文字色 */
+      background: transparent;
+      border: 1px solid #2a3a66;  /* 看起来像一个输入框 */
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;           /* 由 textarea 承担滚动，避免双滚动造成错位 */
+    }
+
+    /* textarea 覆盖在上面，负责输入与滚动 */
+    .du-wrap textarea{
+      position: relative;
+      background: transparent;
+      border: 1px solid #2a3a66;
+      z-index: 1;
+      height: 100%;
+      width: 100%;
+      resize: none;               /* 固定高度，由父网格等高 */
+    }
+
+    /* token 的背景高亮（不要给 color）——重影问题的关键修复 */
+    .hl-ok{
+      background: rgba(34,197,94,.25);    /* 绿底 */
+      border-radius: 4px;
+      padding: 0 2px;
+    }
+    .hl-bad{
+      background: rgba(239,68,68,.28);    /* 红底 */
+      border-radius: 4px;
+      padding: 0 2px;
+    }
+    .hl-sep{ background: transparent; color: transparent; }
+
+  </style>
   <script>
+    // 按需改为你的后端域名；注释掉则默认同源
     window.API_BASE = "https://jakartabackend.onrender.com";
   </script>
+</head>
+<body>
+  <div class="container">
+    <h2>DU 提交记录管理</h2>
 
-  <div class="card">
-    <div class="row">
-      <div>
-        <label>DU ID</label><br>
-        <input id="f-du" placeholder="10-20 位数字">
+    <!-- 筛选区：左列 DU，多行；右列两行条件 -->
+    <div class="card">
+      <div class="grid-2col">
+        <!-- 左列：DU 输入 -->
+        <div class="du-col">
+          <label>DU ID（支持多行/逗号/空格分隔；多于1个则批量查询）</label>
+
+          <!-- 包裹：高亮层 + 文本域 -->
+          <div class="du-wrap">
+            <div id="du-hilite" class="du-hilite" aria-hidden="true"></div>
+            <textarea id="f-du" placeholder="示例：&#10;DID123...&#10;DID456...&#10;或：DID123..., DID456..."></textarea>
+          </div>
+
+          <div class="muted" style="margin-top:6px">
+            提示：合法格式为 <code>DID + 13位数字</code> 可只输入数字。
+          </div>
+        </div>
+
+
+        <!-- 右列 -->
+        <div class="rhs">
+          <!-- 第一行 -->
+          <div class="row-line">
+            <div class="field">
+              <label>状态</label>
+              <select id="f-status">
+                <option value="">（全部）</option>
+                <option value="运输中">运输中</option>
+                <option value="过夜">过夜</option>
+                <option value="已到达">已到达</option>
+              </select>
+            </div>
+
+            <div class="field grow">
+              <label>备注关键词</label>
+              <input id="f-remark" placeholder="模糊匹配">
+            </div>
+
+            <div class="field">
+              <label>是否带附件</label>
+              <select id="f-has">
+                <option value="">（不限）</option>
+                <option value="true">有附件</option>
+                <option value="false">无附件</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>每页数量</label>
+              <input id="f-ps2" type="number" min="1" max="100" value="20" class="w120">
+            </div>
+          </div>
+
+          <!-- 第二行 -->
+          <div class="row-line">
+            <div class="field">
+              <label>开始日期</label>
+              <input id="f-from" type="date">
+            </div>
+            <div class="field">
+              <label>结束日期</label>
+              <input id="f-to" type="date">
+            </div>
+          </div>
+
+          <!-- 第三行：操作按钮 -->
+          <div class="row-line">
+            <div class="field" style="gap:8px;flex:1">
+              <label style="visibility:hidden">操作</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn" id="btn-search">查询</button>
+                <button class="btn ghost" id="btn-reset">重置</button>
+                <button class="btn ghost" id="btn-export-all">导出全部</button>
+                <button class="btn ghost" id="btn-trust-backend-link">信任后台</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div>
-        <label>状态</label><br>
-        <select id="f-status">
-          <option value="">（全部）</option>
-          <option value="运输中">运输中</option>
-          <option value="已到达">已到达</option>
-        </select>
-      </div>
-      <div>
-        <label>备注关键词</label><br>
-        <input id="f-remark" placeholder="模糊匹配">
-      </div>
-      <div>
-        <label>是否带附件</label><br>
-        <select id="f-has">
-          <option value="">（不限）</option>
-          <option value="true">有附件</option>
-          <option value="false">无附件</option>
-        </select>
-      </div>
-      <div>
-        <label>开始日期</label><br>
-        <input id="f-from" type="date">
-      </div>
-      <div>
-        <label>结束日期</label><br>
-        <input id="f-to" type="date">
-      </div>
-      <div>
-        <button class="btn" id="btn-search">查询</button>
-        <button class="btn ghost" id="btn-reset">重置</button>
-        <button class="btn ghost" id="btn-export-all">导出全部</button>
-        <button class="btn ghost" id="btn-trust-backend-link">点击去信任后台系统</button>
+    </div>
+
+    <!-- 结果表格 -->
+    <div class="card">
+      <div id="hint" class="muted">输入条件后点击查询。</div>
+      <table id="tbl" style="display:none">
+        <thead>
+          <tr>
+            <th>ID</th><th>DU ID</th><th>状态</th><th>备注</th><th>照片</th><th>时间</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="pager" id="pager" style="display:none">
+        <button class="ghost" id="prev">上一页</button>
+        <span id="pginfo" class="muted"></span>
+        <button class="ghost" id="next">下一页</button>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div id="hint" class="muted">输入条件后点击查询。</div>
-    <table id="tbl" style="display:none">
-      <thead>
-        <tr>
-          <th>ID</th><th>DU ID</th><th>状态</th><th>备注</th><th>照片</th><th>时间</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <div class="pager" id="pager" style="display:none">
-      <button class="ghost" id="prev">上一页</button>
-      <span id="pginfo" class="muted"></span>
-      <button class="ghost" id="next">下一页</button>
+  <!-- 编辑弹窗 -->
+  <div id="modal-mask" class="modal-mask">
+    <div class="modal">
+      <h3>编辑记录 <span id="modal-id" class="tag"></span></h3>
+      <div class="row-line">
+        <div class="field">
+          <label>状态</label>
+          <select id="m-status">
+            <option value="">（不修改）</option>
+            <option value="运输中">运输中</option>
+            <option value="过夜">过夜</option>
+            <option value="已到达">已到达</option>
+          </select>
+        </div>
+        <div class="field grow">
+          <label>备注</label>
+          <input id="m-remark" placeholder="不修改请留空">
+        </div>
+        <div class="field grow">
+          <label>替换照片（可选）</label>
+          <input id="m-photo" type="file" accept="image/*">
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn ghost" id="m-cancel">取消</button>
+        <button class="btn" id="m-save">保存</button>
+      </div>
+      <div class="muted" id="m-msg" style="margin-top:6px"></div>
     </div>
   </div>
-</div>
 
-<script>
-  const API_BASE = window.API_BASE || location.origin; // 默认同源
-  function toAbsUrl(u){
-    if(!u) return "";
-    if(/^https?:\/\//i.test(u)) return u;           // 已是绝对地址
-    const sep = u.startsWith("/") ? "" : "/";       // 相对路径 → 拼后端域名
-    return `${API_BASE}${sep}${u}`;
-  }
-
-  const q = { page: 1, page_size: 20 };
-
-  const el = id => document.getElementById(id);
-  const tbl = el('tbl');
-  const tbody = tbl.querySelector('tbody');
-  const hint = el('hint');
-  const pager = el('pager');
-  const pginfo = el('pginfo');
-
-  function buildParams(){
-    const p = new URLSearchParams();
-    const du = el('f-du').value.trim();
-    const st = el('f-status').value;
-    const rk = el('f-remark').value.trim();
-    const hp = el('f-has').value;
-    const df = el('f-from').value;
-    const dt = el('f-to').value;
-
-    if(du) p.set('du_id', du);
-    if(st) p.set('status', st);
-    if(rk) p.set('remark', rk);
-    if(hp) p.set('has_photo', hp);
-    if(df){
-      const d = new Date(df + "T00:00:00");
-      p.set('date_from', d.toISOString());
-    }
-    if(dt){
-      const d = new Date(dt + "T23:59:59");
-      p.set('date_to', d.toISOString());
-    }
-    p.set('page', q.page);
-    p.set('page_size', q.page_size);
-    return p.toString();
-  }
-
-  async function fetchList(){
-    try{
-      hint.textContent = '加载中…';
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
-
-      const url = `${API_BASE}/api/du/search?${buildParams()}`;
-      const resp = await fetch(url);
-      const raw = await resp.text();
-      let data = null; try{ data = raw ? JSON.parse(raw) : null }catch{}
-      if(!resp.ok){ throw new Error((data && (data.detail||data.message)) || ('HTTP '+resp.status)); }
-
-      const items = Array.isArray(data?.items) ? data.items : [];
-      tbody.innerHTML = items.map(it=>{
-        const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
-        const link = it.photo_url ? `<a href="${toAbsUrl(it.photo_url)}" target="_blank">查看</a>` : '';
-        const remark = it.remark ? it.remark.replace(/[<>]/g,'') : '';
-        return `<tr><td>${it.id}</td><td>${it.du_id}</td><td>${it.status}</td><td>${remark}</td><td>${link}</td><td>${t}</td></tr>`;
-      }).join('');
-
-      tbl.style.display = '';
-      hint.textContent = items.length ? '' : '没有数据';
-
-      const total = data?.total || 0;
-      const pages = Math.max(1, Math.ceil(total / q.page_size));
-      pginfo.textContent = `第 ${q.page} / ${pages} 页，共 ${total} 条`;
-      pager.style.display = (pages > 1) ? '' : 'none';
-      el('prev').disabled = (q.page <= 1);
-      el('next').disabled = (q.page >= pages);
-    }catch(err){
-      hint.textContent = '查询失败：' + (err?.message || err);
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
-    }
-  }
-
-  el('btn-search').onclick = ()=>{ q.page = 1; fetchList(); };
-  el('btn-reset').onclick = ()=>{
-    ['f-du','f-status','f-remark','f-has','f-from','f-to'].forEach(id=>{
-      const n = el(id);
-      if(n.tagName === 'SELECT') n.value = '';
-      else n.value = '';
-    });
-    q.page = 1; fetchList();
-  };
-  el('prev').onclick = ()=>{ if(q.page>1){ q.page--; fetchList(); }};
-  el('next').onclick = ()=>{ q.page++; fetchList(); };
-
-  // CSV 工具：转义单元格
-  function csvEscape(val){
-    if(val === null || val === undefined) return '';
-    const s = String(val);
-    // 如果包含逗号、双引号、换行，需要用引号包裹，并把双引号转义为 ""。
-    if(/[",\n]/.test(s)){
-      return `"${s.replace(/"/g, '""')}"`;
-    }
-    return s;
-  }
-
-  // 生成并下载 CSV 文件
-  function downloadCSV(rows, filename='du_export.csv'){
-    const bom = '\uFEFF'; // 让 Excel 识别 UTF-8
-    const lines = rows.map(r => r.map(csvEscape).join(',')).join('\n');
-    const blob = new Blob([bom + lines], {type: 'text/csv;charset=utf-8;'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
-  }
-
-  // 根据记录数组，生成 CSV 数据行（含表头）
-  function toCsvRows(items){
-    const header = ['ID','DU ID','状态','备注','照片URL','时间'];
-    const rows = [header];
-    for(const it of items){
-      const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
-      const remark = it.remark ? String(it.remark).replace(/[<>]/g,'') : '';
-      const photo = it.photo_url ? toAbsUrl(it.photo_url) : '';
-      rows.push([it.id, it.du_id, it.status || '', remark, photo, t]);
-    }
-    return rows;
-  }
-
-  // 拉取“全部结果”并导出（遵循当前筛选条件）
-  async function exportAll(){
-    try{
-      hint.textContent = '正在导出全部数据，请稍候…';
-      // 先拉一次，拿 total 和首页数据
-      const firstParams = new URLSearchParams(buildParams());
-      firstParams.set('page', '1');
-      firstParams.set('page_size', String(q.page_size)); // 使用当前每页大小
-      const firstUrl = `${API_BASE}/api/du/search?${firstParams.toString()}`;
-
-      const firstResp = await fetch(firstUrl);
-      const firstRaw = await firstResp.text();
-      let firstData = null; try{ firstData = firstRaw ? JSON.parse(firstRaw) : null }catch{}
-      if(!firstResp.ok){ throw new Error((firstData && (firstData.detail||firstData.message)) || ('HTTP '+firstResp.status)); }
-
-      const total = firstData?.total || 0;
-      let items = Array.isArray(firstData?.items) ? firstData.items.slice() : [];
-
-      // 如果还有更多页，把剩余页也抓回来
-      const per = q.page_size || 20;
-      const pages = Math.max(1, Math.ceil(total / per));
-      for(let p=2; p<=pages; p++){
-        const pParams = new URLSearchParams(buildParams());
-        pParams.set('page', String(p));
-        pParams.set('page_size', String(per));
-        const url = `${API_BASE}/api/du/search?${pParams.toString()}`;
-        const resp = await fetch(url);
-        const raw = await resp.text();
-        let data = null; try{ data = raw ? JSON.parse(raw) : null }catch{}
-        if(!resp.ok){ throw new Error((data && (data.detail||data.message)) || ('HTTP '+resp.status)); }
-        if(Array.isArray(data?.items) && data.items.length){
-          items = items.concat(data.items);
-        }
-      }
-
-      if(!items.length){
-        alert('没有匹配的数据可导出。');
-        hint.textContent = total ? '' : '没有数据';
-        return;
-      }
-
-      const rows = toCsvRows(items);
-      downloadCSV(rows, 'du_all_results.csv');
-      hint.textContent = '';
-    }catch(err){
-      hint.textContent = '导出失败：' + (err?.message || err);
-    }
-  }
-
-// —— 将导出按钮与函数绑定 —— //
-const exportAllBtn = el('btn-export-all');
-exportAllBtn.onclick = async () => {
-  try{
-    exportAllBtn.disabled = true;
-    await exportAll();
-  } finally {
-    exportAllBtn.disabled = false;
-  }
-};
-
-const trustBackendLinkBtn = el('btn-trust-backend-link');
-trustBackendLinkBtn.onclick = () => {
-  window.open("https://jakartabackend.onrender.com", "_blank"); 
-};
-
-q.page = 1; fetchList();
-
-</script>
+  <script src="./admin.js"></script>
 </body>
 </html>
