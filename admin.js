@@ -112,11 +112,18 @@
   }
 
   // 把原始输入拆为 token（按换行/空格/逗号），去重
-  function toTokenList(raw) {
+    function toTokenList(raw) {
     const s = normalizeRawSoft(raw);
-    const arr = s.split(/[\s,;]+/g).map(v => v.trim()).filter(Boolean);
-    return Array.from(new Set(arr));
-  }
+    const arr = s.split(/[\s,;]+/g)
+        .map(v => v.trim())
+        .filter(Boolean);
+
+    // 过滤掉仅有 "DID" 没数字的占位符
+    const valid = arr.filter(v => !/^DID$/i.test(v));
+
+    return Array.from(new Set(valid));
+    }
+
 
   // 渲染 tokens -> textarea + 高亮
   function renderTokens(tokens) {
