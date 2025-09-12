@@ -40,5 +40,8 @@
     "modal.remark.placeholder": "Leave blank to keep unchanged",
     "modal.photo.label": "Replace Photo (Optional)",
     "modal.cancel": "Cancel",
-    "modal.save": "Save"
+    "modal.save": "Save",
+    "table.view": "View",
+    "actions.edit": "Edit",
+    "actions.delete": "Delete"
 }

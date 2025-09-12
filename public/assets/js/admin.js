@@ -50,6 +50,22 @@
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
+  // 将后端中文状态映射到 i18n key，再用 __i18n.t 渲染显示文案（显示层）
+  function i18nStatusDisplay(raw) {
+    const text = (raw || "").trim();
+    if (!text) return "";
+    const map = {
+      "运输中": "status.inTransit",
+      "过夜":   "status.overnight",
+      "已到达": "status.arrived"
+    };
+    const key = map[text];
+    if (window.__i18n && key) {
+      try { return window.__i18n.t(key); } catch {}
+    }
+    return text; // 找不到映射或 i18n 尚未初始化时，回退原文
+  }
+
   // 仅做：大写 + 去零宽/BOM（不做自动注入 DID，除非在“自动换行种子”逻辑里）
   function normalizeRawSoft(raw) {
     return (raw || "").toUpperCase().replace(/\u200B|\uFEFF/g, "");
@@ -59,7 +75,6 @@
   function buildDuHighlightHTML(raw) {
     const s = raw || "";
     if (!s) return "";
-
     const parts = s.split(/([,\s;]+)/g);
     const out = [];
 
@@ -119,7 +134,7 @@
     duHilite.innerHTML = buildDuHighlightHTML(duInput.value);
   }
 
-  // 自动换行 + 种子
+  // 自动换行 + 种子：当“最后一个非空 token”为完整合法 DID13，则追加换行 + "DID"
   function autoSeedNextDidIfNeeded() {
     const val = duInput.value;
     const atEnd = duInput.selectionStart === val.length && duInput.selectionEnd === val.length;
@@ -142,7 +157,7 @@
     }
   }
 
-  // ====== 输入事件 ======
+  // ====== 输入：区分删除与插入；不对删除做自动脚手架 ======
   duInput.addEventListener("input", (e) => {
     const isDelete = (e && typeof e.inputType === "string" && e.inputType.startsWith("delete"));
 
@@ -215,7 +230,7 @@
     return p.toString();
   }
 
-  // ====== Viewer（按需加载原图）======
+  // ====== Viewer（按需加载原图 + 显示 loading）======
   let __viewer = null;
   const __viewerHost = document.createElement("div");
   __viewerHost.id = "viewer-host";
@@ -226,17 +241,12 @@
 
   function openViewerWithUrl(url) {
     if (!url) return;
-  
-    // 容器里放一个“未设置 src”的 img，只挂上 data-src，避免浏览器抢先加载
+    // 不给 img 设置 src，避免预加载；用 data-src，交给 Viewer 的 url() 回调
     __viewerHost.innerHTML = `<img id="__vimg" alt="photo" data-src="${url}">`;
     const img = __viewerHost.querySelector("#__vimg");
-  
-    // 旧实例清理
+
     if (__viewer) { try { __viewer.destroy(); } catch {} __viewer = null; }
-  
-    // 关键点：
-    // 1) 通过 url 回调返回 data-src，避免在 show 之前就加载
-    // 2) 立即 show()，此时图片未完成→会显示 loading 动画
+
     __viewer = new Viewer(img, {
       navbar: false,
       title: false,
@@ -244,42 +254,49 @@
       fullscreen: false,
       movable: true,
       zoomRatio: 0.4,
-      loading: true,       // 显示加载动画
+      loading: true,
       backdrop: true,
       url(image) {
-        return image.getAttribute('data-src');  // 告诉 Viewer 真正的原图地址
+        return image.getAttribute('data-src');
       },
       hidden() {
         try { __viewer.destroy(); } catch {}
         __viewer = null;
       }
     });
-  
-    // 立刻打开，此时 Viewer 会开始按 url() 去加载原图 → 出现 loading
     try { __viewer.show(); } catch {}
   }
-  
 
   // ====== 列表渲染与请求 ======
   function renderRows(items) {
     tbody.innerHTML = items.map(it => {
       const t = it.created_at ? new Date(it.created_at).toLocaleString() : "";
-      // 改动点：不放 <img>，只放一个“查看”链接，点击时才去加载原图
-      const photoCell = it.photo_url
-        ? `<a href="#" class="view-link" data-url="${toAbsUrl(it.photo_url)}">查看</a>`
-        : "";
       const remark = it.remark ? String(it.remark).replace(/[<>]/g,"") : "";
+
+      // 照片列：仅放“查看”链接，点击时才加载原图并用 Viewer 打开
+      const photoCell = it.photo_url
+        ? `<a href="#" class="view-link" data-url="${toAbsUrl(it.photo_url)}" data-i18n="table.view">查看</a>`
+        : "";
+
+      // 状态列：显示翻译 + 保存原始值，便于语言切换时刷新
+      const statusCell = `<td data-raw-status="${escapeHtml(it.status||'')}">${i18nStatusDisplay(it.status)}</td>`;
+
+      // 操作列：按钮加上 data-i18n，切换语言时自动翻译
       const act = SHOW_ACTIONS_FINAL ? (
         `<div class="actions">
-           <button class="btn" data-act="edit" data-id="${it.id}" data-du="${it.du_id}" data-status="${it.status||''}" data-remark="${escapeHtml(remark)}">编辑</button>
-           <button class="btn danger" data-act="del" data-id="${it.id}">删除</button>
+           <button class="btn" data-act="edit" data-id="${it.id}" data-du="${it.du_id}"
+                   data-status="${it.status||''}" data-remark="${escapeHtml(remark)}"
+                   data-i18n="actions.edit">编辑</button>
+           <button class="btn danger" data-act="del" data-id="${it.id}" data-i18n="actions.delete">删除</button>
          </div>`
       ) : "";
+
+      if (window.__i18nApply) window.__i18nApply();
 
       return `<tr>
         <td>${it.id}</td>
         <td>${it.du_id}</td>
-        <td>${it.status||''}</td>
+        ${statusCell}
         <td>${remark}</td>
         <td>${photoCell}</td>
         <td>${t}</td>
@@ -333,6 +350,9 @@
       const items = Array.isArray(data?.items) ? data.items : [];
       renderRows(items);
       bindRowActions();
+      if (window.__i18nApply) {
+        window.__i18nApply();
+      }
 
       tbl.style.display = "";
       hint.textContent = items.length ? "" : "没有数据";
@@ -473,13 +493,23 @@
     }
   }
 
+  // ====== 提供给 index.html 调用：切语言后刷新表格状态列 ======
+  function translateStatusCells() {
+    if (!window.__i18n) return;
+    tbody.querySelectorAll('td[data-raw-status]').forEach(td => {
+      const raw = td.getAttribute('data-raw-status') || '';
+      td.textContent = i18nStatusDisplay(raw);
+    });
+  }
+  window.translateStatusCells = translateStatusCells;
+
   // ====== 事件绑定 ======
   el("btn-search").onclick = () => { q.page = 1; fetchList(); };
   el("btn-reset").onclick = () => {
     ["f-status","f-remark","f-has","f-from","f-to","f-ps2"].forEach(id => {
       const n = el(id); n.value = (id==="f-ps2") ? "20" : "";
     });
-    renderTokens(["DID"]);
+    renderTokens(["DID"]);          // 重置后默认显示 DID（浅灰占位）
     q.page = 1;
     fetchList();
   };
@@ -497,7 +527,7 @@
 
   // ====== 初始 ======
   window.addEventListener("load", () => {
-    if (!duInput.value.trim()) renderTokens(["DID"]);
+    if (!duInput.value.trim()) renderTokens(["DID"]); // 初始显示 DID 浅灰占位
     hint.textContent = "输入条件后点击查询。";
     fetchList();
   });
