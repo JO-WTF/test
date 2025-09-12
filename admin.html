@@ -8,11 +8,11 @@
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0;background:#0b1020;color:#eaf2ff}
     .container{max-width:1100px;margin:0 auto;padding:16px}
     .card{background:#101831;border:1px solid #1f2a4d;border-radius:14px;padding:14px;margin-top:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
     label{font-size:12px;color:#8aa2c8}
     input,select,textarea{background:#0e1631;color:#eaf2ff;border:1px solid #2a3a66;border-radius:10px;padding:8px 10px}
     input[type="date"]{min-width:180px}
-    textarea{min-width:280px;min-height:42px;max-height:300px;resize:none;line-height:1.4}
+    textarea{min-height:140px;resize:none;line-height:1.5} /* 固定高度，由父级网格拉伸匹配右列总高 */
+
     .btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-weight:700;background:#69a8ff;color:#07122b;cursor:pointer}
     .ghost{background:#12182b;color:#eaf2ff}
     .danger{background:#ff6b6b;color:#07122b}
@@ -22,12 +22,22 @@
     .muted{color:#8aa2c8;font-size:12px}
     .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px}
     .actions{display:flex;gap:8px}
-    .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:999}
-    .modal{background:#0f1730;border:1px solid #283760;border-radius:14px;max-width:520px;width:92%;padding:14px}
-    .modal h3{margin:0 0 8px 0}
-    .modal .row>.field{flex:1;min-width:180px}
-    .modal .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;background:#193057;font-size:12px}
+
+    /* 顶部筛选区：两列网格 */
+    .grid-2col{
+      display:grid;
+      grid-template-columns: 1fr 1.6fr; /* 左：DU输入；右：条件区 */
+      gap:12px;
+      align-items:stretch; /* 让两列等高 */
+    }
+    .du-col{display:flex;flex-direction:column}
+    .du-col textarea{flex:1} /* 占满左列高度 */
+
+    .rhs{display:grid;grid-template-rows:auto auto;gap:12px}
+    .row-line{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field.grow{flex:1;min-width:220px}
+    .w120{width:120px}
   </style>
   <script>
     // 按需改为你的后端域名；注释掉则默认同源
@@ -38,56 +48,79 @@
   <div class="container">
     <h2>DU 提交记录管理</h2>
 
-    <!-- 条件筛选（复用一个多行 DU 输入框，自动识别单/多） -->
+    <!-- 筛选区：左列 DU，多行；右列两行条件 -->
     <div class="card">
-      <div class="row">
-        <div style="flex:1;min-width:320px">
-          <label>DU ID（支持多行/逗号/空格分隔；多于1个则批量查询）</label><br>
+      <div class="grid-2col">
+        <!-- 左列：DU 输入 -->
+        <div class="du-col">
+          <label>DU ID（支持多行/逗号/空格分隔；多于1个则批量查询）</label>
           <textarea id="f-du" placeholder="示例：&#10;DID123...&#10;DID456...&#10;或：DID123..., DID456..."></textarea>
+          <div class="muted" style="margin-top:6px">提示：当输入多个 DU 时，会自动使用批量查询接口。</div>
         </div>
-        <div>
-          <label>状态</label><br>
-          <select id="f-status">
-            <option value="">（全部）</option>
-            <option value="运输中">运输中</option>
-            <option value="过夜">过夜</option>
-            <option value="已到达">已到达</option>
-          </select>
-        </div>
-        <div>
-          <label>备注关键词</label><br>
-          <input id="f-remark" placeholder="模糊匹配">
-        </div>
-        <div>
-          <label>是否带附件</label><br>
-          <select id="f-has">
-            <option value="">（不限）</option>
-            <option value="true">有附件</option>
-            <option value="false">无附件</option>
-          </select>
-        </div>
-        <div>
-          <label>开始日期</label><br>
-          <input id="f-from" type="date">
-        </div>
-        <div>
-          <label>结束日期</label><br>
-          <input id="f-to" type="date">
-        </div>
-        <div>
-          <label>每页数量</label><br>
-          <input id="f-ps2" type="number" min="1" max="100" value="20" style="width:120px">
-        </div>
-        <div>
-          <button class="btn" id="btn-search">查询</button>
-          <button class="btn ghost" id="btn-reset">重置</button>
-          <button class="btn ghost" id="btn-export-all">导出全部</button>
-          <button class="btn ghost" id="btn-trust-backend-link">点击去信任后台系统</button>
+
+        <!-- 右列 -->
+        <div class="rhs">
+          <!-- 第一行 -->
+          <div class="row-line">
+            <div class="field">
+              <label>状态</label>
+              <select id="f-status">
+                <option value="">（全部）</option>
+                <option value="运输中">运输中</option>
+                <option value="过夜">过夜</option>
+                <option value="已到达">已到达</option>
+              </select>
+            </div>
+
+            <div class="field grow">
+              <label>备注关键词</label>
+              <input id="f-remark" placeholder="模糊匹配">
+            </div>
+
+            <div class="field">
+              <label>是否带附件</label>
+              <select id="f-has">
+                <option value="">（不限）</option>
+                <option value="true">有附件</option>
+                <option value="false">无附件</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>每页数量</label>
+              <input id="f-ps2" type="number" min="1" max="100" value="20" class="w120">
+            </div>
+          </div>
+
+          <!-- 第二行 -->
+          <div class="row-line">
+            <div class="field">
+              <label>开始日期</label>
+              <input id="f-from" type="date">
+            </div>
+            <div class="field">
+              <label>结束日期</label>
+              <input id="f-to" type="date">
+            </div>
+          </div>
+
+          <!-- 第三行：操作按钮 -->
+          <div class="row-line">
+            <div class="field" style="gap:8px;flex:1">
+              <label style="visibility:hidden">操作</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn" id="btn-search">查询</button>
+                <button class="btn ghost" id="btn-reset">重置</button>
+                <button class="btn ghost" id="btn-export-all">导出全部</button>
+                <button class="btn ghost" id="btn-trust-backend-link">信任后台</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="muted" style="margin-top:6px">提示：当输入多个 DU 时，会自动使用批量查询接口。</div>
     </div>
 
+    <!-- 结果表格 -->
     <div class="card">
       <div id="hint" class="muted">输入条件后点击查询。</div>
       <table id="tbl" style="display:none">
@@ -110,9 +143,9 @@
   <div id="modal-mask" class="modal-mask">
     <div class="modal">
       <h3>编辑记录 <span id="modal-id" class="tag"></span></h3>
-      <div class="row">
+      <div class="row-line">
         <div class="field">
-          <label>状态</label><br>
+          <label>状态</label>
           <select id="m-status">
             <option value="">（不修改）</option>
             <option value="运输中">运输中</option>
@@ -120,12 +153,12 @@
             <option value="已到达">已到达</option>
           </select>
         </div>
-        <div class="field" style="flex:1">
-          <label>备注</label><br>
+        <div class="field grow">
+          <label>备注</label>
           <input id="m-remark" placeholder="不修改请留空">
         </div>
-        <div class="field" style="flex:1">
-          <label>替换照片（可选）</label><br>
+        <div class="field grow">
+          <label>替换照片（可选）</label>
           <input id="m-photo" type="file" accept="image/*">
         </div>
       </div>

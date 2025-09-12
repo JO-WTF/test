@@ -1,4 +1,4 @@
-// 管理页脚本：单/多 DU 自动识别 + 编辑/删除/导出 + 自适应多行输入
+// 管理页脚本：单/多 DU 自动识别 + 编辑/删除/导出（DU 输入固定高度，随右列等高）
 (function(){
   const API_BASE = window.API_BASE || location.origin; // 默认同源
   const el = id => document.getElementById(id);
@@ -21,16 +21,6 @@
     return `${API_BASE}${sep}${u}`;
   }
 
-  // ===== 自适应高度的多行输入 =====
-  function autoresizeTextarea(node){
-    if(!node) return;
-    node.style.height = 'auto';
-    const h = Math.min(node.scrollHeight, 300);
-    node.style.height = h + 'px';
-  }
-  duInput.addEventListener('input', ()=>autoresizeTextarea(duInput));
-  window.addEventListener('load', ()=>autoresizeTextarea(duInput));
-
   // ===== 解析 DU 输入（支持换行/逗号/空格；去重）=====
   function parseDuInput(){
     const raw = (duInput.value || '').trim();
@@ -49,7 +39,7 @@
     q.page_size = ps;
 
     if (ids.length > 1) {
-      // 批量：只依赖 du_ids，不使用其它筛选项（与后端 /batch 对齐）
+      // 批量：只依赖 du_ids
       ids.forEach(id => p.append('du_id', id));
       q.mode = 'batch';
     } else {
@@ -126,12 +116,10 @@
 
       let url = '';
       if(q.mode === 'batch'){
-        // 批量
         const ids = parseDuInput();
         if(!ids.length){ hint.textContent = '请先输入 DU ID'; return; }
         url = `${API_BASE}/api/du/batch?${params}`;
       }else{
-        // 单个/条件
         url = `${API_BASE}/api/du/search?${params}`;
       }
 
@@ -220,7 +208,7 @@
     }
   }
 
-  // ===== 导出全部（遵循当前筛选/批量条件）=====
+  // ===== 导出全部 =====
   function csvEscape(val){
     if(val === null || val === undefined) return '';
     const s = String(val);
@@ -254,9 +242,8 @@
   async function exportAll(){
     try{
       hint.textContent = '正在导出全部数据，请稍候…';
-
       const per = q.page_size || 20;
-      // 先取首页
+
       const p1 = new URLSearchParams(q.lastParams);
       p1.set('page','1'); p1.set('page_size', String(per));
       const firstUrl = `${API_BASE}${q.mode==='batch'?'/api/du/batch?':'/api/du/search?'}${p1.toString()}`;
@@ -300,7 +287,6 @@
       const n = el(id); n.value = (id==='f-ps2') ? '20' : '';
     });
     duInput.value = '';
-    autoresizeTextarea(duInput);
     q.page=1; fetchList();
   };
   el('prev').onclick = ()=>{ if(q.page>1){ q.page--; fetchList(); }};
