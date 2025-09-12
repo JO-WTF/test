@@ -1,309 +1,467 @@
-// admin 管理脚本（编辑 / 删除 / 批量查询 / 导出）
-(function(){
-  const API_BASE = window.API_BASE || location.origin; // 默认同源
-  const el = id => document.getElementById(id);
+// app.js — 智能镜头切换 + iOS 变焦兜底 + 满13位收键盘停摄像头（稳定版）
+import { translations, tFactory } from './i18n.js';
 
-  const tbl = el('tbl');
-  const tbody = tbl.querySelector('tbody');
-  const hint = el('hint');
-  const pager = el('pager');
-  const pginfo = el('pginfo');
+const { createApp, ref, reactive, onMounted, onBeforeUnmount, nextTick } = window.Vue;
 
-  // 查询上下文（复用分页）
-  const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
-  // mode: 'single' 使用 /api/du/search，'batch' 使用 /api/du/batch
-
-  function toAbsUrl(u){
-    if(!u) return "";
-    if(/^https?:\/\//i.test(u)) return u;
-    const sep = u.startsWith("/") ? "" : "/";
-    return `${API_BASE}${sep}${u}`;
+// ====== ZXing Reader 工厂 ======
+function createReader(){
+  try{
+    const hints = new Map();
+    const F = ZXingBrowser.BarcodeFormat;
+    const H = ZXingBrowser.DecodeHintType;
+    hints.set(H.POSSIBLE_FORMATS, [F.QR_CODE, F.CODE_128, F.CODE_39, F.EAN_13, F.EAN_8]);
+    return new ZXingBrowser.BrowserMultiFormatReader(hints, 250);
+  }catch{
+    return new ZXingBrowser.BrowserMultiFormatReader();
   }
+}
 
-  // ============ 单条件查询参数 ============
-  function buildParamsSingle(){
-    const p = new URLSearchParams();
-    const du = el('f-du').value.trim();
-    const st = el('f-status').value;
-    const rk = el('f-remark').value.trim();
-    const hp = el('f-has').value;
-    const df = el('f-from').value;
-    const dt = el('f-to').value;
-    const ps = Number(el('f-ps2').value) || 20;
-
-    if(du) p.set('du_id', du);
-    if(st) p.set('status', st);
-    if(rk) p.set('remark', rk);
-    if(hp) p.set('has_photo', hp);
-    if(df){ p.set('date_from', new Date(df + "T00:00:00").toISOString()); }
-    if(dt){ p.set('date_to', new Date(dt + "T23:59:59").toISOString()); }
-    q.page_size = ps;
-    p.set('page', q.page);
-    p.set('page_size', q.page_size);
-    return p.toString();
+// ====== 智能摄像头管理器 ======
+class SmartCamManager {
+  constructor(storageKey = 'bestCamId.v1') {
+    this.storageKey = storageKey;
+    this.devices = [];
+    this.index = 0;
+    this.bestId = localStorage.getItem(this.storageKey) || '';
   }
+  async refreshDevices() {
+    const all = await navigator.mediaDevices.enumerateDevices();
+    this.devices = all.filter(d => d.kind === 'videoinput');
 
-  // ============ 批量查询参数 ============
-  function parseMultiDu(){
-    const raw = el('f-du-multi').value || '';
-    const list = raw.split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean);
-    return Array.from(new Set(list)); // 去重
-  }
-  function buildParamsBatch(){
-    const p = new URLSearchParams();
-    const ids = parseMultiDu();
-    const ps = Number(el('f-ps').value) || 20;
-    q.page_size = ps;
-    if(!ids.length){ return ''; }
-    for(const id of ids){ p.append('du_id', id); }
-    p.set('page', q.page);
-    p.set('page_size', q.page_size);
-    return p.toString();
-  }
+    // 基于 label 的简易打分：优先后置/主摄；排除深感/红外
+    const scoreOf = (d) => {
+      const L = (d.label || '').toLowerCase();
+      let s = 0;
+      if (/back|rear|environment/.test(L)) s += 8;
+      if (/wide|standard|main|video|1x/.test(L)) s += 4;
+      if (/tele|2x|3x/.test(L)) s += 2;
+      if (/ultra.*wide|0\.5x/.test(L)) s -= 2;
+      if (/macro/.test(L)) s += 1;
+      if (/depth|true.*depth|infrared|tof/.test(L)) s -= 10;
+      return s;
+    };
 
-  // ============ 通用渲染 ============
-  function renderRows(items){
-    tbody.innerHTML = items.map(it=>{
-      const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
-      const link = it.photo_url ? `<a href="${toAbsUrl(it.photo_url)}" target="_blank">查看</a>` : '';
-      const remark = it.remark ? String(it.remark).replace(/[<>]/g,'') : '';
-      const act = `
-        <div class="actions">
-          <button class="btn" data-act="edit" data-id="${it.id}" data-du="${it.du_id}" data-status="${it.status||''}" data-remark="${remark}">编辑</button>
-          <button class="btn danger" data-act="del" data-id="${it.id}">删除</button>
-        </div>`;
-      return `<tr>
-        <td>${it.id}</td>
-        <td>${it.du_id}</td>
-        <td>${it.status||''}</td>
-        <td>${remark}</td>
-        <td>${link}</td>
-        <td>${t}</td>
-        <td>${act}</td>
-      </tr>`;
-    }).join('');
+    const byId = new Map(this.devices.map(d => [d.deviceId, d]));
+    const best = this.bestId && byId.get(this.bestId);
+    const rest = this.devices.filter(d => d !== best).sort((a,b) => scoreOf(b) - scoreOf(a));
+    this.devices = best ? [best, ...rest] : rest;
+    this.index = 0;
   }
+  current() { return this.devices[this.index] || null; }
+  next() {
+    if (!this.devices.length) return null;
+    this.index = (this.index + 1) % this.devices.length;
+    return this.current();
+  }
+  rememberBest(deviceId) {
+    if (!deviceId) return;
+    this.bestId = deviceId;
+    localStorage.setItem(this.storageKey, deviceId);
+    const i = this.devices.findIndex(d => d.deviceId === deviceId);
+    if (i > 0) {
+      const [d] = this.devices.splice(i,1);
+      this.devices.unshift(d);
+      this.index = 0;
+    }
+  }
+  hasMultiple() { return this.devices.length > 1; }
+}
 
-  function bindRowActions(){
-    tbody.querySelectorAll('button[data-act]').forEach(btn=>{
-      const act = btn.getAttribute('data-act');
-      const id = Number(btn.getAttribute('data-id'));
-      if(act === 'edit'){
-        btn.onclick = () => openModalEdit({
-          id,
-          du_id: btn.getAttribute('data-du') || '',
-          status: btn.getAttribute('data-status') || '',
-          remark: btn.getAttribute('data-remark') || ''
-        });
-      }else if(act === 'del'){
-        btn.onclick = () => onDelete(id);
-      }
+createApp({
+  setup(){
+    const video = ref(null);
+    const didInput = ref(null); // 可选：HTML 若未加 ref，将 fallback 到 id 查询
+    const reader = createReader();
+    const camMgr = new SmartCamManager();
+
+    const API_URL = (window.API_URL || 'https://jakartabackend.onrender.com/api/du/update');
+    const DIGIT_DU_RE = /^DID\d{13}$/; // DID + 13位数字
+
+    const state = reactive({
+      lang: 'id',
+      running:false, locked:false,
+      torchSupported:false, torchOn:false,
+      duStatus:"", remark:"",
+      photoFile:null, photoPreview:"",
+      submitting:false, submitOk:false, submitMsg:"",
+      uploadPct:0, needsStatusHint:false, needsStatusShake:false,
+      showResult:false,
+      submitView:{ duId:'', status:'', remark:'', photo:'' },
+      didDigits: "",   // 仅 13 位数字
+      hasDid: false,   // 是否已有可用 DID（扫码或手输）
+      isValid: false,  // 是否满足 DID + 13 位
+      last: null       // 原始识别内容（调试/记录）
     });
-  }
 
-  // ============ 拉取数据 ============
-  async function fetchList(){
-    try{
-      hint.textContent = '加载中…';
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
+    // i18n
+    const t = tFactory(state);
+    const setLang = (l)=>{
+      state.lang = l; document.documentElement.lang = l;
+      const titleMap = { zh:'手机扫码 - 状态更新', en:'Scanner - Status Update', id:'Pemindaian - Pembaruan Status' };
+      document.title = titleMap[l] || 'DU Status Update';
+    };
+    const statusLabel = (val)=>{
+      if(val === '运输中') return t('inTransit');
+      if(val === '已到达') return t('arrived');
+      if(val === '过夜') return t('overnight');
+      return val;
+    };
+    const currentDuId = () => (state.didDigits ? ('DID' + state.didDigits) : '');
 
-      let url = '';
-      if(q.mode === 'batch'){
-        const params = buildParamsBatch();
-        if(!params){ hint.textContent = '请先填写批量 DU ID'; return; }
-        q.lastParams = params;
-        url = `${API_BASE}/api/du/batch?${params}`;
-      }else{
-        const params = buildParamsSingle();
-        q.lastParams = params;
-        url = `${API_BASE}/api/du/search?${params}`;
+    // ====== 输入/键盘工具 ======
+    const getDidInputEl = () => didInput.value || document.getElementById('didInput');
+    const blurKeyboard = () => {
+      const el = getDidInputEl();
+      const tryBlur = () => {
+        if (el && document.activeElement === el) el.blur();
+        else document.activeElement && document.activeElement.blur?.();
+      };
+      tryBlur(); requestAnimationFrame(tryBlur); setTimeout(tryBlur, 0);
+    };
+
+    // 手动输入：满 13 位自动收键盘 + 停摄像头 + 清理状态
+    const onDidInput = () => {
+      const digits = (state.didDigits || '').replace(/\D+/g, '').slice(0, 13);
+      state.didDigits = digits;
+      state.hasDid = digits.length === 13;
+      state.isValid = state.hasDid;
+      if (state.hasDid) {
+        blurKeyboard();
+        stopIfRunning();
+
+        state.duStatus = "";
+        state.remark = "";
+        state.submitMsg = "";
+        state.submitOk = false;
+        state.needsStatusHint = false;
+        state.needsStatusShake = false;
+        state.showResult = false;
       }
+    };
 
-      const resp = await fetch(url);
-      const text = await resp.text();
-      let data = null; try{ data = text ? JSON.parse(text) : null }catch{}
-      if(!resp.ok){ throw new Error((data && (data.detail||data.message)) || ('HTTP '+resp.status)); }
+    // ====== 摄像头/扫描控制 ======
+    let controls = null;
+    let inactivityTimer = null;
+    let noHitTimer = null;
+    let zoomStage = 0; // iOS 单摄兜底使用
 
-      const items = Array.isArray(data?.items) ? data.items : [];
-      renderRows(items);
-      bindRowActions();
+    const clearInactivity=()=>{ if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer=null; } };
+    const startInactivityCountdown=()=>{ clearInactivity(); inactivityTimer=setTimeout(()=>{ stop(); }, 2*60*1000); };
+    const clearNoHitTimer = ()=>{ if(noHitTimer){ clearTimeout(noHitTimer); noHitTimer=null; } };
 
-      tbl.style.display = '';
-      hint.textContent = items.length ? '' : '没有数据';
-
-      const total = data?.total || 0;
-      const pages = Math.max(1, Math.ceil(total / q.page_size));
-      pginfo.textContent = `第 ${q.page} / ${pages} 页，共 ${total} 条`;
-      pager.style.display = (pages > 1) ? '' : 'none';
-      el('prev').disabled = (q.page <= 1);
-      el('next').disabled = (q.page >= pages);
-    }catch(err){
-      hint.textContent = '查询失败：' + (err?.message || err);
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
+    async function detectTorchSupport(){
+      try{
+        const track = video.value?.srcObject?.getVideoTracks?.()[0];
+        const caps = track?.getCapabilities?.();
+        state.torchSupported = !!(caps && 'torch' in caps);
+      }catch{ state.torchSupported=false; }
     }
-  }
-
-  // ============ 编辑弹窗 ============
-  const mask = el('modal-mask');
-  const mId = el('modal-id');
-  const mStatus = el('m-status');
-  const mRemark = el('m-remark');
-  const mPhoto = el('m-photo');
-  const mMsg = el('m-msg');
-  let editingId = 0;
-
-  function openModalEdit(item){
-    editingId = Number(item.id);
-    mId.textContent = `#${editingId} / ${item.du_id||''}`;
-    mStatus.value = item.status || '';
-    mRemark.value = item.remark || '';
-    mPhoto.value = '';
-    mMsg.textContent = '';
-    mask.style.display = 'flex';
-  }
-  function closeModal(){ mask.style.display = 'none'; }
-
-  el('m-cancel').onclick = closeModal;
-  el('m-save').onclick = async ()=>{
-    if(!editingId) return;
-    mMsg.textContent = '保存中…';
-    try{
-      const fd = new FormData();
-      if(mStatus.value) fd.append('status', mStatus.value);
-      if(mRemark.value) fd.append('remark', mRemark.value);
-      if(mPhoto.files && mPhoto.files[0]) fd.append('photo', mPhoto.files[0]);
-
-      const resp = await fetch(`${API_BASE}/api/du/update/${editingId}`, { method:'PUT', body: fd });
-      const text = await resp.text();
-      let data=null; try{ data = text ? JSON.parse(text) : null }catch{}
-      if(!resp.ok){ throw new Error((data && (data.detail||data.message)) || ('HTTP '+resp.status)); }
-
-      mMsg.textContent = '保存成功';
-      closeModal();
-      await fetchList(); // 刷新当前页
-    }catch(err){
-      mMsg.textContent = '保存失败：' + (err?.message || err);
+    async function applyTorch(on){
+      try{
+        const track = video.value?.srcObject?.getVideoTracks?.()[0];
+        if(!track) return;
+        await track.applyConstraints({ advanced:[{ torch: !!on }] });
+        state.torchOn = !!on;
+      }catch{ state.torchOn=false; }
     }
-  };
-
-  // ============ 删除 ============
-  async function onDelete(id){
-    if(!id) return;
-    if(!confirm(`确认要删除记录 #${id} 吗？`)) return;
-    hint.textContent = `正在删除 #${id} …`;
-    try{
-      const resp = await fetch(`${API_BASE}/api/du/update/${id}`, { method:'DELETE' });
-      const text = await resp.text();
-      let data=null; try{ data = text ? JSON.parse(text) : null }catch{}
-      if(!resp.ok){ throw new Error((data && (data.detail||data.message)) || ('HTTP '+resp.status)); }
-      hint.textContent = '删除成功';
-      await fetchList();
-    }catch(err){
-      hint.textContent = '删除失败：' + (err?.message || err);
+    async function enhanceTrack(){
+      try{
+        const track = video.value?.srcObject?.getVideoTracks?.()[0];
+        if(!track) return;
+        try{ const ic = new ImageCapture(track); await ic.setOptions?.({ focusMode: 'continuous' }); }catch{}
+        try{
+          const caps = track.getCapabilities?.();
+          if(caps?.zoom){
+            const z = caps.zoom;
+            const min = z.min ?? 1, max = z.max ?? 1;
+            const target = Math.min(max, Math.max(min, (z.min ?? 1) * 1.4));
+            await track.applyConstraints({ advanced: [{ zoom: target }] });
+          }
+        }catch{}
+      }catch{}
     }
-  }
-
-  // ============ 导出全部 ============
-  function csvEscape(val){
-    if(val === null || val === undefined) return '';
-    const s = String(val);
-    if(/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
-    return s;
-  }
-  function downloadCSV(rows, filename='du_export.csv'){
-    const bom = '\uFEFF';
-    const lines = rows.map(r => r.map(csvEscape).join(',')).join('\n');
-    const blob = new Blob([bom + lines], {type: 'text/csv;charset=utf-8;'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
-  }
-  function toCsvRows(items){
-    const header = ['ID','DU ID','状态','备注','照片URL','时间'];
-    const rows = [header];
-    for(const it of items){
-      const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
-      const remark = it.remark ? String(it.remark).replace(/[<>]/g,'') : '';
-      const photo = it.photo_url ? toAbsUrl(it.photo_url) : '';
-      rows.push([it.id, it.du_id, it.status||'', remark, photo, t]);
-    }
-    return rows;
-  }
-  async function exportAll(){
-    try{
-      hint.textContent = '正在导出全部数据，请稍候…';
-
-      const per = q.page_size || 20;
-      // 先取首页
-      let firstUrl = '';
-      if(q.mode === 'batch'){
-        const p = new URLSearchParams(q.lastParams);
-        p.set('page','1'); p.set('page_size', String(per));
-        firstUrl = `${API_BASE}/api/du/batch?${p.toString()}`;
-      }else{
-        const p = new URLSearchParams(q.lastParams);
-        p.set('page','1'); p.set('page_size', String(per));
-        firstUrl = `${API_BASE}/api/du/search?${p.toString()}`;
+    async function buildConstraintsFor(device){
+      if (device && device.deviceId) {
+        return { audio:false, video:{ deviceId: { exact: device.deviceId }, width:{ ideal:1280 }, height:{ ideal:720 } } };
       }
+      return { audio:false, video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } } };
+    }
+    const hardStopStream = ()=>{
+      const s = video.value?.srcObject;
+      if (s && s.getTracks) s.getTracks().forEach(t=>{ try{ t.stop(); }catch{} });
+      if (video.value) video.value.srcObject = null;
+      state.torchOn = false; state.torchSupported = false;
+    };
 
-      const fResp = await fetch(firstUrl);
-      const fRaw = await fResp.text();
-      let fData=null; try{ fData = fRaw ? JSON.parse(fRaw) : null }catch{}
-      if(!fResp.ok){ throw new Error((fData && (fData.detail||fData.message)) || ('HTTP '+fResp.status)); }
+    const stopIfRunning = async () => { if (state.running) await stop(); };
 
-      const total = fData?.total || 0;
-      let items = Array.isArray(fData?.items) ? fData.items.slice() : [];
-      const pages = Math.max(1, Math.ceil(total / per));
+    // iOS 单摄兜底：按 1x → 2x → 0.5x 循环跳变焦，模拟换镜头
+    async function hopZoomTrack(){
+      const track = video.value?.srcObject?.getVideoTracks?.[0];
+      const caps = track?.getCapabilities?.();
+      if (!caps?.zoom) return false;
 
-      for(let p=2; p<=pages; p++){
-        const params = new URLSearchParams(q.lastParams);
-        params.set('page', String(p)); params.set('page_size', String(per));
-        const url = `${API_BASE}${q.mode==='batch'?'/api/du/batch?':'/api/du/search?'}${params.toString()}`;
-        const r = await fetch(url);
-        const raw = await r.text();
-        let d=null; try{ d = raw ? JSON.parse(raw) : null }catch{}
-        if(!r.ok){ throw new Error((d && (d.detail||d.message)) || ('HTTP '+r.status)); }
-        if(Array.isArray(d?.items)) items = items.concat(d.items);
+      const min = caps.zoom.min ?? 1;
+      const max = caps.zoom.max ?? 1;
+      const oneX  = Math.min(max, Math.max(min, 1));
+      const twoX  = Math.min(max, Math.max(min, oneX * 2));
+      const halfX = Math.min(max, Math.max(min, oneX * 0.5));
+      const targets = [oneX, twoX, halfX];
+
+      const target = targets[zoomStage % targets.length];
+      zoomStage++;
+
+      try{
+        await track.applyConstraints({ advanced:[{ zoom: target }] });
+        console.info('[scan] hop zoom ->', target);
+        return true;
+      }catch(e){
+        console.warn('[scan] hop zoom failed', e);
+        return false;
       }
+    }
 
-      if(!items.length){
-        alert('没有匹配的数据可导出。');
-        hint.textContent = total ? '' : '没有数据';
+    // 启动指定镜头并开始识别（start / nextCamera 复用）
+    async function tryDevice(device){
+      console.info('[scan] try device ->', device?.label || device?.deviceId || '(unknown)');
+
+      // 停旧流
+      try{ controls?.stop(); }catch{}
+      try{ reader.reset(); }catch{}
+      hardStopStream();
+
+      const constraints = await buildConstraintsFor(device);
+      controls = await reader.decodeFromConstraints(
+        constraints,
+        video.value,
+        async (result, err, _controls) => {
+          if (result && !state.locked) {
+            state.locked = true;
+            const text = result.getText();
+            const format = result.getBarcodeFormat();
+
+            // 识别 DID
+            if (DIGIT_DU_RE.test(text)) {
+              const digits = text.slice(3);
+              state.didDigits = digits.replace(/\D+/g, '').slice(0, 13);
+              state.hasDid = state.didDigits.length === 13;
+              state.isValid = state.hasDid;
+            } else {
+              const m = (text.match(/(\d{13})/) || [])[1] || "";
+              state.didDigits = m;
+              state.hasDid = !!m;
+              state.isValid = !!m;
+            }
+
+            if (state.hasDid) blurKeyboard(); // 扫码成功也顺手收键盘
+
+            // 清理状态
+            state.duStatus = "";
+            state.remark = "";
+            clearPhoto();
+            state.submitMsg = "";
+            state.submitOk = false;
+            state.needsStatusHint = false;
+            state.needsStatusShake = false;
+            state.showResult = false;
+            state.last = { text, format };
+
+            // 记忆当前镜头
+            try{
+              const tr = video.value?.srcObject?.getVideoTracks?.()[0];
+              const devId = tr?.getSettings?.().deviceId;
+              if (devId) camMgr.rememberBest(devId);
+            }catch{}
+
+            // 停止当前识别流
+            try{ _controls.stop(); }catch{}
+            try{ reader.reset(); }catch{}
+            await applyTorch(false);
+            await detectTorchSupport();
+            state.running = false;           // 仅在成功识别时置 false
+            clearInactivity();
+            clearNoHitTimer();
+            try{ navigator.vibrate?.(30); }catch{}
+          }
+        }
+      );
+
+      await enhanceTrack();
+      await detectTorchSupport();
+      startInactivityCountdown();
+    }
+
+    function armNoHitTimer(){
+      clearNoHitTimer();
+      noHitTimer = setTimeout(async ()=>{
+        if (state.locked) return;
+
+        if (camMgr.hasMultiple()) {
+          console.info('[scan] no hit in 4s, switch to next *device*');
+          const nextDev = camMgr.next();
+          state.locked = false;
+          await tryDevice(nextDev);
+        } else {
+          // iOS 单摄兜底：变焦分档模拟换镜头
+          const hopped = await hopZoomTrack();
+          if (!hopped) {
+            console.info('[scan] no hit in 4s, but no multi-cam/zoom; stay');
+          }
+          // 变焦无需重启流，继续等待下一次 4s
+        }
+        armNoHitTimer();
+      }, 4000); // 可调 3000~6000
+    }
+
+    // ====== 开始/停止/重扫 ======
+    const start = async ()=>{
+      if (state.running) return;
+      state.running = true;
+      state.locked = false;
+      clearInactivity();
+      clearNoHitTimer();
+      zoomStage = 0; // 重置 zoom 兜底序列
+      try{
+        await camMgr.refreshDevices();
+        await tryDevice(camMgr.current());
+        armNoHitTimer();
+      }catch(e){
+        console.error(e);
+        alert('Camera error: ' + (e?.name || '') + (e?.message ? (' - ' + e.message) : ''));
+        state.running = false; clearNoHitTimer();
+      }
+    };
+
+    const stop = async ()=>{
+      try{ controls?.stop(); }catch{}
+      try{ reader.reset(); }catch{}
+      try{ await applyTorch(false); }catch{}
+      hardStopStream();
+      state.running=false; state.locked=false; clearInactivity(); clearNoHitTimer();
+    };
+
+    const resume = async ()=>{
+      state.locked=false;
+      state.didDigits=""; state.hasDid=false; state.isValid=false;
+      state.duStatus=""; state.remark=""; clearPhoto();
+      state.submitMsg=""; state.submitOk=false; state.showResult=false;
+      state.needsStatusHint=false; state.needsStatusShake=false;
+
+      await start();
+    };
+
+    // 选图/清图
+    const onPickPhoto = (e)=>{
+      const file = e.target.files?.[0];
+      if(!file) return;
+      state.photoFile = file;
+      try{ state.photoPreview = URL.createObjectURL(file); }catch{ state.photoPreview = ''; }
+    };
+    const clearPhoto = ()=>{
+      try{ state.photoPreview && URL.revokeObjectURL(state.photoPreview); }catch{}
+      state.photoPreview = ''; state.photoFile = null;
+    };
+
+    // 手动切换镜头（用统一 tryDevice；切完继续计时）
+    const nextCamera = async ()=>{
+      if (!state.running) { await start(); return; }
+      try{
+        const dev = camMgr.next();
+        if (!dev) return;
+        state.locked = false;
+        clearNoHitTimer();
+        await tryDevice(dev);
+        armNoHitTimer();
+      }catch(err){ console.error(err); }
+    };
+
+    // 提交
+    const submitUpdate = async ()=>{
+      if(!state.isValid){
+        state.submitOk=false; state.submitMsg=t('invalidId'); return;
+      }
+      if(!state.duStatus){
+        state.submitOk=false; state.submitMsg=t('needSelectStatus');
+        state.needsStatusHint = true; state.needsStatusShake = true;
+        requestAnimationFrame(()=>{
+          const sel = document.getElementById('duStatus'); if(sel){ sel.focus(); }
+          setTimeout(()=>{ state.needsStatusShake=false; }, 400);
+        });
         return;
       }
-      downloadCSV(toCsvRows(items), 'du_all_results.csv');
-      hint.textContent = '';
-    }catch(err){
-      hint.textContent = '导出失败：' + (err?.message || err);
-    }
-  }
 
-  // ============ 事件绑定 ============
-  el('btn-search').onclick = ()=>{ q.mode='single'; q.page=1; fetchList(); };
-  el('btn-reset').onclick = ()=>{
-    ['f-du','f-status','f-remark','f-has','f-from','f-to','f-ps2'].forEach(id=>{
-      const n = el(id);
-      n.value = (id==='f-ps2') ? '20' : '';
+      state.submitting = true; state.submitMsg = ''; state.submitOk = false; state.uploadPct = 0;
+
+      try{
+        const isPlaceholder = !API_URL || /<你的-render-域名>/.test(API_URL);
+        if(isPlaceholder){ throw new Error(t('apiUrlMissing')); }
+
+        const fd = new FormData();
+        fd.append('duId', currentDuId());
+        fd.append('status', state.duStatus); // 保持中文值
+        fd.append('remark', state.remark || '');
+        if(state.photoFile) fd.append('photo', state.photoFile);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', API_URL, true);
+        xhr.upload.onprogress = (e)=>{ if(e && e.lengthComputable){ state.uploadPct = Math.min(100, Math.round(e.loaded / e.total * 100)); } };
+        xhr.onerror = ()=>{ state.submitOk = false; state.submitMsg = t('submitNetworkErr'); state.submitting = false; };
+        xhr.onabort = ()=>{ state.submitOk = false; state.submitMsg = t('submitCanceled'); state.submitting = false; };
+
+        xhr.onreadystatechange = ()=>{
+          if(xhr.readyState !== 4) return;
+          const status = xhr.status; const text = xhr.responseText || '';
+          let data = null; try{ data = text ? JSON.parse(text) : null }catch{}
+          if(status >= 200 && status < 300){
+            const ok = (data && (data.ok===true || data.success===true)) || true;
+            state.submitOk = !!ok;
+            state.submitMsg = ok ? (data?.message || t('submitSuccess')) : (data?.message || (t('submitHttpErrPrefix') + 'unknown'));
+            state.uploadPct = 100;
+            if(ok){
+              state.showResult = true;
+              state.submitView = {
+                duId: currentDuId(),
+                status: state.duStatus,
+                remark: state.remark,
+                photo: state.photoPreview || ''
+              };
+              nextTick(() => {
+                window.scrollTo({
+                  top: document.body.scrollHeight,
+                  behavior: "smooth"
+                });
+              });
+            }
+          }else{
+            const msg = (data && (data.detail || data.message)) || ('HTTP ' + status);
+            state.submitOk = false; state.submitMsg = t('submitHttpErrPrefix') + msg;
+          }
+          state.submitting = false;
+        };
+        xhr.send(fd);
+      }catch(err){
+        console.error(err);
+        state.submitOk = false; state.submitMsg = t('submitHttpErrPrefix') + (err?.message || err);
+        state.submitting = false;
+      }
+    };
+
+    onMounted(async ()=>{
+      setLang('id'); // 默认印尼语
+      video.value?.setAttribute('playsinline','true');
+      video.value?.setAttribute('muted','muted');
+      document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop() });
+      window.addEventListener('pagehide', stop);
+      await start();
     });
-    q.mode='single'; q.page=1; fetchList();
-  };
-  el('prev').onclick = ()=>{ if(q.page>1){ q.page--; fetchList(); }};
-  el('next').onclick = ()=>{ q.page++; fetchList(); };
+    onBeforeUnmount(()=>{ stop() });
 
-  el('btn-batch').onclick = ()=>{ q.mode='batch'; q.page=1; fetchList(); };
-
-  const exportAllBtn = el('btn-export-all');
-  exportAllBtn.onclick = async () => { exportAllBtn.disabled=true; try{ await exportAll(); } finally { exportAllBtn.disabled=false; } };
-
-  const trustBackendLinkBtn = el('btn-trust-backend-link');
-  trustBackendLinkBtn.onclick = () => window.open(API_BASE.replace(/\/+$/,''), "_blank");
-
-  // 初始进入展示空态
-  hint.textContent = '输入条件后点击查询。';
-})();
+    return {
+      state, video, didInput, t, setLang, statusLabel,
+      start, stop, resume,
+      toggleTorch: async ()=>{ if(state.torchSupported) await applyTorch(!state.torchOn) },
+      nextCamera,
+      submitUpdate, onPickPhoto, clearPhoto, onDidInput
+    };
+  }
+}).mount('#app');
