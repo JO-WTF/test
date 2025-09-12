@@ -281,7 +281,7 @@ const app = createApp({
           state.submitOk = true;
           state.submitMsg = t('submitOk') || 'Submitted';
         } else {
-          const res = await fetch(`${API_BASE}/du/update`, {
+          const res = await fetch(`${API_BASE}/api/du/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
