@@ -159,62 +159,69 @@
     </div>
   </div>
 
-  <!-- i18n 初始化 + 语言切换（默认 zh） -->
+  <!-- i18n 初始化 + 语言切换（统一用 __i18nApply） -->
   <script>
     (async () => {
       if (!window.I18NCore || !window.I18NDOM) return;
-
-      // 1) 初始化（默认中文）
+  
       const i18n = I18NCore.createI18n({
         namespaces: ["admin"],
-        lang: I18NCore.detectLang("zh"), // 默认中文；若浏览器/URL 指明其它语言会覆盖
+        lang: I18NCore.detectLang("zh"),
         fallbackLang: "en"
       });
       await i18n.init();
-
-      // 2) 首次渲染
-      I18NDOM.apply(document, i18n);
-
-      // 3) 暴露给其他脚本（如 admin.js）
+  
+      // 统一入口：DOM 翻译 + 刷新表格状态列（admin.js 提供）
       window.__i18n = i18n;
-      window.__i18nApply = () => I18NDOM.apply(document, i18n);
-
-      // 4) 语言切换按钮逻辑
-      const $btnZh = document.getElementById('btn-lang-zh');
-      const $btnEn = document.getElementById('btn-lang-en');
-      const $btnId = document.getElementById('btn-lang-id');
+      window.__i18nApply = () => {
+        I18NDOM.apply(document, i18n);
+        if (typeof window.translateStatusCells === "function") {
+          window.translateStatusCells();
+        }
+      };
+  
+      // 首次渲染
+      window.__i18nApply();
+  
+      // 语言切换按钮
+      const $btnZh = document.getElementById("btn-lang-zh");
+      const $btnEn = document.getElementById("btn-lang-en");
+      const $btnId = document.getElementById("btn-lang-id");
       const btns = [$btnZh, $btnEn, $btnId];
-
+  
       async function setLangAndApply(lang) {
         await i18n.setLang(lang);
-        I18NDOM.apply(document, i18n);
-        // 按钮 active 状态
-        btns.forEach(b => b && b.classList.remove('active'));
-        if (lang === 'zh') $btnZh?.classList.add('active');
-        if (lang === 'en') $btnEn?.classList.add('active');
-        if (lang === 'id') $btnId?.classList.add('active');
-        // 同步 <html lang="...">
-        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : (lang === 'id' ? 'id' : 'en'));
+        window.__i18nApply(); // 使用统一入口
+        btns.forEach(b => b && b.classList.remove("active"));
+        if (lang === "zh") $btnZh?.classList.add("active");
+        if (lang === "en") $btnEn?.classList.add("active");
+        if (lang === "id") $btnId?.classList.add("active");
+        document.documentElement.setAttribute(
+          "lang",
+          lang === "zh" ? "zh-CN" : (lang === "id" ? "id" : "en")
+        );
       }
-
-      $btnZh?.addEventListener('click', () => setLangAndApply('zh'));
-      $btnEn?.addEventListener('click', () => setLangAndApply('en'));
-      $btnId?.addEventListener('click', () => setLangAndApply('id'));
-
-      // 根据当前语言修正按钮状态（如果 detectLang 非 zh）
+  
+      $btnZh?.addEventListener("click", () => setLangAndApply("zh"));
+      $btnEn?.addEventListener("click", () => setLangAndApply("en"));
+      $btnId?.addEventListener("click", () => setLangAndApply("id"));
+  
+      // 根据当前语言修正按钮状态与 <html lang>
       setTimeout(() => {
         const cur = i18n.state.lang;
-        if (cur !== 'zh') {
-          btns.forEach(b => b && b.classList.remove('active'));
-          if (cur === 'en') $btnEn?.classList.add('active');
-          if (cur === 'id') $btnId?.classList.add('active');
-          document.documentElement.setAttribute('lang', cur === 'zh' ? 'zh-CN' : (cur === 'id' ? 'id' : 'en'));
-        }
+        btns.forEach(b => b && b.classList.remove("active"));
+        if (cur === "zh") $btnZh?.classList.add("active");
+        if (cur === "en") $btnEn?.classList.add("active");
+        if (cur === "id") $btnId?.classList.add("active");
+        document.documentElement.setAttribute(
+          "lang",
+          cur === "zh" ? "zh-CN" : (cur === "id" ? "id" : "en")
+        );
       }, 0);
     })();
   </script>
-
-  <!-- 页面逻辑（你原来的 admin.js，不需要改动；如需读取语言，用 window.__i18n.state.lang） -->
+  
+  <!-- 页面逻辑 -->
   <script src="/assets/js/admin.js"></script>
 </body>
 </html>
