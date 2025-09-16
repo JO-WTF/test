@@ -302,7 +302,7 @@
         ${statusCell}
         <td>${remark}</td>
         <td>${photoCell}</td>
-        <td>${location}</td>
+        <td>${lonlat}</td>
         <td>${t}</td>
         <td>${act}</td>
       </tr>`;
