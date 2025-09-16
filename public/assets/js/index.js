@@ -81,6 +81,7 @@ function validateDN(result_text) {
 
 async function enumerateCameras() {
   const all = await navigator.mediaDevices.enumerateDevices();
+  console.log(all);
   devices = all.filter((d) => d.kind === "videoinput");
   if (devices.length === 0) throw new Error("No camera found");
   const backIndex = devices.findIndex((d) =>
@@ -128,17 +129,17 @@ async function startReader() {
       Quagga.onDetected((result) => {
         const code = result.codeResult?.code;
         // 检查条形码是否符合条件
-        var prefixes = ['DID', 'KID', 'SDNID', 'MIND', 'CID', 'RFID', 'STRID'];
+        var prefixes = ["DID", "KID", "SDNID", "MIND", "CID", "RFID", "STRID"];
         var isValid = false;
 
         // 条形码长度检查，必须在14到18位之间
         if (code.length >= 14 && code.length <= 18) {
-            // 检查条形码是否以指定前缀之一开头
-            prefixes.forEach(function (prefix) {
-                if (code.startsWith(prefix)) {
-                    isValid = true;
-                }
-            });
+          // 检查条形码是否以指定前缀之一开头
+          prefixes.forEach(function (prefix) {
+            if (code.startsWith(prefix)) {
+              isValid = true;
+            }
+          });
         }
         if (isValid) {
           state.DNID = result_text;
@@ -203,7 +204,6 @@ const app = createApp({
       }
     });
 
-    const video = ref(null);
     const dnInput = ref(null);
 
     const showScanControls = computed(() => !state.isValid);
@@ -213,8 +213,6 @@ const app = createApp({
     );
 
     const start = async () => {
-      // console.log(video.value);
-      // if (!video.value) return;
       try {
         await startReader();
       } catch (e) {
@@ -232,15 +230,34 @@ const app = createApp({
       await setTorch(!state.torchOn);
     };
 
-    const nextCamera = async () => {
+    async function nextCamera() {
       if (!devices.length) await enumerateCameras();
-      deviceIndex = (deviceIndex + 1) % devices.length;
+
+      deviceIndex = (deviceIndex + 1) % devices.length; // 切换到下一个摄像头
       currentDeviceId = devices[deviceIndex].deviceId;
-      if (state.running && video.value) {
+
+      // 更新状态
+      state.currentDeviceId = currentDeviceId;
+
+      // 重新初始化摄像头
+      if (state.running) {
         await stopReader();
-        await startReader();
+        await startReader(); // 重新启动 Quagga
       }
-    };
+
+      // 显示 Toast 通知
+      const cameraLabel =
+        devices[deviceIndex].label || `Camera ${deviceIndex + 1}`;
+      Toastify({
+        text: `${cameraLabel}`,
+        duration: 1000, // 3秒钟后消失
+        gravity: "bottom", // `top` or `bottom`
+        position: "center", // Toast 显示的位置
+        style: {
+          background: "linear-gradient(to right, #00b09b, #96c93d)",
+        },
+      }).showToast();
+    }
 
     const resume = async () => {
       state.last = false;
@@ -256,7 +273,6 @@ const app = createApp({
       state.hasDN = false;
       state.isValid = false;
       state.DNID = "";
-      console.log(video.value);
       try {
         await startReader();
       } catch (e) {
@@ -467,7 +483,6 @@ const app = createApp({
       t,
       setLang,
       state,
-      video,
       dnInput,
       onDNInput,
       onOkClick,
