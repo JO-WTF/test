@@ -6,7 +6,7 @@
     "startScan": "开始扫描",
     "stop": "停止",
     "torchToggle": "切换闪光灯",
-    "rescan": "重新扫描",
+    "restart": "重新开始",
     "result": "识别结果",
     "updateStatus": "更新 DU 状态",
     "choose": "请选择",

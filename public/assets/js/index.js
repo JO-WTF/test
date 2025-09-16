@@ -373,7 +373,7 @@ const app = createApp({
       } catch {}
     }
 
-    const onRescan = async () => {
+    const onRestart = async () => {
       // 保留输入框，不清引用
       state.last = false;
       state.showResult = false;
@@ -399,13 +399,9 @@ const app = createApp({
         await stopReader();
         if (video.value) await startReader(video.value);
       } catch (e) {
-        console.warn("Rescan failed:", e);
+        console.warn("Restart failed:", e);
       }
 
-      // 重新聚焦输入框（保留输入框可用）
-      try {
-        dnInput.value?.focus();
-      } catch {}
     };
 
     return {
@@ -426,7 +422,7 @@ const app = createApp({
       statusLabel,
       showScanControls,
       torchTagVisible,
-      onRescan,
+      onRestart,
     };
   },
 });

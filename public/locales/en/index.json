@@ -6,7 +6,7 @@
     "startScan": "Start Scan",
     "stop": "Stop",
     "torchToggle": "Toggle Torch",
-    "rescan": "Rescan",
+    "restart": "Restart",
     "result": "Result",
     "updateStatus": "Update DU Status",
     "choose": "Please select",
