@@ -369,8 +369,12 @@ const app = createApp({
       }
     };
 
+    function onDNInput(e) {
+      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
+    }
+
     function onOkClick(e) {
-      state.DNID = dnInput.value.value;
+      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
       state.isValid = validateDN(state.DNID);
       if (state.isValid) {
         stopReader();
@@ -412,6 +416,7 @@ const app = createApp({
       state,
       video,
       dnInput,
+      onDNInput,
       onOkClick,
       start,
       stop,
