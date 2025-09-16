@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Quagga 条形码扫描</title>
+  <style>
+    #camera video {
+      width: 100%;
+      max-width: 640px;
+    }
+  </style>
+</head>
+<body>
+  <h1>条形码扫描</h1>
+  <div id="camera"></div>
+  <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+  <script>
+    // 初始化Quagga配置
+    const quaggaConf = {
+      inputStream: {
+        target: document.querySelector("#camera"), // 设置视频流显示区域
+        type: "LiveStream",
+        constraints: {
+          width: { min: 640 }, // 设置视频流宽度
+          height: { min: 480 }, // 设置视频流高度
+          facingMode: "environment" // 使用后置摄像头
+        }
+      },
+      decoder: {
+        readers: ["code_128_reader"] // 配置要识别的条形码类型，可以根据需求调整
+      }
+    };
+
+    // 初始化并启动 Quagga
+    Quagga.init(quaggaConf, function (err) {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      Quagga.start();
+    });
+
+    // 条形码识别回调函数
+    Quagga.onDetected(function (result) {
+      alert("检测到条形码：" + result.codeResult.code); // 弹出识别的条形码
+    });
+  </script>
+</body>
+</html>
