@@ -80,15 +80,21 @@ async function startReader(videoEl) {
       type: "LiveStream",
       target: videoEl,
       constraints: {
-        facingMode: "environment",
+        aspectRatio: { min: 1, max: 2 },
+        width: { min: 1280, ideal: 1920, max: 1920 },
+        height: { min: 720, ideal: 1080, max: 1080 },
+        facingMode: "environment", // 后置相机
       },
     },
-    decoder: {
-      readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"], // 根据需要选择适当的解码器
+    decoder: {},
+    locator: {
+      patchSize: "medium", // 默认使用 medium
+      halfSample: true
     },
+    locate: true,
   }, (err) => {
     if (err) {
-      console.error(err);
+      console.log(err);
       return;
     }
 
