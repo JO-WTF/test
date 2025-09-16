@@ -272,6 +272,7 @@
     tbody.innerHTML = items.map(it => {
       const t = it.created_at ? new Date(it.created_at).toLocaleString() : "";
       const remark = it.remark ? String(it.remark).replace(/[<>]/g,"") : "";
+      const lonlat = (it.lng && it.lat) ? `${it.lng},${it.lat}` : "-";
 
       // 照片列：仅放“查看”链接，点击时才加载原图并用 Viewer 打开
       const photoCell = it.photo_url
@@ -299,6 +300,7 @@
         ${statusCell}
         <td>${remark}</td>
         <td>${photoCell}</td>
+        <td>${lonlat}</td>
         <td>${t}</td>
         <td>${act}</td>
       </tr>`;
