@@ -35,7 +35,6 @@
     "statusLabel": "Status",
     "remarkLabel": "Catatan",
     "photoLabel": "Foto",
-    "didLabel": "Pindai kode batang atau masukkan DID secara manual (DID + 13 digit)",
-    "didPlaceholder": "Masukkan 13 digit saja",
+    "didLabel": "Pindai kode batang atau masukkan DN secara manual",
     "switchCamera": "Ganti kamera"
 }

@@ -35,7 +35,6 @@
     "statusLabel": "状态",
     "remarkLabel": "备注",
     "photoLabel": "照片",
-    "didLabel": "扫码或手动输入单号（DID＋13位数字）",
-    "didPlaceholder": "仅输入后面的13位数字",
+    "didLabel": "扫码或手动输入单号",
     "switchCamera": "切换摄像头"
 }
