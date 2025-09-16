@@ -7,9 +7,11 @@
 
   <link rel="stylesheet" href="/assets/css/styles.css" />
 
-  <!-- Vue 3 & ZXing (UMD 全局) -->
+  <!-- Vue 3 & Quagga & Toastify (UMD 全局) -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
   <!-- 公共配置 & i18n 核心（提供全局 I18NCore） -->
   <script src="/config.js"></script>
@@ -67,6 +69,7 @@
           maxlength="20"
           v-model="state.DNID"
           style="flex:1"
+          @input="onDNInput" 
         />
         <button
           type="button"

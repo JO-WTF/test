@@ -11,6 +11,7 @@ await i18n.init();
 // --- 全局状态 ---
 const state = reactive({
   ...i18n.state,
+  location: "",
   hasDN: false,
   DNID: "",
   duStatus: "",
@@ -53,6 +54,26 @@ async function setTorch(on) {
     return false;
   }
 }
+// --- 获取经纬度 ---
+async function getLocation() {
+  return new Promise((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          reject("Unable to retrieve location");
+        }
+      );
+    } else {
+      reject("Geolocation is not supported by this browser");
+    }
+  });
+}
 
 function validateDN(result_text) {
   return result_text;
@@ -60,6 +81,7 @@ function validateDN(result_text) {
 
 async function enumerateCameras() {
   const all = await navigator.mediaDevices.enumerateDevices();
+  console.log(all);
   devices = all.filter((d) => d.kind === "videoinput");
   if (devices.length === 0) throw new Error("No camera found");
   const backIndex = devices.findIndex((d) =>
@@ -73,48 +95,64 @@ async function startReader() {
   const Quagga = window.Quagga;
   if (!Quagga) throw new Error("Quagga is not loaded");
   // 初始化 Quagga
-  Quagga.init({
-    inputStream: {
-      name: "Live",
-      type: "LiveStream",
-      constraints: {
-        aspectRatio: { min: 1, max: 2 },
-        width: { min: 1280, ideal: 1920, max: 1920 },
-        height: { min: 720, ideal: 1080, max: 1080 },
-        facingMode: "environment", // 后置相机
+  Quagga.init(
+    {
+      inputStream: {
+        type: "LiveStream",
+        constraints: {
+          width: { min: 1920 },
+          height: { min: 1080 },
+          facingMode: "environment", // 后置相机
+          aspectRatio: { min: 1, max: 2 },
+        },
       },
+      locator: {
+        patchSize: "medium", // 默认使用 medium
+        halfSample: true,
+      },
+      numOfWorkers: 2, // 默认使用 2 个 workers
+      frequency: 10,
+      decoder: { readers: [] },
+      locate: true,
     },
-    decoder: {},
-    locator: {
-      patchSize: "medium", // 默认使用 medium
-      halfSample: true
-    },
-    locate: true,
-  }, (err) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-
-    // 启动 Quagga 扫描
-    Quagga.start();
-    state.running = true;
-    currentStream = videoEl.srcObject;
-
-    // 扫描结果回调
-    Quagga.onDetected((result) => {
-      const result_text = result.codeResult?.code;
-      if (result_text) {
-        state.DNID = result_text;
-        state.isValid = validateDN(result_text);
-        if (state.isValid) {
-          state.hasDN = true;
-          stopReader();
-          hideKeyboard(dnInput);
-        }
+    (err) => {
+      if (err) {
+        console.log(err);
+        return;
       }
-    });
-  });
+
+      // 启动 Quagga 扫描
+      Quagga.start();
+      state.running = true;
+
+      // 扫描结果回调
+      Quagga.onDetected((result) => {
+        const code = result.codeResult?.code;
+        // 检查条形码是否符合条件
+        var prefixes = ["DID", "KID", "SDNID", "MIND", "CID", "RFID", "STRID"];
+        var isValid = false;
+
+        // 条形码长度检查，必须在14到18位之间
+        if (code.length >= 14 && code.length <= 18) {
+          // 检查条形码是否以指定前缀之一开头
+          prefixes.forEach(function (prefix) {
+            if (code.startsWith(prefix)) {
+              isValid = true;
+            }
+          });
+        }
+        if (isValid) {
+          state.DNID = result_text;
+          state.isValid = validateDN(result_text);
+          if (state.isValid) {
+            state.hasDN = true;
+            stopReader();
+            hideKeyboard(dnInput);
+          }
+        }
+      });
+    }
+  );
 
   // 检查摄像头支持情况
   try {
@@ -166,7 +204,6 @@ const app = createApp({
       }
     });
 
-    const video = ref(null);
     const dnInput = ref(null);
 
     const showScanControls = computed(() => !state.isValid);
@@ -176,8 +213,6 @@ const app = createApp({
     );
 
     const start = async () => {
-      // console.log(video.value);
-      // if (!video.value) return;
       try {
         await startReader();
       } catch (e) {
@@ -195,15 +230,34 @@ const app = createApp({
       await setTorch(!state.torchOn);
     };
 
-    const nextCamera = async () => {
+    async function nextCamera() {
       if (!devices.length) await enumerateCameras();
-      deviceIndex = (deviceIndex + 1) % devices.length;
+
+      deviceIndex = (deviceIndex + 1) % devices.length; // 切换到下一个摄像头
       currentDeviceId = devices[deviceIndex].deviceId;
-      if (state.running && video.value) {
+
+      // 更新状态
+      state.currentDeviceId = currentDeviceId;
+
+      // 重新初始化摄像头
+      if (state.running) {
         await stopReader();
-        await startReader();
+        await startReader(); // 重新启动 Quagga
       }
-    };
+
+      // 显示 Toast 通知
+      const cameraLabel =
+        devices[deviceIndex].label || `Camera ${deviceIndex + 1}`;
+      Toastify({
+        text: `${cameraLabel}`,
+        duration: 1000, // 3秒钟后消失
+        gravity: "bottom", // `top` or `bottom`
+        position: "center", // Toast 显示的位置
+        style: {
+          background: "linear-gradient(to right, #00b09b, #96c93d)",
+        },
+      }).showToast();
+    }
 
     const resume = async () => {
       state.last = false;
@@ -219,7 +273,6 @@ const app = createApp({
       state.hasDN = false;
       state.isValid = false;
       state.DNID = "";
-      console.log(video.value);
       try {
         await startReader();
       } catch (e) {
@@ -313,6 +366,8 @@ const app = createApp({
             status: state.duStatus,
             remark: state.remark,
             photo: state.photoPreview || null,
+            lng: state.location?.lng,
+            lat: state.location?.lat,
           };
           state.showResult = true;
           state.last = true;
@@ -370,13 +425,28 @@ const app = createApp({
       }
     };
 
-    function onOkClick(e) {
-      state.DNID = dnInput.value.value;
+    function onDNInput(e) {
+      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
+    }
+
+    async function onOkClick(e) {
+      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
       state.isValid = validateDN(state.DNID);
       if (state.isValid) {
         stopReader();
         hideKeyboard(dnInput);
         state.hasDN = true;
+      }
+      try {
+        // 加载位置信息并保存到 state.location
+        const location = await getLocation();
+        state.location = {
+          lat: location?.lat ?? null,
+          lng: location?.lng ?? null,
+        };
+      } catch (e) {
+        console.error("Failed to get location:", e);
+        state.location = { lat: null, lng: null }; // 如果获取失败，存储空值
       }
     }
 
@@ -411,8 +481,8 @@ const app = createApp({
       t,
       setLang,
       state,
-      video,
       dnInput,
+      onDNInput,
       onOkClick,
       start,
       stop,
