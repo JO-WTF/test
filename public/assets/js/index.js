@@ -402,6 +402,8 @@ const app = createApp({
         console.warn("Restart failed:", e);
       }
 
+      hideKeyboard(dnInput);
+
     };
 
     return {
