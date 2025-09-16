@@ -49,35 +49,40 @@
     <div><h1>{{ t('scanTitle') }}</h1></div>
 
     <!-- 扫码区 -->
-    <section class="scan-area" v-if="!state.hasDid">
+    <section class="scan-area" v-if="!state.hasDN">
       <video ref="video" playsinline muted autoplay></video>
       <div class="corners">
         <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
       </div>
     </section>
 
-    <!-- DID 手动输入 -->
+    <!-- DN 手动输入 -->
     <div class="did-input card" style="margin-top:12px">
-      <label for="didInput" style="display:block;margin-bottom:6px">{{ t('didLabel') }}</label>
+      <label for="dnInput" style="display:block;margin-bottom:6px">{{ t('didLabel') }}</label>
       <div class="did-row" style="display:flex;align-items:center;gap:8px">
-        <span class="prefix mono" aria-hidden="true">DID</span>
         <input
-          id="didInput"
-          ref="didInput"
+          id="dnInput"
+          ref="dnInput"
           class="mono"
           type="tel"
           inputmode="numeric"
           pattern="[0-9]*"
           maxlength="13"
-          v-model="state.didDigits"
-          @input="onDidInput"
-          :placeholder="t('didPlaceholder')"
+          v-model="state.DNID"
           aria-label="DID digits"
           enterkeyhint="done"
           style="flex:1"
         />
+        <button
+          type="button"
+          @click="onOkClick"
+          style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;"
+        >
+          OK
+        </button>
       </div>
     </div>
+    
 
     <!-- 闪光灯状态条 -->
     <button
@@ -98,7 +103,7 @@
     </div>
 
     <!-- 提交结果 -->
-    <div class="card" v-if="state.hasDid">
+    <div class="card" v-if="state.hasDN">
       <div class="row">
         <button class="primary" @click="resume">{{ t('rescan') }}</button>
       </div>
@@ -170,7 +175,7 @@
       </template>
 
       <template v-else>
-        <div class="err">{{ t('invalidId') }}</div>
+        <div class="err">{{ t('invalid DN') }}</div>
       </template>
     </div>
   </div>
