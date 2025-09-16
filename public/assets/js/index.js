@@ -80,21 +80,28 @@ async function startReader(videoEl) {
       type: "LiveStream",
       target: videoEl,
       constraints: {
-        facingMode: "environment",
+        aspectRatio: { min: 1, max: 2 },
+        width: { min: 1280, ideal: 1920, max: 1920 },
+        height: { min: 720, ideal: 1080, max: 1080 },
+        facingMode: "environment", // 后置相机
       },
     },
-    decoder: {
-      readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"], // 根据需要选择适当的解码器
+    decoder: {},
+    locator: {
+      patchSize: "medium", // 默认使用 medium
+      halfSample: true
     },
+    locate: true,
   }, (err) => {
     if (err) {
-      console.error(err);
+      console.log(err);
       return;
     }
 
     // 启动 Quagga 扫描
     Quagga.start();
     state.running = true;
+    currentStream = videoEl.srcObject;
 
     // 扫描结果回调
     Quagga.onDetected((result) => {
@@ -109,8 +116,6 @@ async function startReader(videoEl) {
         }
       }
     });
-
-    currentStream = videoEl.srcObject;
   });
 
   // 检查摄像头支持情况
