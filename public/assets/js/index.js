@@ -4,15 +4,15 @@ const { createApp, reactive, ref, onMounted, computed } = window.Vue;
 const i18n = I18NCore.createI18n({
   namespaces: ["index"],
   lang: I18NCore.detectLang("id"),
-  fallbackLang: "id"
+  fallbackLang: "id",
 });
 await i18n.init();
 
 // --- 全局状态 ---
 const state = reactive({
   ...i18n.state,
-  hasDid: false,
-  didDigits: "",
+  hasDN: false,
+  DNID: "",
   duStatus: "",
   remark: "",
   photoFile: null,
@@ -44,7 +44,7 @@ async function setTorch(on) {
   const track = currentStream.getVideoTracks()[0];
   if (!track) return false;
   const caps = track.getCapabilities?.() || {};
-  if (!('torch' in caps)) return false;
+  if (!("torch" in caps)) return false;
   try {
     await track.applyConstraints({ advanced: [{ torch: !!on }] });
     state.torchOn = !!on;
@@ -54,43 +54,40 @@ async function setTorch(on) {
   }
 }
 
-function extractDidDigits(text) {
-  const m = String(text || '').match(/DID\s*([0-9]{6,20})/i) || String(text || '').match(/([0-9]{10,20})/);
-  return m ? m[1].slice(0, 13) : "";
-}
-
-function validateDid(digits) {
-  return /^\d{13}$/.test(digits);
+function validateDN(result_text) {
+  return result_text;
 }
 
 async function enumerateCameras() {
   const all = await navigator.mediaDevices.enumerateDevices();
-  devices = all.filter(d => d.kind === 'videoinput');
-  if (devices.length === 0) throw new Error('No camera found');
-  const backIndex = devices.findIndex(d => /back|rear|environment/i.test(d.label));
+  devices = all.filter((d) => d.kind === "videoinput");
+  if (devices.length === 0) throw new Error("No camera found");
+  const backIndex = devices.findIndex((d) =>
+    /back|rear|environment/i.test(d.label)
+  );
   deviceIndex = backIndex >= 0 ? backIndex : 0;
   currentDeviceId = devices[deviceIndex].deviceId;
 }
 
 async function startReader(videoEl) {
   const { BrowserMultiFormatReader } = window.ZXingBrowser || {};
-  if (!BrowserMultiFormatReader) throw new Error('ZXing UMD not loaded');
+  if (!BrowserMultiFormatReader) throw new Error("ZXing UMD not loaded");
   if (!reader) reader = new BrowserMultiFormatReader();
 
   if (!devices.length) await enumerateCameras();
   const deviceId = currentDeviceId || devices[deviceIndex]?.deviceId;
   state.running = true;
 
-  await reader.decodeFromVideoDevice(deviceId, videoEl, result => {
+  await reader.decodeFromVideoDevice(deviceId, videoEl, (result) => {
     if (!result) return;
-    const digits = extractDidDigits(result.getText ? result.getText() : result.text);
-    if (digits) {
-      state.didDigits = digits;
-      state.isValid = validateDid(digits);
+    const result_text = result.getText ? result.getText() : result.text;
+    if (result_text) {
+      state.DNID = result_text;
+      state.isValid = validateDN(result_text);
       if (state.isValid) {
-        state.hasDid = true;
+        state.hasDN = true;
         stopReader();
-        hideKeyboard(didInput);
+        hideKeyboard(dnInput);
       }
     }
   });
@@ -99,7 +96,7 @@ async function startReader(videoEl) {
   try {
     const track = currentStream?.getVideoTracks?.()[0];
     const caps = track?.getCapabilities?.();
-    state.torchSupported = !!(caps && 'torch' in caps);
+    state.torchSupported = !!(caps && "torch" in caps);
   } catch {
     state.torchSupported = false;
   }
@@ -110,7 +107,7 @@ async function stopReader() {
     await reader?.reset();
   } catch {}
   if (currentStream) {
-    currentStream.getTracks().forEach(t => t.stop());
+    currentStream.getTracks().forEach((t) => t.stop());
     currentStream = null;
   }
   state.running = false;
@@ -135,27 +132,18 @@ const app = createApp({
         await start();
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || 'Camera start failed';
+        state.submitMsg = (e && e.message) || "Camera start failed";
       }
     });
 
     const video = ref(null);
-    const didInput = ref(null);
+    const dnInput = ref(null);
 
     const showScanControls = computed(() => !state.isValid);
 
-    const torchTagVisible = computed(() => state.running && !state.isValid && state.torchSupported);
-
-    const onDidInput = () => {
-      state.didDigits = state.didDigits.replace(/\D+/g, '').slice(0, 13);
-      const wasValid = state.isValid;
-      state.isValid = validateDid(state.didDigits);
-      state.hasDid = state.didDigits.length > 0;
-
-      if (!wasValid && state.isValid) {
-        hideKeyboard(didInput);
-      }
-    };
+    const torchTagVisible = computed(
+      () => state.running && !state.isValid && state.torchSupported
+    );
 
     const start = async () => {
       if (!video.value) return;
@@ -163,7 +151,7 @@ const app = createApp({
         await startReader(video.value);
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || 'Camera start failed';
+        state.submitMsg = (e && e.message) || "Camera start failed";
       }
     };
 
@@ -189,18 +177,20 @@ const app = createApp({
     const resume = async () => {
       state.last = false;
       state.showResult = false;
-      state.submitMsg = '';
+      state.submitMsg = "";
       state.submitOk = false;
-      state.duStatus = '';
-      state.remark = '';
+      state.duStatus = "";
+      state.remark = "";
       state.photoFile = null;
       state.photoPreview = null;
       state.needsStatusHint = false;
       state.needsStatusShake = false;
-      state.hasDid = false;
+      state.hasDN = false;
       state.isValid = false;
-      state.didDigits = '';
-      try { didInput.value?.focus(); } catch {}
+      state.DNID = "";
+      try {
+        dnInput.value?.focus();
+      } catch {}
     };
 
     const onPickPhoto = (e) => {
@@ -226,28 +216,36 @@ const app = createApp({
       return v || "-";
     }
 
-    function uploadWithProgress({ url, formData, onProgress, timeoutMs = 15000 }) {
+    function uploadWithProgress({
+      url,
+      formData,
+      onProgress,
+      timeoutMs = 15000,
+    }) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', url);
+        xhr.open("POST", url);
 
         xhr.upload.onprogress = (evt) => {
-          if (evt.lengthComputable && typeof onProgress === 'function') {
+          if (evt.lengthComputable && typeof onProgress === "function") {
             const pct = Math.round((evt.loaded / evt.total) * 100);
             onProgress(pct);
           }
         };
 
         xhr.timeout = timeoutMs;
-        xhr.ontimeout = () => reject(new Error('Request timeout'));
+        xhr.ontimeout = () => reject(new Error("Request timeout"));
 
         xhr.onload = () => {
           const ok = xhr.status >= 200 && xhr.status < 300;
-          if (!ok) return reject(new Error(`HTTP ${xhr.status} - ${xhr.responseText || ''}`));
+          if (!ok)
+            return reject(
+              new Error(`HTTP ${xhr.status} - ${xhr.responseText || ""}`)
+            );
           resolve(xhr.responseText);
         };
 
-        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.onerror = () => reject(new Error("Network error"));
 
         xhr.send(formData);
       });
@@ -263,20 +261,21 @@ const app = createApp({
 
       state.submitting = true;
       state.uploadPct = 0;
-      state.submitMsg = '';
+      state.submitMsg = "";
       state.submitOk = false;
 
       try {
-        const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '';
+        const API_BASE =
+          (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "";
 
         if (!API_BASE) {
-          await new Promise(r => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 300));
           state.uploadPct = 100;
           state.submitOk = true;
-          state.submitMsg = t('submitOk') || 'Submitted';
+          state.submitMsg = t("submitOk") || "Submitted";
 
           state.submitView = {
-            duId: 'DID' + state.didDigits,
+            duId: state.DNID,
             status: state.duStatus,
             remark: state.remark,
             photo: state.photoPreview || null,
@@ -286,19 +285,22 @@ const app = createApp({
           return;
         }
 
-        const url = API_BASE.replace(/\/+$/, '') + '/api/du/update';
+        const url = API_BASE.replace(/\/+$/, "") + "/api/du/update";
 
         const fd = new FormData();
-        fd.append('duId', 'DID' + state.didDigits);
-        fd.append('status', state.duStatus ?? '');
-        fd.append('remark', state.remark ?? '');
+        fd.append("duId", state.DNID);
+        fd.append("status", state.duStatus ?? "");
+        fd.append("remark", state.remark ?? "");
 
         if (state.photoFile instanceof File) {
-          fd.append('photo', state.photoFile, state.photoFile.name || 'photo');
-        } else if (typeof state.photoPreview === 'string' && state.photoPreview) {
-          fd.append('photo', state.photoPreview);
+          fd.append("photo", state.photoFile, state.photoFile.name || "photo");
+        } else if (
+          typeof state.photoPreview === "string" &&
+          state.photoPreview
+        ) {
+          fd.append("photo", state.photoPreview);
         } else {
-          fd.append('photo', '');
+          fd.append("photo", "");
         }
 
         await uploadWithProgress({
@@ -312,10 +314,10 @@ const app = createApp({
 
         state.uploadPct = 100;
         state.submitOk = true;
-        state.submitMsg = t('submitOk') || 'Submitted';
+        state.submitMsg = t("submitOk") || "Submitted";
 
         state.submitView = {
-          duId: 'DID' + state.didDigits,
+          duId: state.DNID,
           status: state.duStatus,
           remark: state.remark,
           photo: state.photoPreview || null,
@@ -325,32 +327,48 @@ const app = createApp({
       } catch (e) {
         state.submitOk = false;
         state.submitMsg =
-          (t('submitFailed') || 'Submit failed') +
-          ': ' +
-          (e && e.message ? e.message : 'Error');
-        console.error('submit error', e);
+          (t("submitFailed") || "Submit failed") +
+          ": " +
+          (e && e.message ? e.message : "Error");
+        console.error("submit error", e);
       } finally {
         state.submitting = false;
       }
     };
 
+    function onOkClick(e) {
+      state.DNID = dnInput.value.value;
+      state.isValid = validateDN(state.DNID);
+      if (state.isValid) {
+        stopReader();
+        hideKeyboard(dnInput);
+        state.hasDN = true;
+      }
+    }
+
     function hideKeyboard(inputEl) {
       try {
         const el = inputEl?.value || inputEl;
-        if (el && typeof el.blur === 'function') {
+        if (el && typeof el.blur === "function") {
           const wasReadonly = el.readOnly;
           el.readOnly = true;
           el.blur();
           el.readOnly = wasReadonly;
         }
-        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        if (
+          document.activeElement &&
+          typeof document.activeElement.blur === "function"
+        ) {
           document.activeElement.blur();
         }
         setTimeout(() => {
-          if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          if (
+            document.activeElement &&
+            typeof document.activeElement.blur === "function"
+          ) {
             document.activeElement.blur();
           }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }, 50);
       } catch {}
     }
@@ -359,43 +377,44 @@ const app = createApp({
       // 保留输入框，不清引用
       state.last = false;
       state.showResult = false;
-      state.submitMsg = '';
+      state.submitMsg = "";
       state.submitOk = false;
-    
-      // 清 DID 与状态
-      state.duStatus = '';
-      state.remark = '';
+
+      // 清 DN 与状态
+      state.duStatus = "";
+      state.remark = "";
       state.photoFile = null;
       if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
       state.photoPreview = null;
-    
+
       state.needsStatusHint = false;
       state.needsStatusShake = false;
-    
-      state.hasDid = false;
+
+      state.hasDN = false;
       state.isValid = false;
-      state.didDigits = '';
-    
+      state.DNID = "";
+
       // 重启摄像头扫描（如果页面上 video 已经挂载）
       try {
         await stopReader();
         if (video.value) await startReader(video.value);
       } catch (e) {
-        console.warn('Rescan failed:', e);
+        console.warn("Rescan failed:", e);
       }
-    
+
       // 重新聚焦输入框（保留输入框可用）
-      try { didInput.value?.focus(); } catch {}
+      try {
+        dnInput.value?.focus();
+      } catch {}
     };
-    
 
     return {
       t,
       setLang,
       state,
       video,
-      didInput,
-      onDidInput,
+      dnInput,
+      onOkClick,
       start,
       stop,
       toggleTorch,
@@ -409,7 +428,7 @@ const app = createApp({
       torchTagVisible,
       onRescan,
     };
-  }
+  },
 });
 
 app.mount("#app");
