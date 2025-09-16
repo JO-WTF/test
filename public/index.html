@@ -165,6 +165,8 @@
           <div class="result-row"><span class="k">{{ t('duIdLabel') }}:</span><span class="v mono">{{ state.submitView.duId }}</span></div>
           <div class="result-row"><span class="k">{{ t('statusLabel') }}:</span><span class="v">{{ statusLabel(state.submitView.status) }}</span></div>
           <div class="result-row"><span class="k">{{ t('remarkLabel') }}:</span><span class="v">{{ state.submitView.remark || '-' }}</span></div>
+          <div class="result-row"><span class="k">{{ t('lng') }}:</span><span class="v">{{ state.submitView.lng || '-' }}</span></div>
+          <div class="result-row"><span class="k">{{ t('lat') }}:</span><span class="v">{{ state.submitView.lat || '-' }}</span></div>
           <div class="result-row" v-if="state.submitView.photo">
             <span class="k">{{ t('photoLabel') }}:</span>
             <img :src="state.submitView.photo" class="thumb" alt="thumb" />
