@@ -62,7 +62,7 @@ async function getLocation() {
         (position) => {
           resolve({
             lat: position.coords.latitude,
-            lon: position.coords.longitude,
+            lng: position.coords.longitude,
           });
         },
         (error) => {
@@ -352,10 +352,6 @@ const app = createApp({
       state.submitOk = false;
 
       try {
-        // 获取经纬度并将其添加到备注中
-        const locationRemark = `Latitude: ${state.location?.lat}, Longitude: ${state.location?.lon}`;
-        state.remark += ` ${locationRemark}`;
-
         const API_BASE =
           (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "";
 
@@ -370,6 +366,8 @@ const app = createApp({
             status: state.duStatus,
             remark: state.remark,
             photo: state.photoPreview || null,
+            lng: state.location?.lng,
+            lat: state.location?.lat,
           };
           state.showResult = true;
           state.last = true;
@@ -444,11 +442,11 @@ const app = createApp({
         const location = await getLocation();
         state.location = {
           lat: location?.lat ?? null,
-          lon: location?.lon ?? null,
+          lng: location?.lng ?? null,
         };
       } catch (e) {
         console.error("Failed to get location:", e);
-        state.location = { lat: null, lon: null }; // 如果获取失败，存储空值
+        state.location = { lat: null, lng: null }; // 如果获取失败，存储空值
       }
     }
 
