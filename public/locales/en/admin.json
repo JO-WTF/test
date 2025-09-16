@@ -42,6 +42,7 @@
     "modal.cancel": "Cancel",
     "modal.save": "Save",
     "table.view": "View",
+    "table.lonlat": "LonLat",
     "actions.edit": "Edit",
     "actions.delete": "Delete"
 }
