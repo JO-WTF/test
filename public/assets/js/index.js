@@ -32,7 +32,7 @@ const state = reactive({
   uploadPct: 0,
 });
 
-// --- ZXing & 媒体相关 ---
+// --- Quagga & 媒体相关 ---
 let reader = null;
 let currentDeviceId = null;
 let devices = [];
@@ -70,29 +70,50 @@ async function enumerateCameras() {
 }
 
 async function startReader(videoEl) {
-  const { BrowserMultiFormatReader } = window.ZXingBrowser || {};
-  if (!BrowserMultiFormatReader) throw new Error("ZXing UMD not loaded");
-  if (!reader) reader = new BrowserMultiFormatReader();
+  const Quagga = window.Quagga;
+  if (!Quagga) throw new Error("Quagga is not loaded");
 
-  if (!devices.length) await enumerateCameras();
-  const deviceId = currentDeviceId || devices[deviceIndex]?.deviceId;
-  state.running = true;
-
-  await reader.decodeFromVideoDevice(deviceId, videoEl, (result) => {
-    if (!result) return;
-    const result_text = result.getText ? result.getText() : result.text;
-    if (result_text) {
-      state.DNID = result_text;
-      state.isValid = validateDN(result_text);
-      if (state.isValid) {
-        state.hasDN = true;
-        stopReader();
-        hideKeyboard(dnInput);
-      }
+  // 初始化 Quagga
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: videoEl,
+      constraints: {
+        facingMode: "environment",
+      },
+    },
+    decoder: {
+      readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"], // 根据需要选择适当的解码器
+    },
+  }, (err) => {
+    if (err) {
+      console.error(err);
+      return;
     }
+
+    // 启动 Quagga 扫描
+    Quagga.start();
+    state.running = true;
+
+    // 扫描结果回调
+    Quagga.onDetected((result) => {
+      const result_text = result.codeResult?.code;
+      if (result_text) {
+        state.DNID = result_text;
+        state.isValid = validateDN(result_text);
+        if (state.isValid) {
+          state.hasDN = true;
+          stopReader();
+          hideKeyboard(dnInput);
+        }
+      }
+    });
+
+    currentStream = videoEl.srcObject;
   });
 
-  currentStream = videoEl.srcObject;
+  // 检查摄像头支持情况
   try {
     const track = currentStream?.getVideoTracks?.()[0];
     const caps = track?.getCapabilities?.();
@@ -104,8 +125,14 @@ async function startReader(videoEl) {
 
 async function stopReader() {
   try {
-    await reader?.reset();
-  } catch {}
+    const Quagga = window.Quagga;
+    if (Quagga) {
+      Quagga.stop(); // 停止 Quagga
+    }
+  } catch (e) {
+    console.error("Error stopping Quagga", e);
+  }
+
   if (currentStream) {
     currentStream.getTracks().forEach((t) => t.stop());
     currentStream = null;
