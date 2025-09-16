@@ -146,6 +146,7 @@ const app = createApp({
     );
 
     const start = async () => {
+      console.log(video.value);
       if (!video.value) return;
       try {
         await startReader(video.value);
@@ -188,9 +189,12 @@ const app = createApp({
       state.hasDN = false;
       state.isValid = false;
       state.DNID = "";
+      console.log(video.value);
       try {
-        dnInput.value?.focus();
-      } catch {}
+        await startReader(video.value);
+      } catch (e) {
+        console.log(e);
+      }
     };
 
     const onPickPhoto = (e) => {
@@ -373,41 +377,6 @@ const app = createApp({
       } catch {}
     }
 
-    const onRescan = async () => {
-      // 保留输入框，不清引用
-      state.last = false;
-      state.showResult = false;
-      state.submitMsg = "";
-      state.submitOk = false;
-
-      // 清 DN 与状态
-      state.duStatus = "";
-      state.remark = "";
-      state.photoFile = null;
-      if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
-      state.photoPreview = null;
-
-      state.needsStatusHint = false;
-      state.needsStatusShake = false;
-
-      state.hasDN = false;
-      state.isValid = false;
-      state.DNID = "";
-
-      // 重启摄像头扫描（如果页面上 video 已经挂载）
-      try {
-        await stopReader();
-        if (video.value) await startReader(video.value);
-      } catch (e) {
-        console.warn("Rescan failed:", e);
-      }
-
-      // 重新聚焦输入框（保留输入框可用）
-      try {
-        dnInput.value?.focus();
-      } catch {}
-    };
-
     return {
       t,
       setLang,
@@ -426,7 +395,6 @@ const app = createApp({
       statusLabel,
       showScanControls,
       torchTagVisible,
-      onRescan,
     };
   },
 });

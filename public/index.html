@@ -49,7 +49,7 @@
     <div><h1>{{ t('scanTitle') }}</h1></div>
 
     <!-- 扫码区 -->
-    <section class="scan-area" v-if="!state.hasDN">
+    <section class="scan-area" v-show="!state.hasDN">
       <video ref="video" playsinline muted autoplay></video>
       <div class="corners">
         <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
@@ -64,13 +64,8 @@
           id="dnInput"
           ref="dnInput"
           class="mono"
-          type="tel"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          maxlength="13"
+          maxlength="20"
           v-model="state.DNID"
-          aria-label="DID digits"
-          enterkeyhint="done"
           style="flex:1"
         />
         <button
@@ -105,7 +100,7 @@
     <!-- 提交结果 -->
     <div class="card" v-if="state.hasDN">
       <div class="row">
-        <button class="primary" @click="resume">{{ t('rescan') }}</button>
+        <button class="primary" @click="resume">{{ t('restart') }}</button>
       </div>
 
       <template v-if="state.isValid">
