@@ -49,7 +49,7 @@
     <div><h1>{{ t('scanTitle') }}</h1></div>
 
     <!-- 扫码区 -->
-    <section class="scan-area" v-if="!state.hasDN">
+    <section class="scan-area" v-show="!state.hasDN">
       <video ref="video" playsinline muted autoplay></video>
       <div class="corners">
         <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
