@@ -69,16 +69,14 @@ async function enumerateCameras() {
   currentDeviceId = devices[deviceIndex].deviceId;
 }
 
-async function startReader(videoEl) {
+async function startReader() {
   const Quagga = window.Quagga;
   if (!Quagga) throw new Error("Quagga is not loaded");
-
   // 初始化 Quagga
   Quagga.init({
     inputStream: {
       name: "Live",
       type: "LiveStream",
-      target: videoEl,
       constraints: {
         aspectRatio: { min: 1, max: 2 },
         width: { min: 1280, ideal: 1920, max: 1920 },
@@ -101,7 +99,6 @@ async function startReader(videoEl) {
     // 启动 Quagga 扫描
     Quagga.start();
     state.running = true;
-    currentStream = videoEl.srcObject;
 
     // 扫描结果回调
     Quagga.onDetected((result) => {
@@ -178,10 +175,10 @@ const app = createApp({
     );
 
     const start = async () => {
-      console.log(video.value);
-      if (!video.value) return;
+      // console.log(video.value);
+      // if (!video.value) return;
       try {
-        await startReader(video.value);
+        await startReader();
       } catch (e) {
         state.submitOk = false;
         state.submitMsg = (e && e.message) || "Camera start failed";
@@ -203,7 +200,7 @@ const app = createApp({
       currentDeviceId = devices[deviceIndex].deviceId;
       if (state.running && video.value) {
         await stopReader();
-        await startReader(video.value);
+        await startReader();
       }
     };
 
@@ -223,7 +220,7 @@ const app = createApp({
       state.DNID = "";
       console.log(video.value);
       try {
-        await startReader(video.value);
+        await startReader();
       } catch (e) {
         console.log(e);
       }
