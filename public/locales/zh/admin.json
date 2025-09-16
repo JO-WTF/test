@@ -41,7 +41,7 @@
     "modal.photo.label": "替换照片（可选）",
     "modal.cancel": "取消",
     "modal.save": "保存",
-    "table.lonlat": "经纬度",
+    "table.location": "位置",
     "table.view": "查看",
     "actions.edit": "编辑",
     "actions.delete": "删除"
