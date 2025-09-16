@@ -14,14 +14,7 @@
 <body>
     <section id="container" class="container">
         <div class="controls">
-            <fieldset class="input-group">
-                <button class="stop">Stop</button>
-            </fieldset>
             <fieldset class="reader-config-group">
-                <label>
-                    <span>Half-Sample</span>
-                    <input type="checkbox" checked="checked" name="locator_half-sample" />
-                </label>
                 <label>
                     <span>Camera</span>
                     <select name="input-stream_constraints" id="deviceSelection"></select>
@@ -73,19 +66,6 @@
                 attachListeners: function () {
                     var self = this;
                     self.initCameraSelection();
-                    $(".controls").on("click", "button.stop", function (e) {
-                        e.preventDefault();
-                        Quagga.stop();
-                    });
-
-                    $(".controls .reader-config-group").on("change", "input, select", function (e) {
-                        e.preventDefault();
-                        var $target = $(e.target),
-                            value = $target.attr("type") === "checkbox" ? $target.prop("checked") : $target.val(),
-                            name = $target.attr("name");
-
-                        self.setState(name, value);
-                    });
                 },
 
                 setState: function (path, value) {

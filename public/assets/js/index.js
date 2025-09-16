@@ -11,6 +11,7 @@ await i18n.init();
 // --- 全局状态 ---
 const state = reactive({
   ...i18n.state,
+  location: "",
   hasDN: false,
   DNID: "",
   duStatus: "",
@@ -53,6 +54,26 @@ async function setTorch(on) {
     return false;
   }
 }
+// --- 获取经纬度 ---
+async function getLocation() {
+  return new Promise((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+        },
+        (error) => {
+          reject("Unable to retrieve location");
+        }
+      );
+    } else {
+      reject("Geolocation is not supported by this browser");
+    }
+  });
+}
 
 function validateDN(result_text) {
   return result_text;
@@ -73,47 +94,64 @@ async function startReader() {
   const Quagga = window.Quagga;
   if (!Quagga) throw new Error("Quagga is not loaded");
   // 初始化 Quagga
-  Quagga.init({
-    inputStream: {
-      name: "Live",
-      type: "LiveStream",
-      constraints: {
-        aspectRatio: { min: 1, max: 2 },
-        width: { min: 1280, ideal: 1920, max: 1920 },
-        height: { min: 720, ideal: 1080, max: 1080 },
-        facingMode: "environment", // 后置相机
+  Quagga.init(
+    {
+      inputStream: {
+        type: "LiveStream",
+        constraints: {
+          width: { min: 1920 },
+          height: { min: 1080 },
+          facingMode: "environment", // 后置相机
+          aspectRatio: { min: 1, max: 2 },
+        },
       },
+      locator: {
+        patchSize: "medium", // 默认使用 medium
+        halfSample: true,
+      },
+      numOfWorkers: 2, // 默认使用 2 个 workers
+      frequency: 10,
+      decoder: { readers: [] },
+      locate: true,
     },
-    decoder: {},
-    locator: {
-      patchSize: "medium", // 默认使用 medium
-      halfSample: true
-    },
-    locate: true,
-  }, (err) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-
-    // 启动 Quagga 扫描
-    Quagga.start();
-    state.running = true;
-
-    // 扫描结果回调
-    Quagga.onDetected((result) => {
-      const result_text = result.codeResult?.code;
-      if (result_text) {
-        state.DNID = result_text;
-        state.isValid = validateDN(result_text);
-        if (state.isValid) {
-          state.hasDN = true;
-          stopReader();
-          hideKeyboard(dnInput);
-        }
+    (err) => {
+      if (err) {
+        console.log(err);
+        return;
       }
-    });
-  });
+
+      // 启动 Quagga 扫描
+      Quagga.start();
+      state.running = true;
+
+      // 扫描结果回调
+      Quagga.onDetected((result) => {
+        const code = result.codeResult?.code;
+        // 检查条形码是否符合条件
+        var prefixes = ['DID', 'KID', 'SDNID', 'MIND', 'CID', 'RFID', 'STRID'];
+        var isValid = false;
+
+        // 条形码长度检查，必须在14到18位之间
+        if (code.length >= 14 && code.length <= 18) {
+            // 检查条形码是否以指定前缀之一开头
+            prefixes.forEach(function (prefix) {
+                if (code.startsWith(prefix)) {
+                    isValid = true;
+                }
+            });
+        }
+        if (isValid) {
+          state.DNID = result_text;
+          state.isValid = validateDN(result_text);
+          if (state.isValid) {
+            state.hasDN = true;
+            stopReader();
+            hideKeyboard(dnInput);
+          }
+        }
+      });
+    }
+  );
 
   // 检查摄像头支持情况
   try {
@@ -298,6 +336,10 @@ const app = createApp({
       state.submitOk = false;
 
       try {
+        // 获取经纬度并将其添加到备注中
+        const locationRemark = `Latitude: ${state.location?.lat}, Longitude: ${state.location?.lon}`;
+        state.remark += ` ${locationRemark}`;
+
         const API_BASE =
           (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "";
 
@@ -373,13 +415,24 @@ const app = createApp({
       state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
     }
 
-    function onOkClick(e) {
+    async function onOkClick(e) {
       state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
       state.isValid = validateDN(state.DNID);
       if (state.isValid) {
         stopReader();
         hideKeyboard(dnInput);
         state.hasDN = true;
+      }
+      try {
+        // 加载位置信息并保存到 state.location
+        const location = await getLocation();
+        state.location = {
+          lat: location?.lat ?? null,
+          lon: location?.lon ?? null,
+        };
+      } catch (e) {
+        console.error("Failed to get location:", e);
+        state.location = { lat: null, lon: null }; // 如果获取失败，存储空值
       }
     }
 
