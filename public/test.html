@@ -1,49 +1,174 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Quagga 条形码扫描</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Quagga Barcode Scanner</title>
   <style>
-    #camera video {
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    header, footer {
+      text-align: center;
+      padding: 10px;
+      background-color: #333;
+      color: white;
+    }
+    .container {
+      padding: 20px;
+    }
+    #camera {
       width: 100%;
       max-width: 640px;
+      margin: auto;
+      border: 2px solid #ccc;
+    }
+    .controls select, .controls button, .controls label {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .controls {
+      margin: 10px 0;
+    }
+    .controls fieldset {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    .controls fieldset label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      text-align: center;
     }
   </style>
 </head>
+
 <body>
-  <h1>条形码扫描</h1>
-  <div id="camera"></div>
+  <header>
+    <h1>QuaggaJS Barcode Scanner</h1>
+  </header>
+
+  <div class="container">
+    <h3>Select Options</h3>
+    <div class="controls">
+      <fieldset>
+        <label for="barcode-type">Barcode Type:</label>
+        <select id="barcode-type">
+          <option value="code_128">Code 128</option>
+          <option value="code_39">Code 39</option>
+          <option value="ean">EAN</option>
+          <option value="ean_extended">EAN-extended</option>
+          <option value="upc">UPC</option>
+          <option value="upc_e">UPC-E</option>
+        </select>
+
+        <label for="resolution">Resolution:</label>
+        <select id="resolution">
+          <option value="640x480">640x480</option>
+          <option value="800x600">800x600</option>
+          <option value="1280x720">1280x720</option>
+          <option value="1600x960">1600x960</option>
+        </select>
+
+        <label for="patch-size">Patch Size:</label>
+        <select id="patch-size">
+          <option value="x-small">x-small</option>
+          <option value="small">small</option>
+          <option value="medium">medium</option>
+          <option value="large">large</option>
+          <option value="x-large">x-large</option>
+        </select>
+
+        <label for="half-sample">Half Sample:</label>
+        <input type="checkbox" id="half-sample" checked />
+
+        <label for="num-workers">Number of Workers:</label>
+        <select id="num-workers">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+        </select>
+
+        <button id="stop">Stop</button>
+      </fieldset>
+    </div>
+
+    <h3>Live Camera Feed</h3>
+    <div id="camera"></div>
+
+    <div id="result">
+      <p><strong>Barcode Result:</strong> <span id="barcode-result">No barcode detected</span></p>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; Made with ❤️ by You</p>
+  </footer>
+
   <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
   <script>
-    // 初始化Quagga配置
-    const quaggaConf = {
-      inputStream: {
-        target: document.querySelector("#camera"), // 设置视频流显示区域
+    let currentStream = null;
+
+    function startScanner() {
+      const barcodeType = document.getElementById("barcode-type").value;
+      const resolution = document.getElementById("resolution").value.split("x");
+      const patchSize = document.getElementById("patch-size").value;
+      const halfSample = document.getElementById("half-sample").checked;
+      const numWorkers = document.getElementById("num-workers").value;
+
+      const constraints = {
+        target: document.querySelector("#camera"),
         type: "LiveStream",
         constraints: {
-          width: { min: 640 }, // 设置视频流宽度
-          height: { min: 480 }, // 设置视频流高度
-          facingMode: "environment" // 使用后置摄像头
+          width: { min: parseInt(resolution[0]) },
+          height: { min: parseInt(resolution[1]) },
+          facingMode: "environment"
         }
-      },
-      decoder: {
-        readers: ["code_128_reader"] // 配置要识别的条形码类型，可以根据需求调整
-      }
-    };
+      };
 
-    // 初始化并启动 Quagga
-    Quagga.init(quaggaConf, function (err) {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      Quagga.start();
+      const config = {
+        inputStream: constraints,
+        decoder: {
+          readers: [barcodeType] // 根据用户选择的条形码类型
+        },
+        locator: {
+          patchSize: patchSize, // 配置补丁大小
+          halfSample: halfSample // 配置半采样
+        },
+        numOfWorkers: parseInt(numWorkers) // 设置工作线程数
+      };
+
+      Quagga.init(config, function (err) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        Quagga.start();
+      });
+
+      Quagga.onDetected(function (result) {
+        const barcodeResult = document.getElementById("barcode-result");
+        barcodeResult.textContent = result.codeResult.code; // 将扫描结果显示在页面上
+      });
+    }
+
+    document.getElementById("stop").addEventListener("click", function () {
+      Quagga.stop();
     });
 
-    // 条形码识别回调函数
-    Quagga.onDetected(function (result) {
-      alert("检测到条形码：" + result.codeResult.code); // 弹出识别的条形码
-    });
+    // 初始化摄像头和扫码
+    startScanner();
   </script>
 </body>
 </html>
