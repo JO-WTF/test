@@ -380,6 +380,8 @@ const app = createApp({
         fd.append("duId", state.DNID);
         fd.append("status", state.duStatus ?? "");
         fd.append("remark", state.remark ?? "");
+        fd.append("lng", state.location?.lng ?? "");
+        fd.append("lat", state.location?.lat ?? "");
 
         if (state.photoFile instanceof File) {
           fd.append("photo", state.photoFile, state.photoFile.name || "photo");
