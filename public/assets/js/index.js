@@ -101,6 +101,7 @@ async function startReader(videoEl) {
     // 启动 Quagga 扫描
     Quagga.start();
     state.running = true;
+    currentStream = videoEl.srcObject;
 
     // 扫描结果回调
     Quagga.onDetected((result) => {
@@ -115,8 +116,6 @@ async function startReader(videoEl) {
         }
       }
     });
-
-    currentStream = videoEl.srcObject;
   });
 
   // 检查摄像头支持情况
