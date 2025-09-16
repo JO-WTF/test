@@ -412,6 +412,8 @@ const app = createApp({
           status: state.duStatus,
           remark: state.remark,
           photo: state.photoPreview || null,
+          lng: state.location?.lng,
+          lat: state.location?.lat,
         };
         state.showResult = true;
         state.last = true;
