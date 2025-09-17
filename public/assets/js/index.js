@@ -6,6 +6,8 @@ import {
   computed,
 } from "https://unpkg.com/vue@3.2.45/dist/vue.esm-browser.js";
 
+import "../../scanbot-web-sdk/bundle/ScanbotSDK.ui2.min.js";
+
 // --- i18n 初始化（扁平 JSON + 显式 ns）---
 const i18n = I18NCore.createI18n({
   namespaces: ["index"],
@@ -39,12 +41,29 @@ const state = reactive({
   uploadPct: 0,
 });
 
-// --- Quagga & 媒体相关 ---
-let reader = null;
 let currentDeviceId = null;
 let devices = [];
 let deviceIndex = 0;
 let currentStream = null;
+let scanner;
+
+const sdk = await ScanbotSDK.initialize({
+  engine: "scanbot-web-sdk/bundle/bin/barcode-scanner/",
+});
+const configuration = {
+  //  The `id` of the containing HTML element where the Barcode Scanner will be initialized.
+  containerId: "interactive",
+  onBarcodesDetected: (result) => {
+    console.log(result.barcodes[0].text);
+    let isValid = validateDN(result.barcodes[0].text);
+    if (isValid) {
+      scanner.dispose();
+      state.DNID = result.barcodes[0].text;
+      state.isValid = true;
+      state.hasDN = true;
+    }
+  },
+};
 
 async function setTorch(on) {
   if (!currentStream) return false;
@@ -84,7 +103,11 @@ async function getLocation() {
 
 function validateDN(result_text) {
   const regex = /^[A-Za-z]{1,5}[0-9A-Za-z]{9,13}$/;
-  return regex.test(result_text) && result_text.length >= 14 && result_text.length <= 18;
+  return (
+    regex.test(result_text) &&
+    result_text.length >= 14 &&
+    result_text.length <= 18
+  );
 }
 
 // --- Vue App ---
@@ -96,118 +119,39 @@ const app = createApp({
       state.lang = lang;
     };
 
-    onMounted(async () => { // <-- 这里是生命周期钩子
+    onMounted(async () => {
+      // <-- 这里是生命周期钩子
       try {
-        await start(); // <-- 调用 start 方法来初始化 Quagga
-        Quagga.onProcessed((result) => {  // <-- 初始化后的事件监听
-          const drawingCtx = Quagga.canvas.ctx.overlay,
-            drawingCanvas = Quagga.canvas.dom.overlay;
-    
-          if (result) {
-            if (result.boxes) {
-              drawingCtx.clearRect(
-                0,
-                0,
-                parseInt(drawingCanvas.getAttribute("width")),
-                parseInt(drawingCanvas.getAttribute("height"))
-              );
-              result.boxes
-                .filter(function (box) {
-                  return box !== result.box;
-                })
-                .forEach(function (box) {
-                  Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
-                    color: "green",
-                    lineWidth: 2,
-                  });
-                });
-            }
-    
-            if (result.box) {
-              Quagga.ImageDebug.drawPath(
-                result.box,
-                { x: 0, y: 1 },
-                drawingCtx,
-                { color: "#00F", lineWidth: 2 }
-              );
-            }
-    
-            if (result.codeResult && result.codeResult.code) {
-              Quagga.ImageDebug.drawPath(
-                result.line,
-                { x: "x", y: "y" },
-                drawingCtx,
-                { color: "red", lineWidth: 3 }
-              );
-            }
-          }
-        });
-    
-        Quagga.onDetected(function (result) {  // <-- 检测到条形码后处理
-          const code = result.codeResult.code;
-          var $node = $( // <-- 这里是 Vue 和 DOM 结合的地方
-            '<li><div class="thumbnail"><div class="imgWrapper"><img /></div><div class="caption"><h4 class="code"></h4></div></div></li>'
-          );
-          $node.find("img").attr("src", Quagga.canvas.dom.image.toDataURL());
-          $node.find("h4.code").html(code);
-          $("#result_strip ul.thumbnails").prepend($node);
-
-          state.isValid = validateDN(code);
-          if (state.isValid) {
-            state.DNID = code;
-            stop();
-          }
-        });
+        await start();
       } catch (e) {
         state.submitOk = false;
         state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
       }
     });
-    
-    const start = async () => { // <-- 启动扫描器的方法
+
+    const start = async () => {
+      // <-- 启动扫描器的方法
       try {
-        Quagga.init( // <-- Quagga 初始化
-          {
-            name: "Live",
-            type: "LiveStream",
-            constraints: {
-              width: 1920,
-              height: 1080,
-              facingMode: "environment",
-              deviceId: currentDeviceId, // <-- 使用 Vue 的 deviceId
-            },
-            locator: {
-              patchSize: "x-large",
-              // halfSample: true,
-            },
-            debug: {
-              showCanvas: true,
-              showPatches: true,
-              showFoundPatches: true,
-              showSkeleton: true,
-              showLabels: true,
-              showPatchLabels: true,
-              showRemainingPatchLabels: true,
-              boxFromPatches: {
-                showTransformed: true,
-                showTransformedBox: true,
-                showBB: true
-              },
-            },
-            numOfWorkers: 4,
-            singleChannel: false,
-          },
-          function (err) {
-            if (err) {
-              console.log(err);
-            }
-            Quagga.start(); // <-- 启动扫描
-          }
-        );
+        scanner = await sdk.createBarcodeScanner(configuration);
         state.running = true;
       } catch (e) {
         state.submitOk = false;
         state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
+      }
+    };
+
+    const stop = async () => {
+      // <-- 停止扫描器的方法
+      try {
+        if (scanner) {
+          scanner.dispose();
+          state.running = false;
+        } else {
+          console.warn("no scanner");
+        }
+      } catch (e) {
+        state.submitOk = false;
+        state.submitMsg = (e && e.message) || "Camera stop failed"; // <-- 错误处理
       }
     };
 
@@ -218,12 +162,6 @@ const app = createApp({
     const torchTagVisible = computed(
       () => state.running && !state.isValid && state.torchSupported
     );
-
-
-    const stop = async () => {
-      Quagga.stop();
-      state.running = false;
-    };
 
     const toggleTorch = async () => {
       if (!state.torchSupported) return;
@@ -242,7 +180,7 @@ const app = createApp({
 
       // 重新初始化摄像头
       if (state.running) {
-        await stop(); // 重新启动 Quagga
+        await stop();
         await start();
       }
 
@@ -435,15 +373,50 @@ const app = createApp({
     }
 
     async function onOkClick(e) {
+      // 获取并转化输入的 DNID 为大写
       state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
-      state.isValid = validateDN(state.DNID);
+      state.isValid = validateDN(state.DNID); // 验证 DNID
+      console.log(state.isValid);
+    
+      // 获取类名为 'dnInput' 的第一个元素
+      const dnInputElement = document.querySelector('.did-input');  // 使用 querySelector 获取类名为 dnInput 的元素
+    
+      if (!dnInputElement) {
+        console.error('dnInput element not found!');
+        return;
+      }
+    
+      // 创建 ❌ 图标元素
+      const errorIcon = document.createElement('span');
+      errorIcon.textContent = '❌';
+      errorIcon.style.fontSize = '20px'; // 适当的字体大小
+      errorIcon.style.marginLeft = '10px'; // 控制图标和输入框的间距
+      errorIcon.style.color = 'red'; // 给图标加上红色，确保显示出来
+    
       if (state.isValid) {
+        // 如果验证通过，停止操作并隐藏键盘
         stop();
         hideKeyboard(dnInput);
         state.hasDN = true;
+    
+        // 移除错误图标（如果之前显示了的话）
+        const errorIconElement = document.getElementById('error-icon');
+        if (errorIconElement) {
+          errorIconElement.style.visibility = 'hidden';
+        }
+      } else {
+        // 如果验证不通过，显示错误图标
+        let errorIconElement = document.getElementById('error-icon');
+        if (!errorIconElement) {
+          errorIconElement = errorIcon;
+          errorIconElement.id = 'error-icon'; // 给图标添加唯一 ID
+          dnInputElement.appendChild(errorIconElement); // 将 ❌ 图标添加到 dnInput 元素的父容器
+        }
+        errorIconElement.style.visibility = 'visible'; // 确保图标显示
       }
+    
       try {
-        // 加载位置信息并保存到 state.location
+        // 获取位置信息并保存到 state.location
         const location = await getLocation();
         state.location = {
           lat: location?.lat ?? null,
@@ -451,9 +424,11 @@ const app = createApp({
         };
       } catch (e) {
         console.error("Failed to get location:", e);
-        state.location = { lat: null, lng: null }; // 如果获取失败，存储空值
+        // 如果获取位置信息失败，存储空值
+        state.location = { lat: null, lng: null };
       }
     }
+    
 
     function hideKeyboard(inputEl) {
       try {
