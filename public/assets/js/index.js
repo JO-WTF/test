@@ -6,7 +6,7 @@ import {
   computed,
 } from "https://unpkg.com/vue@3.2.45/dist/vue.esm-browser.js";
 
-import "../../scanbot-web-sdk/bundle/ScanbotSDK.ui2.min.js";
+import "https://cdn.jsdelivr.net/npm/scanbot-web-sdk@latest/bundle/ScanbotSDK.ui2.min.js";
 
 // --- i18n 初始化（扁平 JSON + 显式 ns）---
 const i18n = I18NCore.createI18n({
