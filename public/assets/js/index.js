@@ -177,8 +177,22 @@ const app = createApp({
               deviceId: currentDeviceId, // <-- 使用 Vue 的 deviceId
             },
             locator: {
-              patchSize: "medium",
-              halfSample: true,
+              patchSize: "x-large",
+              // halfSample: true,
+            },
+            debug: {
+              showCanvas: true,
+              showPatches: true,
+              showFoundPatches: true,
+              showSkeleton: true,
+              showLabels: true,
+              showPatchLabels: true,
+              showRemainingPatchLabels: true,
+              boxFromPatches: {
+                showTransformed: true,
+                showTransformedBox: true,
+                showBB: true
+              },
             },
             numOfWorkers: 4,
             singleChannel: false,
