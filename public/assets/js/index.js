@@ -149,6 +149,15 @@ async function startReader() {
             stopReader();
             hideKeyboard(dnInput);
           }
+        } else {
+          // 获取到class为'temp-result'的div
+          const tempResultDiv = document.querySelector(".temp-result");
+
+          // 将结果展示在该div中
+          if (tempResultDiv) {
+            tempResultDiv.textContent = `Invalid result: ${result_text}`;
+            tempResultDiv.style.display = "block"; // 确保div显示出来
+          }
         }
       });
     }
