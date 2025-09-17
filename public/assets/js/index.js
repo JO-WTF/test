@@ -480,11 +480,13 @@ const app = createApp({
         state.lastResult = code;
         state.barcodeResult = code;
         console.log("Barcode detected: ", code);
-        state.DNID = code;
-        state.isValid = validateDN(code);
-        if (state.isValid) {state.hasDN = true;}
-        stopReader();
-        hideKeyboard(dnInput);
+        state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
+        state.isValid = validateDN(state.DNID);
+        if (state.isValid) {
+          stopReader();
+          hideKeyboard(dnInput);
+          state.hasDN = true;
+        }
       }
     }
 
