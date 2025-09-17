@@ -48,21 +48,21 @@ let currentStream = null;
 let scanner;
 
 const sdk = await ScanbotSDK.initialize({
-  licenseKey: "KH1nmhmptRSxGqMQ5BhSpleutwfhXC" +
-  "eOcDnM2KfTF6s46RYW1En5HCWXlyIU" +
-  "+KS10sRn56VZu93HfAyQAbmXgRfa9v" +
-  "IdpdqaTs3ZtfXCXYyDdVq/pdimdtky" +
-  "Ykcj7sLQzj9BAUhYRsgepbBzlpj4ao" +
-  "9G9KkIzEL+X4GLtpg2kiqnK/J+wmx5" +
-  "3iqaCqscIE5EyqZAvZKVbHpNlfqt8h" +
-  "TIM5Jpot0jj0A3kCNl1IhhM7a/2w3l" +
-  "g/cD3jwJy/AcRkobKeq42dsJt9Vq9/" +
-  "GMtLlO2iuZrp1v62yXEnFL5vFOnukW" +
-  "EtC/ARPl/5nsXk067Htwz7YI7rqd3Y" +
-  "QWnUuaAl9LPA==\nU2NhbmJvdFNESw" +
-  "psb2NhbGhvc3R8aWRuc2MuZHBkbnMu" +
-  "b3JnCjE3NTg3NTgzOTkKODM4ODYwNw" +
-  "o4\n", // Empty string is the default value for trial mode
+  // licenseKey: "KH1nmhmptRSxGqMQ5BhSpleutwfhXC" +
+  // "eOcDnM2KfTF6s46RYW1En5HCWXlyIU" +
+  // "+KS10sRn56VZu93HfAyQAbmXgRfa9v" +
+  // "IdpdqaTs3ZtfXCXYyDdVq/pdimdtky" +
+  // "Ykcj7sLQzj9BAUhYRsgepbBzlpj4ao" +
+  // "9G9KkIzEL+X4GLtpg2kiqnK/J+wmx5" +
+  // "3iqaCqscIE5EyqZAvZKVbHpNlfqt8h" +
+  // "TIM5Jpot0jj0A3kCNl1IhhM7a/2w3l" +
+  // "g/cD3jwJy/AcRkobKeq42dsJt9Vq9/" +
+  // "GMtLlO2iuZrp1v62yXEnFL5vFOnukW" +
+  // "EtC/ARPl/5nsXk067Htwz7YI7rqd3Y" +
+  // "QWnUuaAl9LPA==\nU2NhbmJvdFNESw" +
+  // "psb2NhbGhvc3R8aWRuc2MuZHBkbnMu" +
+  // "b3JnCjE3NTg3NTgzOTkKODM4ODYwNw" +
+  // "o4\n",
   enginePath: "https://cdn.jsdelivr.net/npm/scanbot-web-sdk@7.2.0/bundle/bin/complete/"
 });
 const configuration = {
