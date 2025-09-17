@@ -156,7 +156,6 @@ const app = createApp({
           state.isValid = validateDN(code);
           if (state.isValid) {
             state.DNID = code;
-            state.hasDN = true;
             stop();
           }
         });
