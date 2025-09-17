@@ -209,6 +209,7 @@ const app = createApp({
 
     const stop = async () => {
       Quagga.stop();
+      state.running = false;
     };
 
     const toggleTorch = async () => {
