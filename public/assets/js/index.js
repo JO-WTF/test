@@ -480,6 +480,11 @@ const app = createApp({
         state.lastResult = code;
         state.barcodeResult = code;
         console.log("Barcode detected: ", code);
+        state.DNID = code;
+        state.isValid = validateDN(code);
+        if (state.isValid) {state.hasDN = true;}
+        stopReader();
+        hideKeyboard(dnInput);
       }
     }
 
