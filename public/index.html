@@ -84,10 +84,6 @@
 
       <!-- 扫码区 -->
       <section id="container" class="scan-area container" v-show="!state.hasDN">
-        <div id="result_strip">
-          <ul class="thumbnails"></ul>
-          <ul class="collector"></ul>
-        </div>
         <div id="interactive" class="viewport"></div>
         <div class="corners">
           <div class="c tl"></div>
@@ -96,6 +92,10 @@
           <div class="c br"></div>
         </div>
       </section>
+      <div id="result_strip" v-show="!state.hasDN">
+        <ul class="thumbnails"></ul>
+        <ul class="collector"></ul>
+      </div>
 
       <!-- DN 手动输入 -->
       <div class="did-input card" style="margin-top: 12px">

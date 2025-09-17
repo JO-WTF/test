@@ -83,7 +83,8 @@ async function getLocation() {
 }
 
 function validateDN(result_text) {
-  return result_text;
+  const regex = /^[A-Za-z]{1,5}[0-9A-Za-z]{9,13}$/;
+  return regex.test(result_text) && result_text.length >= 14 && result_text.length <= 18;
 }
 
 function tFactory(ns) {
