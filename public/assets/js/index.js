@@ -87,10 +87,6 @@ function validateDN(result_text) {
   return regex.test(result_text) && result_text.length >= 14 && result_text.length <= 18;
 }
 
-function tFactory(ns) {
-  return (key, vars) => i18n.t(`${ns}.${key}`, vars);
-}
-
 // --- Vue App ---
 const app = createApp({
   setup() {
@@ -177,11 +173,16 @@ const app = createApp({
             name: "Live",
             type: "LiveStream",
             constraints: {
-              width: 640,
-              height: 480,
+              width: 1920,
+              height: 1080,
               facingMode: "environment",
               deviceId: currentDeviceId, // <-- 使用 Vue 的 deviceId
             },
+            locator: {
+              patchSize: "medium",
+              halfSample: true,
+            },
+            numOfWorkers: 4,
             singleChannel: false,
           },
           function (err) {
@@ -191,6 +192,7 @@ const app = createApp({
             Quagga.start(); // <-- 启动扫描
           }
         );
+        state.running = true;
       } catch (e) {
         state.submitOk = false;
         state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
