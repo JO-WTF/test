@@ -5,7 +5,7 @@
     "du.tip": "Hint: Valid format is DID + 13 digits. You can input only digits.",
     "status.label": "Status",
     "status.all": "(All)",
-    "status.inTransit": "In Transit",
+    "status.inTransit": "Start Transporting",
     "status.overnight": "Overnight",
     "status.arrived": "Arrived",
     "remark.kw.label": "Remark Keyword",

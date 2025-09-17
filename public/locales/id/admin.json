@@ -5,7 +5,7 @@
     "du.tip": "Petunjuk: Format valid adalah DID + 13 digit. Bisa hanya memasukkan angka.",
     "status.label": "Status",
     "status.all": "(Semua)",
-    "status.inTransit": "Dalam Perjalanan",
+    "status.inTransit": "Mulai Pengiriman",
     "status.overnight": "Menginap",
     "status.arrived": "Tiba",
     "remark.kw.label": "Kata Kunci Catatan",

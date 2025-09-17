@@ -5,7 +5,7 @@
     "du.tip": "提示：合法格式为 DID + 13位数字 可只输入数字。",
     "status.label": "状态",
     "status.all": "（全部）",
-    "status.inTransit": "运输中",
+    "status.inTransit": "开始运输",
     "status.overnight": "过夜",
     "status.arrived": "已到达",
     "remark.kw.label": "备注关键词",

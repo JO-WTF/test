@@ -100,7 +100,6 @@ const app = createApp({
       try {
         await start(); // <-- 调用 start 方法来初始化 Quagga
         Quagga.onProcessed((result) => {  // <-- 初始化后的事件监听
-          console.log(result)
           const drawingCtx = Quagga.canvas.ctx.overlay,
             drawingCanvas = Quagga.canvas.dom.overlay;
     
