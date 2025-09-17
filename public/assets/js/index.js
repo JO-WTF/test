@@ -229,8 +229,8 @@ const app = createApp({
 
       // 重新初始化摄像头
       if (state.running) {
-        await start();
         await stop(); // 重新启动 Quagga
+        await start();
       }
 
       // 显示 Toast 通知
