@@ -1,4 +1,10 @@
-import { createApp, reactive, ref, onMounted, computed } from 'https://unpkg.com/vue@3.2.45/dist/vue.esm-browser.js';
+import {
+  createApp,
+  reactive,
+  ref,
+  onMounted,
+  computed,
+} from "https://unpkg.com/vue@3.2.45/dist/vue.esm-browser.js";
 
 // --- i18n 初始化（扁平 JSON + 显式 ns）---
 const i18n = I18NCore.createI18n({
@@ -93,14 +99,97 @@ const app = createApp({
       state.lang = lang;
     };
 
-    onMounted(async () => {
+    onMounted(async () => { // <-- 这里是生命周期钩子
       try {
-        await start();
+        await start(); // <-- 调用 start 方法来初始化 Quagga
+        Quagga.onProcessed((result) => {  // <-- 初始化后的事件监听
+          console.log(result)
+          const drawingCtx = Quagga.canvas.ctx.overlay,
+            drawingCanvas = Quagga.canvas.dom.overlay;
+    
+          if (result) {
+            if (result.boxes) {
+              drawingCtx.clearRect(
+                0,
+                0,
+                parseInt(drawingCanvas.getAttribute("width")),
+                parseInt(drawingCanvas.getAttribute("height"))
+              );
+              result.boxes
+                .filter(function (box) {
+                  return box !== result.box;
+                })
+                .forEach(function (box) {
+                  Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
+                    color: "green",
+                    lineWidth: 2,
+                  });
+                });
+            }
+    
+            if (result.box) {
+              Quagga.ImageDebug.drawPath(
+                result.box,
+                { x: 0, y: 1 },
+                drawingCtx,
+                { color: "#00F", lineWidth: 2 }
+              );
+            }
+    
+            if (result.codeResult && result.codeResult.code) {
+              Quagga.ImageDebug.drawPath(
+                result.line,
+                { x: "x", y: "y" },
+                drawingCtx,
+                { color: "red", lineWidth: 3 }
+              );
+            }
+          }
+        });
+    
+        Quagga.onDetected(function (result) {  // <-- 检测到条形码后处理
+          const code = result.codeResult.code;
+          console.log(code);
+    
+          var $node = $( // <-- 这里是 Vue 和 DOM 结合的地方
+            '<li><div class="thumbnail"><div class="imgWrapper"><img /></div><div class="caption"><h4 class="code"></h4></div></div></li>'
+          );
+          $node.find("img").attr("src", Quagga.canvas.dom.image.toDataURL());
+          $node.find("h4.code").html(code);
+          $("#result_strip ul.thumbnails").prepend($node);
+        });
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera start failed";
+        state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
       }
     });
+    
+    const start = async () => { // <-- 启动扫描器的方法
+      try {
+        Quagga.init( // <-- Quagga 初始化
+          {
+            name: "Live",
+            type: "LiveStream",
+            constraints: {
+              width: 640,
+              height: 480,
+              facingMode: "environment",
+              deviceId: currentDeviceId, // <-- 使用 Vue 的 deviceId
+            },
+            singleChannel: false,
+          },
+          function (err) {
+            if (err) {
+              console.log(err);
+            }
+            Quagga.start(); // <-- 启动扫描
+          }
+        );
+      } catch (e) {
+        state.submitOk = false;
+        state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
+      }
+    };
 
     const dnInput = ref(null);
 
@@ -110,14 +199,6 @@ const app = createApp({
       () => state.running && !state.isValid && state.torchSupported
     );
 
-    const start = async () => {
-      try {
-        await startReader();
-      } catch (e) {
-        state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera start failed";
-      }
-    };
 
     const stop = async () => {
       await stopReader();
@@ -129,7 +210,8 @@ const app = createApp({
     };
 
     async function nextCamera() {
-      if (!devices.length) devices = await Quagga.CameraAccess.enumerateVideoDevices();
+      if (!devices.length)
+        devices = await Quagga.CameraAccess.enumerateVideoDevices();
 
       deviceIndex = (deviceIndex + 1) % devices.length; // 切换到下一个摄像头
       currentDeviceId = devices[deviceIndex].deviceId;
@@ -139,8 +221,8 @@ const app = createApp({
 
       // 重新初始化摄像头
       if (state.running) {
-        await stopReader();
-        await startReader(); // 重新启动 Quagga
+        await start();
+        await stop(); // 重新启动 Quagga
       }
 
       // 显示 Toast 通知
@@ -172,7 +254,7 @@ const app = createApp({
       state.isValid = false;
       state.DNID = "";
       try {
-        await startReader();
+        await start();
       } catch (e) {
         console.log(e);
       }
@@ -377,117 +459,6 @@ const app = createApp({
           window.scrollTo({ top: 0, behavior: "smooth" });
         }, 50);
       } catch {}
-    }
-
-    // --- Quagga 初始化及处理 ---
-    async function startReader() {
-      devices = await Quagga.CameraAccess.enumerateVideoDevices();
-      console.log(devices)
-
-      if (devices.length === 0) return;
-
-      const constraints = {
-        inputStream: {
-          type: "LiveStream",
-          constraints: {
-            width: { min: 1920 },
-            height: { min: 1080 },
-            facingMode: "environment",
-            deviceId: devices[deviceIndex].deviceId,
-          },
-        },
-        decoder: {
-          readers: [
-          ],
-        },
-      };
-
-      // 初始化 Quagga
-      Quagga.init(constraints, function (err) {
-        if (err) {
-          console.error(err);
-          return;
-        }
-        Quagga.start();
-        state.running = true;
-        console.log("running")
-      });
-
-      // 处理扫描结果
-      Quagga.onDetected(handleDetected);
-      Quagga.onProcessed(handleProcessed);
-    }
-
-    async function stopReader() {
-      Quagga.stop();
-      state.running = false;
-    }
-
-    function handleProcessed(result) {
-      if (result) {
-        const drawingCtx = Quagga.canvas.ctx.overlay;
-        console.log(drawingCtx)
-        const drawingCanvas = Quagga.canvas.dom.overlay;
-
-        // 清空画布并重新绘制框架
-        if (result.boxes) {
-          drawingCtx.clearRect(
-            0,
-            0,
-            parseInt(drawingCanvas.getAttribute("width")),
-            parseInt(drawingCanvas.getAttribute("height"))
-          );
-          result.boxes
-            .filter(function (box) {
-              return box !== result.box; // 排除当前框
-            })
-            .forEach(function (box) {
-              Quagga.ImageDebug.drawPath(
-                box,
-                { x: 0, y: 1 },
-                drawingCtx,
-                { color: "green", lineWidth: 2 }
-              );
-            });
-        }
-
-        // 绘制当前框
-        if (result.box) {
-          Quagga.ImageDebug.drawPath(
-            result.box,
-            { x: 0, y: 1 },
-            drawingCtx,
-            { color: "#00F", lineWidth: 2 }
-          );
-        }
-
-        // 如果识别到了条形码，绘制扫描线
-        if (result.codeResult && result.codeResult.code) {
-          Quagga.ImageDebug.drawPath(
-            result.line,
-            { x: "x", y: "y" },
-            drawingCtx,
-            { color: "red", lineWidth: 3 }
-          );
-        }
-      }
-    }
-
-    function handleDetected(result) {
-      const code = result.codeResult.code;
-      console.log(code);
-      if (state.lastResult !== code) {
-        state.lastResult = code;
-        state.barcodeResult = code;
-        console.log("Barcode detected: ", code);
-        state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
-        state.isValid = validateDN(state.DNID);
-        if (state.isValid) {
-          stopReader();
-          hideKeyboard(dnInput);
-          state.hasDN = true;
-        }
-      }
     }
 
     return {
