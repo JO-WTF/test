@@ -149,15 +149,19 @@ const app = createApp({
     
         Quagga.onDetected(function (result) {  // <-- 检测到条形码后处理
           const code = result.codeResult.code;
-          console.log(code);
-          alert(code);
-    
           var $node = $( // <-- 这里是 Vue 和 DOM 结合的地方
             '<li><div class="thumbnail"><div class="imgWrapper"><img /></div><div class="caption"><h4 class="code"></h4></div></div></li>'
           );
           $node.find("img").attr("src", Quagga.canvas.dom.image.toDataURL());
           $node.find("h4.code").html(code);
           $("#result_strip ul.thumbnails").prepend($node);
+
+          state.isValid = validateDN(code);
+          if (state.isValid) {
+            state.DNID = code;
+            state.hasDN = true;
+            stop();
+          }
         });
       } catch (e) {
         state.submitOk = false;
@@ -202,7 +206,7 @@ const app = createApp({
 
 
     const stop = async () => {
-      await stopReader();
+      Quagga.stop();
     };
 
     const toggleTorch = async () => {
@@ -418,7 +422,7 @@ const app = createApp({
       state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
       state.isValid = validateDN(state.DNID);
       if (state.isValid) {
-        stopReader();
+        stop();
         hideKeyboard(dnInput);
         state.hasDN = true;
       }
