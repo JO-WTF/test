@@ -92,7 +92,7 @@
           <div class="c br"></div>
         </div>
       </section>
-      <div id="result_strip" v-show="!state.hasDN">
+      <div id="result_strip" v-show="state.lang==='zh'">
         <ul class="thumbnails"></ul>
         <ul class="collector"></ul>
       </div>
@@ -176,7 +176,7 @@
               >
                 <option value="" disabled>{{ t('choose') }}</option>
                 <option value="运输中">{{ t('inTransit') }}</option>
-                <option value="过夜">{{ t('overnight') }}</option>
+                <!-- <option value="过夜">{{ t('overnight') }}</option> -->
                 <option value="已到达">{{ t('arrived') }}</option>
               </select>
             </div>
