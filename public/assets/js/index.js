@@ -1,4 +1,4 @@
-const { createApp, reactive, ref, onMounted, computed } = window.Vue;
+import { createApp, reactive, ref, onMounted, computed } from 'https://unpkg.com/vue@3.2.45/dist/vue.esm-browser.js';
 
 // --- i18n 初始化（扁平 JSON + 显式 ns）---
 const i18n = I18NCore.createI18n({
@@ -54,6 +54,7 @@ async function setTorch(on) {
     return false;
   }
 }
+
 // --- 获取经纬度 ---
 async function getLocation() {
   return new Promise((resolve, reject) => {
@@ -77,118 +78,6 @@ async function getLocation() {
 
 function validateDN(result_text) {
   return result_text;
-}
-
-async function enumerateCameras() {
-  const all = await navigator.mediaDevices.enumerateDevices();
-  console.log(all);
-  devices = all.filter((d) => d.kind === "videoinput");
-  if (devices.length === 0) throw new Error("No camera found");
-  const backIndex = devices.findIndex((d) =>
-    /back|rear|environment/i.test(d.label)
-  );
-  deviceIndex = backIndex >= 0 ? backIndex : 0;
-  currentDeviceId = devices[deviceIndex].deviceId;
-}
-
-async function startReader() {
-  const Quagga = window.Quagga;
-  if (!Quagga) throw new Error("Quagga is not loaded");
-  // 初始化 Quagga
-  Quagga.init(
-    {
-      inputStream: {
-        type: "LiveStream",
-        constraints: {
-          width: { min: 1920 },
-          height: { min: 1080 },
-          facingMode: "environment", // 后置相机
-          aspectRatio: { min: 1, max: 2 },
-        },
-      },
-      locator: {
-        patchSize: "medium", // 默认使用 medium
-        halfSample: true,
-      },
-      numOfWorkers: 2, // 默认使用 2 个 workers
-      frequency: 10,
-      decoder: { readers: [] },
-      locate: true,
-    },
-    (err) => {
-      if (err) {
-        console.log(err);
-        return;
-      }
-
-      // 启动 Quagga 扫描
-      Quagga.start();
-      state.running = true;
-
-      // 扫描结果回调
-      Quagga.onDetected((result) => {
-        const code = result.codeResult?.code;
-        // 检查条形码是否符合条件
-        var prefixes = ["DID", "KID", "SDNID", "MIND", "CID", "RFID", "STRID"];
-        var isValid = false;
-
-        // 条形码长度检查，必须在14到18位之间
-        if (code.length >= 14 && code.length <= 18) {
-          // 检查条形码是否以指定前缀之一开头
-          prefixes.forEach(function (prefix) {
-            if (code.startsWith(prefix)) {
-              isValid = true;
-            }
-          });
-        }
-        if (isValid) {
-          state.DNID = result_text;
-          state.isValid = validateDN(result_text);
-          if (state.isValid) {
-            state.hasDN = true;
-            stopReader();
-            hideKeyboard(dnInput);
-          }
-        } else {
-          // 获取到class为'temp-result'的div
-          const tempResultDiv = document.querySelector(".temp-result");
-
-          // 将结果展示在该div中
-          if (tempResultDiv) {
-            tempResultDiv.textContent = `Invalid result: ${result_text}`;
-            tempResultDiv.style.display = "block"; // 确保div显示出来
-          }
-        }
-      });
-    }
-  );
-
-  // 检查摄像头支持情况
-  try {
-    const track = currentStream?.getVideoTracks?.()[0];
-    const caps = track?.getCapabilities?.();
-    state.torchSupported = !!(caps && "torch" in caps);
-  } catch {
-    state.torchSupported = false;
-  }
-}
-
-async function stopReader() {
-  try {
-    const Quagga = window.Quagga;
-    if (Quagga) {
-      Quagga.stop(); // 停止 Quagga
-    }
-  } catch (e) {
-    console.error("Error stopping Quagga", e);
-  }
-
-  if (currentStream) {
-    currentStream.getTracks().forEach((t) => t.stop());
-    currentStream = null;
-  }
-  state.running = false;
-  state.torchOn = false;
 }
 
 function tFactory(ns) {
@@ -240,7 +129,7 @@ const app = createApp({
     };
 
     async function nextCamera() {
-      if (!devices.length) await enumerateCameras();
+      if (!devices.length) devices = await Quagga.CameraAccess.enumerateVideoDevices();
 
       deviceIndex = (deviceIndex + 1) % devices.length; // 切换到下一个摄像头
       currentDeviceId = devices[deviceIndex].deviceId;
@@ -488,6 +377,110 @@ const app = createApp({
           window.scrollTo({ top: 0, behavior: "smooth" });
         }, 50);
       } catch {}
+    }
+
+    // --- Quagga 初始化及处理 ---
+    async function startReader() {
+      devices = await Quagga.CameraAccess.enumerateVideoDevices();
+      console.log(devices)
+
+      if (devices.length === 0) return;
+
+      const constraints = {
+        inputStream: {
+          type: "LiveStream",
+          constraints: {
+            width: { min: 1920 },
+            height: { min: 1080 },
+            facingMode: "environment",
+            deviceId: devices[deviceIndex].deviceId,
+          },
+        },
+        decoder: {
+          readers: [
+          ],
+        },
+      };
+
+      // 初始化 Quagga
+      Quagga.init(constraints, function (err) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        Quagga.start();
+        state.running = true;
+        console.log("running")
+      });
+
+      // 处理扫描结果
+      Quagga.onDetected(handleDetected);
+      Quagga.onProcessed(handleProcessed);
+    }
+
+    async function stopReader() {
+      Quagga.stop();
+      state.running = false;
+    }
+
+    function handleProcessed(result) {
+      if (result) {
+        const drawingCtx = Quagga.canvas.ctx.overlay;
+        console.log(drawingCtx)
+        const drawingCanvas = Quagga.canvas.dom.overlay;
+
+        // 清空画布并重新绘制框架
+        if (result.boxes) {
+          drawingCtx.clearRect(
+            0,
+            0,
+            parseInt(drawingCanvas.getAttribute("width")),
+            parseInt(drawingCanvas.getAttribute("height"))
+          );
+          result.boxes
+            .filter(function (box) {
+              return box !== result.box; // 排除当前框
+            })
+            .forEach(function (box) {
+              Quagga.ImageDebug.drawPath(
+                box,
+                { x: 0, y: 1 },
+                drawingCtx,
+                { color: "green", lineWidth: 2 }
+              );
+            });
+        }
+
+        // 绘制当前框
+        if (result.box) {
+          Quagga.ImageDebug.drawPath(
+            result.box,
+            { x: 0, y: 1 },
+            drawingCtx,
+            { color: "#00F", lineWidth: 2 }
+          );
+        }
+
+        // 如果识别到了条形码，绘制扫描线
+        if (result.codeResult && result.codeResult.code) {
+          Quagga.ImageDebug.drawPath(
+            result.line,
+            { x: "x", y: "y" },
+            drawingCtx,
+            { color: "red", lineWidth: 3 }
+          );
+        }
+      }
+    }
+
+    function handleDetected(result) {
+      const code = result.codeResult.code;
+      console.log(code);
+      if (state.lastResult !== code) {
+        state.lastResult = code;
+        state.barcodeResult = code;
+        console.log("Barcode detected: ", code);
+      }
     }
 
     return {
