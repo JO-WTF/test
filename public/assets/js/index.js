@@ -402,6 +402,8 @@ const app = createApp({
           photo: state.photoPreview || null,
           lng: state.location?.lng,
           lat: state.location?.lat,
+          lng: state.location?.lng,
+          lat: state.location?.lat,
         };
         state.showResult = true;
         state.last = true;
