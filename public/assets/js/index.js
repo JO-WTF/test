@@ -20,7 +20,7 @@ await i18n.init();
 // --- 全局状态 ---
 const state = reactive({
   ...i18n.state,
-  location: "",
+  location: null, // ✅ 保持对象/空一致
   hasDN: false,
   DNID: "",
   duStatus: "",
@@ -41,34 +41,22 @@ const state = reactive({
   uploadPct: 0,
 });
 
-// --- 获取经纬度 ---
+// --- 获取经纬度（更友好错误信息）---
 async function getLocation() {
   return new Promise((resolve, reject) => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          reject("Unable to retrieve location");
-        }
-      );
-    } else {
-      reject("Geolocation is not supported by this browser");
-    }
+    if (!navigator.geolocation) return reject("Geolocation not supported");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) =>
+        reject(`Location error (${err.code}): ${err.message || "Unknown"}`)
+    );
   });
 }
 
-function validateDN(result_text) {
-  const regex = /^[A-Za-z]{1,5}[0-9A-Za-z]{9,13}$/;
-  return (
-    regex.test(result_text) &&
-    result_text.length >= 14 &&
-    result_text.length <= 18
-  );
+// --- DN 校验：单条正则内合并长度要求 ---
+function validateDN(text) {
+  // 总长 14–18；前缀 1–5 位字母；后续为字母数字
+  return /^(?=.{14,18}$)[A-Za-z]{1,5}[0-9A-Za-z]+$/.test(text);
 }
 
 // --- Vue App ---
@@ -81,8 +69,12 @@ const app = createApp({
     };
 
     let scanner;
+    let $errorIcon = null; // ✅ 缓存错误图标，避免反复查询
 
     onMounted(async () => {
+      // 缓存错误图标节点
+      $errorIcon = document.getElementById("error-icon");
+
       try {
         scanner = await Dynamsoft.DBR.BarcodeScanner.createInstance();
         await scanner.setUIElement(document.getElementById("div-ui-container"));
@@ -96,20 +88,17 @@ const app = createApp({
         await start();
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
+        state.submitMsg = (e && e.message) || "Camera start failed";
       }
     });
 
     const start = async () => {
-      // <-- 启动扫描器的方法
       try {
         await scanner.show();
-        // renderCameraSelector();
-        // renderResolutionSelector();
         state.running = true;
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
+        state.submitMsg = (e && e.message) || "Camera start failed";
       }
       console.log("running:", state.running);
     };
@@ -118,11 +107,10 @@ const app = createApp({
       try {
         await scanner.stop();
         console.log("Scanner stopped");
-
         state.running = false;
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera stop failed"; // <-- 错误处理
+        state.submitMsg = (e && e.message) || "Camera stop failed";
       }
       console.log("running:", state.running);
     };
@@ -130,42 +118,58 @@ const app = createApp({
     const dnInput = ref(null);
 
     const showScanControls = computed(() => !state.isValid);
-
     const torchTagVisible = computed(() => state.running && !state.isValid);
 
     const toggleTorch = async () => {
       await setTorch(!state.torchOn);
     };
 
+    // ✅ 修正 torch 开关逻辑
+    const setTorch = async (on) => {
+      try {
+        if (on) {
+          await scanner.turnOnTorch();
+        } else {
+          await scanner.turnOffTorch();
+        }
+        state.torchOn = on;
+      } catch (e) {
+        Toastify({
+          text: `${t("torchFailed")}`,
+          duration: 1000,
+          gravity: "bottom",
+          position: "center",
+          style: { background: "linear-gradient(to right, #ff3333,  #ff3333)" },
+        }).showToast();
+      }
+    };
+
+    // ✅ 相机切换更健壮
     async function nextCamera() {
-      // 获取所有可用摄像头
-      let cameras = await scanner.getAllCameras();
-
-      // 获取当前正在使用的摄像头
-      let currentCamera = await scanner.getCurrentCamera();
-
-      // 找到当前摄像头的索引
-      let currentCameraIndex = cameras.findIndex(
-        (camera) => camera.deviceId === currentCamera.deviceId
+      const cameras = await scanner.getAllCameras();
+      if (!Array.isArray(cameras) || cameras.length === 0) return;
+      if (cameras.length === 1) {
+        Toastify({
+          text: t("onlyOneCamera") || "Only one camera",
+          duration: 1000,
+          gravity: "bottom",
+          position: "center",
+        }).showToast();
+        return;
+      }
+      const current = await scanner.getCurrentCamera();
+      const idx = Math.max(
+        0,
+        cameras.findIndex((c) => c.deviceId === current?.deviceId)
       );
-
-      // 计算下一个摄像头的索引（如果是最后一个摄像头，则返回到第一个摄像头）
-      let nextCameraIndex = (currentCameraIndex + 1) % cameras.length;
-
-      // 获取下一个摄像头
-      let nextCamera = cameras[nextCameraIndex];
-
-      // 切换到下一个摄像头
-      await scanner.setCurrentCamera(nextCamera);
-
+      const next = cameras[(idx + 1) % cameras.length];
+      await scanner.setCurrentCamera(next);
       Toastify({
-        text: `${nextCamera.label}`,
-        duration: 1000, // 3秒钟后消失
-        gravity: "bottom", // `top` or `bottom`
-        position: "center", // Toast 显示的位置
-        style: {
-          background: "linear-gradient(to right, #00b09b, #96c93d)",
-        },
+        text: `${next?.label || "Camera"}`,
+        duration: 1000,
+        gravity: "bottom",
+        position: "center",
+        style: { background: "linear-gradient(to right, #00b09b, #96c93d)" },
       }).showToast();
     }
 
@@ -177,6 +181,7 @@ const app = createApp({
       state.duStatus = "";
       state.remark = "";
       state.photoFile = null;
+      if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
       state.photoPreview = null;
       state.needsStatusHint = false;
       state.needsStatusShake = false;
@@ -190,35 +195,12 @@ const app = createApp({
       }
     };
 
-    const setTorch = async (on) => {
-      try {
-        if (on) {
-          await scanner.turnOffTorch();
-        } else {
-          await scanner.turnOffTorch();
-        }
-        state.torchOn = on;
-      } catch (e) {
-        Toastify({
-          text: `${t("torchFailed")}`,
-          duration: 1000, // 3秒钟后消失
-          gravity: "bottom", // `top` or `bottom`
-          position: "center", // Toast 显示的位置
-          style: {
-            background: "linear-gradient(to right, #ff3333,  #ff3333)",
-          },
-        }).showToast();
-      }
-    };
-
+    // ✅ 选择图片时释放旧 URL
     const onPickPhoto = (e) => {
-      const f = e.target.files?.[0];
-      state.photoFile = f || null;
-      if (f) {
-        state.photoPreview = URL.createObjectURL(f);
-      } else {
-        state.photoPreview = null;
-      }
+      const f = e.target.files?.[0] || null;
+      state.photoFile = f;
+      if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
+      state.photoPreview = f ? URL.createObjectURL(f) : null;
     };
 
     const clearPhoto = () => {
@@ -245,8 +227,11 @@ const app = createApp({
         xhr.open("POST", url);
 
         xhr.upload.onprogress = (evt) => {
-          if (evt.lengthComputable && typeof onProgress === "function") {
-            const pct = Math.round((evt.loaded / evt.total) * 100);
+          if (typeof onProgress === "function") {
+            const pct =
+              evt && evt.lengthComputable && evt.total > 0
+                ? Math.round((evt.loaded / evt.total) * 100)
+                : 0;
             onProgress(pct);
           }
         };
@@ -365,64 +350,42 @@ const app = createApp({
       if (state.isValid) {
         stop();
         hideKeyboard(dnInput);
-        state.DNID = code_result;
-        // state.hasDN = true;
+        state.DNID = code_result.toUpperCase();
+        hideErrorIcon();
+      } else {
+        showErrorIcon();
       }
     }
 
+    // ✅ 实时输入：更新 isValid，并在有效时隐藏错误图标
     function onDNInput(e) {
-      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
-      hideErrorIcon();
-    }
-
-    // 显示错误图标
-    function showErrorIcon() {
-      const errorIconElement = document.getElementById("error-icon");
-      if (errorIconElement) {
-        errorIconElement.style.visibility = "visible"; // 显示错误图标
-      } else {
-        console.error("Error icon element not found!");
-      }
-    }
-
-    // 隐藏错误图标
-    function hideErrorIcon() {
-      const errorIconElement = document.getElementById("error-icon");
-      if (errorIconElement) {
-        errorIconElement.style.visibility = "hidden"; // 隐藏错误图标
-      } else {
-        console.error("Error icon element not found!");
-      }
+      state.DNID = dnInput.value.value.toUpperCase();
+      state.isValid = validateDN(state.DNID);
     }
 
     async function onOkClick(e) {
-      // 获取并转化输入的 DNID 为大写
-      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
-      state.isValid = validateDN(state.DNID); // 验证 DNID
+      // 将输入转为大写并校验
+      state.DNID = dnInput.value.value.toUpperCase();
+      state.isValid = validateDN(state.DNID);
 
-      // 获取类名为 'dnInput' 的第一个元素
+      // 通过类名选中输入区域容器（用于存在性检查）
       const dnInputElement = document.querySelector(".did-input");
-
       if (!dnInputElement) {
-        console.error("dnInput element not found!");
+        console.error("did-input element not found!");
         return;
       }
 
       if (state.isValid) {
-        // 如果验证通过，停止操作并隐藏键盘
+        // 验证通过：停扫描、收键盘、标记、隐藏错误图标
         stop();
         hideKeyboard(dnInput);
         state.hasDN = true;
-
-        // 隐藏错误图标
         hideErrorIcon();
       } else {
-        // 如果验证不通过，显示错误图标
         showErrorIcon();
       }
 
       try {
-        // 获取位置信息并保存到 state.location
         const location = await getLocation();
         state.location = {
           lat: location?.lat ?? null,
@@ -430,7 +393,6 @@ const app = createApp({
         };
       } catch (e) {
         console.error("Failed to get location:", e);
-        // 如果获取位置信息失败，存储空值
         state.location = { lat: null, lng: null };
       }
     }

@@ -419,6 +419,15 @@ body,
   overflow: hidden; /* 圆角裁切 */
 }
 
+#dnInput {
+  flex: 1;
+  margin: 8px 0;
+}
+
+.okBtn {
+  color: var(--accent)
+}
+
 /* 左侧固定前缀：不可编辑的“DID”方块 */
 .did-input .prefix {
   flex: 0 0 auto;
