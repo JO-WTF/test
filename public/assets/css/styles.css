@@ -387,7 +387,6 @@ i.icon-24-scan {
 
   #interactive.viewport canvas,
   video {
-      margin-top: -50px;
       width: 300px;
       height: 400px;
   }
