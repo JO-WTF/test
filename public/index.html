@@ -9,7 +9,7 @@
     <title>Pemindaian - Pembaruan Status</title>
 
     <link rel="stylesheet" href="/assets/css/styles.css" />
-    <link
+    <link rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
     />
 
@@ -48,9 +48,13 @@
 
       <!-- 扫码区 -->
       <section id="container" class="scan-area container" v-show="!state.hasDN">
-        <div id="div-ui-container" style="width:100%;height:100%;">
-          <div class="dce-video-container" style="position:relative;width:100%;height:100%;"></div>
-      </div>
+        <div id="div-ui-container" style="width: 100%; height: 100%">
+          <div
+            class="dce-video-container"
+            style="position: relative; width: 100%; height: 100%"
+          ></div>
+        </div>
+
         <div class="corners">
           <div class="c tl"></div>
           <div class="c tr"></div>
@@ -58,10 +62,6 @@
           <div class="c br"></div>
         </div>
       </section>
-      <div id="result_strip" v-show="state.lang==='zh'">
-        <ul class="thumbnails"></ul>
-        <ul class="collector"></ul>
-      </div>
 
       <!-- DN 手动输入 -->
       <div class="did-input card" style="margin-top: 12px">

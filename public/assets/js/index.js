@@ -28,7 +28,6 @@ const state = reactive({
   photoFile: null,
   photoPreview: null,
   torchOn: false,
-  torchSupported: false,
   running: false,
   last: false,
   isValid: false,
@@ -41,27 +40,6 @@ const state = reactive({
   submitView: {},
   uploadPct: 0,
 });
-
-let currentDeviceId = null;
-let devices = [];
-let deviceIndex = 0;
-let currentStream = null;
-let scanner;
-
-async function setTorch(on) {
-  if (!currentStream) return false;
-  const track = currentStream.getVideoTracks()[0];
-  if (!track) return false;
-  const caps = track.getCapabilities?.() || {};
-  if (!("torch" in caps)) return false;
-  try {
-    await track.applyConstraints({ advanced: [{ torch: !!on }] });
-    state.torchOn = !!on;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // --- 获取经纬度 ---
 async function getLocation() {
@@ -107,9 +85,11 @@ const app = createApp({
     onMounted(async () => {
       try {
         scanner = await Dynamsoft.DBR.BarcodeScanner.createInstance();
-        scanner.onFrameRead = (results) => {
-          if (results.length > 0) console.log(results);
-        };
+        await scanner.setUIElement(document.getElementById("div-ui-container"));
+        scanner.setVideoFit("cover");
+        scanner.barcodeFillStyle = "rgba(73, 245, 73, 0)";
+        scanner.barcodeLineWidth = 5;
+        scanner.barcodeStrokeStyle = "rgba(73, 245, 73, 1)";
         scanner.onUniqueRead = (txt, result) => {
           onCodeScaned(txt);
         };
@@ -123,9 +103,9 @@ const app = createApp({
     const start = async () => {
       // <-- 启动扫描器的方法
       try {
-        await scanner.setUIElement(document.getElementById('div-ui-container'));
-        await scanner.setResolution(1920, 1080);
         await scanner.show();
+        // renderCameraSelector();
+        // renderResolutionSelector();
         state.running = true;
       } catch (e) {
         state.submitOk = false;
@@ -135,9 +115,10 @@ const app = createApp({
     };
 
     const stop = async () => {
-      // <-- 停止扫描器的方法
       try {
-        
+        await scanner.stop();
+        console.log("Scanner stopped");
+
         state.running = false;
       } catch (e) {
         state.submitOk = false;
@@ -150,36 +131,35 @@ const app = createApp({
 
     const showScanControls = computed(() => !state.isValid);
 
-    const torchTagVisible = computed(
-      () => state.running && !state.isValid && state.torchSupported
-    );
+    const torchTagVisible = computed(() => state.running && !state.isValid);
 
     const toggleTorch = async () => {
-      if (!state.torchSupported) return;
       await setTorch(!state.torchOn);
     };
 
     async function nextCamera() {
-      if (!devices.length)
-      devices = await Quagga.CameraAccess.enumerateVideoDevices();
+      // 获取所有可用摄像头
+      let cameras = await scanner.getAllCameras();
 
-      deviceIndex = (deviceIndex + 1) % devices.length; // 切换到下一个摄像头
-      currentDeviceId = devices[deviceIndex].deviceId;
+      // 获取当前正在使用的摄像头
+      let currentCamera = await scanner.getCurrentCamera();
 
-      // 更新状态
-      state.currentDeviceId = currentDeviceId;
+      // 找到当前摄像头的索引
+      let currentCameraIndex = cameras.findIndex(
+        (camera) => camera.deviceId === currentCamera.deviceId
+      );
 
-      // 重新初始化摄像头
-      if (state.running) {
-        await stop();
-        await start();
-      }
+      // 计算下一个摄像头的索引（如果是最后一个摄像头，则返回到第一个摄像头）
+      let nextCameraIndex = (currentCameraIndex + 1) % cameras.length;
 
-      // 显示 Toast 通知
-      const cameraLabel =
-        devices[deviceIndex].label || `Camera ${deviceIndex + 1}`;
+      // 获取下一个摄像头
+      let nextCamera = cameras[nextCameraIndex];
+
+      // 切换到下一个摄像头
+      await scanner.setCurrentCamera(nextCamera);
+
       Toastify({
-        text: `${cameraLabel}`,
+        text: `${nextCamera.label}`,
         duration: 1000, // 3秒钟后消失
         gravity: "bottom", // `top` or `bottom`
         position: "center", // Toast 显示的位置
@@ -207,6 +187,27 @@ const app = createApp({
         await start();
       } catch (e) {
         console.log(e);
+      }
+    };
+
+    const setTorch = async (on) => {
+      try {
+        if (on) {
+          await scanner.turnOffTorch();
+        } else {
+          await scanner.turnOffTorch();
+        }
+        state.torchOn = on;
+      } catch (e) {
+        Toastify({
+          text: `${t("torchFailed")}`,
+          duration: 1000, // 3秒钟后消失
+          gravity: "bottom", // `top` or `bottom`
+          position: "center", // Toast 显示的位置
+          style: {
+            background: "linear-gradient(to right, #ff3333,  #ff3333)",
+          },
+        }).showToast();
       }
     };
 
