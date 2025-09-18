@@ -372,6 +372,27 @@ const app = createApp({
 
     function onDNInput(e) {
       state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
+      hideErrorIcon();
+    }
+
+    // 显示错误图标
+    function showErrorIcon() {
+      const errorIconElement = document.getElementById("error-icon");
+      if (errorIconElement) {
+        errorIconElement.style.visibility = "visible"; // 显示错误图标
+      } else {
+        console.error("Error icon element not found!");
+      }
+    }
+
+    // 隐藏错误图标
+    function hideErrorIcon() {
+      const errorIconElement = document.getElementById("error-icon");
+      if (errorIconElement) {
+        errorIconElement.style.visibility = "hidden"; // 隐藏错误图标
+      } else {
+        console.error("Error icon element not found!");
+      }
     }
 
     async function onOkClick(e) {
@@ -380,19 +401,12 @@ const app = createApp({
       state.isValid = validateDN(state.DNID); // 验证 DNID
 
       // 获取类名为 'dnInput' 的第一个元素
-      const dnInputElement = document.querySelector(".did-input"); // 使用 querySelector 获取类名为 dnInput 的元素
+      const dnInputElement = document.querySelector(".did-input");
 
       if (!dnInputElement) {
         console.error("dnInput element not found!");
         return;
       }
-
-      // 创建 ❌ 图标元素
-      const errorIcon = document.createElement("span");
-      errorIcon.textContent = "❌";
-      errorIcon.style.fontSize = "20px"; // 适当的字体大小
-      errorIcon.style.marginLeft = "10px"; // 控制图标和输入框的间距
-      errorIcon.style.color = "red"; // 给图标加上红色，确保显示出来
 
       if (state.isValid) {
         // 如果验证通过，停止操作并隐藏键盘
@@ -400,20 +414,11 @@ const app = createApp({
         hideKeyboard(dnInput);
         state.hasDN = true;
 
-        // 移除错误图标（如果之前显示了的话）
-        const errorIconElement = document.getElementById("error-icon");
-        if (errorIconElement) {
-          errorIconElement.style.visibility = "hidden";
-        }
+        // 隐藏错误图标
+        hideErrorIcon();
       } else {
         // 如果验证不通过，显示错误图标
-        let errorIconElement = document.getElementById("error-icon");
-        if (!errorIconElement) {
-          errorIconElement = errorIcon;
-          errorIconElement.id = "error-icon"; // 给图标添加唯一 ID
-          dnInputElement.appendChild(errorIconElement); // 将 ❌ 图标添加到 dnInput 元素的父容器
-        }
-        errorIconElement.style.visibility = "visible"; // 确保图标显示
+        showErrorIcon();
       }
 
       try {

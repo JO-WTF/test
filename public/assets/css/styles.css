@@ -97,9 +97,9 @@ video {
 }
 .c {
   position: absolute;
-  width: 18%;
+  width: 13%;
   height: 20%;
-  border: 3px solid #ffbb66;
+  border: 3px solid var(--accent);
 }
 .tl {
   left: 30px;

@@ -65,13 +65,10 @@
 
       <!-- DN 手动输入 -->
       <div class="did-input card" style="margin-top: 12px">
-        <label for="dnInput" style="display: block; margin-bottom: 6px"
-          >{{ t('didLabel') }}</label
-        >
-        <div
-          class="did-row"
-          style="display: flex; align-items: center; gap: 8px"
-        >
+        <label for="dnInput" style="display: block; margin-bottom: 6px">
+          {{ t('didLabel') }}
+        </label>
+        <div class="did-row" style="display: flex; align-items: center; gap: 8px">
           <input
             id="dnInput"
             ref="dnInput"
@@ -96,7 +93,15 @@
             OK
           </button>
         </div>
+        <!-- 错误图标，初始设置为隐藏 -->
+        <span
+        id="error-icon"
+        style="visibility: hidden; font-size: 20px; color: red; margin-left: 10px;"
+      >
+        ❌
+      </span>
       </div>
+      
 
       <!-- 闪光灯状态条 -->
       <button
