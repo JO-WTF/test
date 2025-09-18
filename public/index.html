@@ -9,19 +9,14 @@
     <title>Pemindaian - Pembaruan Status</title>
 
     <link rel="stylesheet" href="/assets/css/styles.css" />
-    <link rel="stylesheet" href="/test.css" />
-
-    <!-- Vue 3 & Quagga & Toastify (UMD 全局) -->
-    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link
+      rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
     />
 
     <!-- 公共配置 & i18n 核心（提供全局 I18NCore） -->
     <script src="/config.js"></script>
     <script src="/assets/js/i18n/core.js"></script>
-
   </head>
   <body>
     <div id="app" class="wrap">
@@ -54,7 +49,13 @@
 
       <!-- 扫码区 -->
       <section id="container" class="scan-area container" v-show="!state.hasDN">
-        <div id="interactive" class="viewport"></div>
+        <div id="div-ui-container" style="width: 100%; height: 100%">
+          <div
+            class="dce-video-container"
+            style="position: relative; width: 100%; height: 100%"
+          ></div>
+        </div>
+
         <div class="corners">
           <div class="c tl"></div>
           <div class="c tr"></div>
@@ -62,20 +63,29 @@
           <div class="c br"></div>
         </div>
       </section>
-      <div id="result_strip" v-show="state.lang==='zh'">
-        <ul class="thumbnails"></ul>
-        <ul class="collector"></ul>
-      </div>
-
       <!-- DN 手动输入 -->
       <div class="did-input card" style="margin-top: 12px">
-        <label for="dnInput" style="display: block; margin-bottom: 6px"
-          >{{ t('didLabel') }}</label
-        >
+        <label for="dnInput"> {{ t('didLabel') }} </label>
         <div
           class="did-row"
-          style="display: flex; align-items: center; gap: 8px"
+          style="display: flex; align-items: center; gap: 5px"
         >
+          <!-- 错误或成功图标，根据 state.isValid 来判断 -->
+          <span
+            id="error-icon"
+            v-if="!state.isValid"
+            style="color: red; margin-left: 10px; font-size: 20px"
+          >
+            ❌
+          </span>
+          <span
+            id="success-icon"
+            v-if="state.isValid"
+            style="color: green; margin-left: 10px; font-size: 20px"
+          >
+            ✅
+          </span>
+
           <input
             id="dnInput"
             ref="dnInput"
@@ -85,20 +95,8 @@
             style="flex: 1"
             @input="onDNInput"
           />
-          <button
-            type="button"
-            @click="onOkClick"
-            style="
-              padding: 8px 16px;
-              background-color: #007bff;
-              color: white;
-              border: none;
-              border-radius: 4px;
-              cursor: pointer;
-            "
-          >
-            OK
-          </button>
+
+          <button class="okBtn" type="button" @click="onOkClick">OK</button>
         </div>
       </div>
 
@@ -179,7 +177,6 @@
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       @change="onPickPhoto"
                     />
                     <small class="muted">{{ t('photoTip') }}</small>
@@ -262,7 +259,9 @@
         </template>
       </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-javascript-barcode@9.6.40/dist/dbr.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script type="module" src="/assets/js/index.js"></script>
   </body>
 </html>

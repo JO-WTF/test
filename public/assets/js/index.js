@@ -6,7 +6,8 @@ import {
   computed,
 } from "https://unpkg.com/vue@3.2.45/dist/vue.esm-browser.js";
 
-import "https://cdn.jsdelivr.net/npm/scanbot-web-sdk@latest/bundle/ScanbotSDK.ui2.min.js";
+Dynamsoft.DBR.BarcodeScanner.license =
+  "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0NTQzNDEwLU1UQTBOVFF6TkRFd0xYZGxZaTFVY21saGJGQnliMm8iLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tZGxzLmR5bmFtc29mdG9ubGluZS5jb20iLCJvcmdhbml6YXRpb25JRCI6IjEwNDU0MzQxMCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NkbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsImNoZWNrQ29kZSI6MTg2NjI4MDUzMX0=";
 
 // --- i18n 初始化（扁平 JSON + 显式 ns）---
 const i18n = I18NCore.createI18n({
@@ -19,7 +20,7 @@ await i18n.init();
 // --- 全局状态 ---
 const state = reactive({
   ...i18n.state,
-  location: "",
+  location: null, // ✅ 保持对象/空一致
   hasDN: false,
   DNID: "",
   duStatus: "",
@@ -27,7 +28,6 @@ const state = reactive({
   photoFile: null,
   photoPreview: null,
   torchOn: false,
-  torchSupported: false,
   running: false,
   last: false,
   isValid: false,
@@ -41,88 +41,22 @@ const state = reactive({
   uploadPct: 0,
 });
 
-let currentDeviceId = null;
-let devices = [];
-let deviceIndex = 0;
-let currentStream = null;
-let scanner;
-
-const sdk = await ScanbotSDK.initialize({
-  // licenseKey: "KH1nmhmptRSxGqMQ5BhSpleutwfhXC" +
-  // "eOcDnM2KfTF6s46RYW1En5HCWXlyIU" +
-  // "+KS10sRn56VZu93HfAyQAbmXgRfa9v" +
-  // "IdpdqaTs3ZtfXCXYyDdVq/pdimdtky" +
-  // "Ykcj7sLQzj9BAUhYRsgepbBzlpj4ao" +
-  // "9G9KkIzEL+X4GLtpg2kiqnK/J+wmx5" +
-  // "3iqaCqscIE5EyqZAvZKVbHpNlfqt8h" +
-  // "TIM5Jpot0jj0A3kCNl1IhhM7a/2w3l" +
-  // "g/cD3jwJy/AcRkobKeq42dsJt9Vq9/" +
-  // "GMtLlO2iuZrp1v62yXEnFL5vFOnukW" +
-  // "EtC/ARPl/5nsXk067Htwz7YI7rqd3Y" +
-  // "QWnUuaAl9LPA==\nU2NhbmJvdFNESw" +
-  // "psb2NhbGhvc3R8aWRuc2MuZHBkbnMu" +
-  // "b3JnCjE3NTg3NTgzOTkKODM4ODYwNw" +
-  // "o4\n",
-  enginePath: "https://cdn.jsdelivr.net/npm/scanbot-web-sdk@7.2.0/bundle/bin/complete/"
-});
-const configuration = {
-  //  The `id` of the containing HTML element where the Barcode Scanner will be initialized.
-  containerId: "interactive",
-  onBarcodesDetected: (result) => {
-    console.log(result.barcodes[0].text);
-    let isValid = validateDN(result.barcodes[0].text);
-    if (isValid) {
-      scanner.dispose();
-      state.DNID = result.barcodes[0].text;
-      state.isValid = true;
-      // state.hasDN = true;
-    }
-  },
-};
-
-async function setTorch(on) {
-  if (!currentStream) return false;
-  const track = currentStream.getVideoTracks()[0];
-  if (!track) return false;
-  const caps = track.getCapabilities?.() || {};
-  if (!("torch" in caps)) return false;
-  try {
-    await track.applyConstraints({ advanced: [{ torch: !!on }] });
-    state.torchOn = !!on;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// --- 获取经纬度 ---
+// --- 获取经纬度（更友好错误信息）---
 async function getLocation() {
   return new Promise((resolve, reject) => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          reject("Unable to retrieve location");
-        }
-      );
-    } else {
-      reject("Geolocation is not supported by this browser");
-    }
+    if (!navigator.geolocation) return reject("Geolocation not supported");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) =>
+        reject(`Location error (${err.code}): ${err.message || "Unknown"}`)
+    );
   });
 }
 
-function validateDN(result_text) {
-  const regex = /^[A-Za-z]{1,5}[0-9A-Za-z]{9,13}$/;
-  return (
-    regex.test(result_text) &&
-    result_text.length >= 14 &&
-    result_text.length <= 18
-  );
+// --- DN 校验：单条正则内合并长度要求 ---
+function validateDN(text) {
+  // 总长 14–18；前缀 1–5 位字母；后续为字母数字
+  return /^(?=.{14,18}$)[A-Za-z]{1,5}[0-9A-Za-z]+$/.test(text);
 }
 
 // --- Vue App ---
@@ -134,82 +68,108 @@ const app = createApp({
       state.lang = lang;
     };
 
+    let scanner;
+    let $errorIcon = null; // ✅ 缓存错误图标，避免反复查询
+
     onMounted(async () => {
-      // <-- 这里是生命周期钩子
+      // 缓存错误图标节点
+      $errorIcon = document.getElementById("error-icon");
+
       try {
+        scanner = await Dynamsoft.DBR.BarcodeScanner.createInstance();
+        await scanner.setUIElement(document.getElementById("div-ui-container"));
+        scanner.setVideoFit("cover");
+        scanner.barcodeFillStyle = "rgba(73, 245, 73, 0)";
+        scanner.barcodeLineWidth = 5;
+        scanner.barcodeStrokeStyle = "rgba(73, 245, 73, 1)";
+        scanner.onUniqueRead = (txt, result) => {
+          onCodeScaned(txt);
+        };
         await start();
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
+        state.submitMsg = (e && e.message) || "Camera start failed";
       }
     });
 
     const start = async () => {
-      // <-- 启动扫描器的方法
       try {
-        scanner = await sdk.createBarcodeScanner(configuration);
+        await scanner.show();
         state.running = true;
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera start failed"; // <-- 错误处理
+        state.submitMsg = (e && e.message) || "Camera start failed";
       }
+      console.log("running:", state.running);
     };
 
     const stop = async () => {
-      // <-- 停止扫描器的方法
       try {
-        if (scanner) {
-          scanner.dispose();
-          state.running = false;
-        } else {
-          console.warn("no scanner");
-        }
+        await scanner.stop();
+        console.log("Scanner stopped");
+        state.running = false;
       } catch (e) {
         state.submitOk = false;
-        state.submitMsg = (e && e.message) || "Camera stop failed"; // <-- 错误处理
+        state.submitMsg = (e && e.message) || "Camera stop failed";
       }
+      console.log("running:", state.running);
     };
 
     const dnInput = ref(null);
 
     const showScanControls = computed(() => !state.isValid);
-
-    const torchTagVisible = computed(
-      () => state.running && !state.isValid && state.torchSupported
-    );
+    const torchTagVisible = computed(() => state.running && !state.isValid);
 
     const toggleTorch = async () => {
-      if (!state.torchSupported) return;
       await setTorch(!state.torchOn);
     };
 
-    async function nextCamera() {
-      if (!devices.length)
-        devices = await Quagga.CameraAccess.enumerateVideoDevices();
-
-      deviceIndex = (deviceIndex + 1) % devices.length; // 切换到下一个摄像头
-      currentDeviceId = devices[deviceIndex].deviceId;
-
-      // 更新状态
-      state.currentDeviceId = currentDeviceId;
-
-      // 重新初始化摄像头
-      if (state.running) {
-        await stop();
-        await start();
+    // ✅ 修正 torch 开关逻辑
+    const setTorch = async (on) => {
+      try {
+        if (on) {
+          await scanner.turnOnTorch();
+        } else {
+          await scanner.turnOffTorch();
+        }
+        state.torchOn = on;
+      } catch (e) {
+        Toastify({
+          text: `${t("torchFailed")}`,
+          duration: 1000,
+          gravity: "bottom",
+          position: "center",
+          style: { background: "linear-gradient(to right, #ff3333,  #ff3333)" },
+        }).showToast();
       }
+    };
 
-      // 显示 Toast 通知
-      const cameraLabel =
-        devices[deviceIndex].label || `Camera ${deviceIndex + 1}`;
+    // ✅ 相机切换更健壮
+    async function nextCamera() {
+      const cameras = await scanner.getAllCameras();
+      if (!Array.isArray(cameras) || cameras.length === 0) return;
+      if (cameras.length === 1) {
+        Toastify({
+          text: t("onlyOneCamera") || "Only one camera",
+          duration: 1000,
+          gravity: "bottom",
+          position: "center",
+        }).showToast();
+        return;
+      }
+      const current = await scanner.getCurrentCamera();
+      const idx = Math.max(
+        0,
+        cameras.findIndex((c) => c.deviceId === current?.deviceId)
+      );
+      const next = cameras[(idx + 1) % cameras.length];
+      await scanner.setCurrentCamera(next);
       Toastify({
-        text: `${cameraLabel}`,
-        duration: 1000, // 3秒钟后消失
-        gravity: "bottom", // `top` or `bottom`
-        position: "center", // Toast 显示的位置
-        style: {
-          background: "linear-gradient(to right, #00b09b, #96c93d)",
-        },
+        text: `${next?.label || "Camera"}`,
+        duration: 1000,
+        gravity: "bottom",
+        position: "center",
+        style: { background: "linear-gradient(to right, #00b09b, #96c93d)" },
       }).showToast();
     }
 
@@ -221,6 +181,7 @@ const app = createApp({
       state.duStatus = "";
       state.remark = "";
       state.photoFile = null;
+      if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
       state.photoPreview = null;
       state.needsStatusHint = false;
       state.needsStatusShake = false;
@@ -234,14 +195,12 @@ const app = createApp({
       }
     };
 
+    // ✅ 选择图片时释放旧 URL
     const onPickPhoto = (e) => {
-      const f = e.target.files?.[0];
-      state.photoFile = f || null;
-      if (f) {
-        state.photoPreview = URL.createObjectURL(f);
-      } else {
-        state.photoPreview = null;
-      }
+      const f = e.target.files?.[0] || null;
+      state.photoFile = f;
+      if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
+      state.photoPreview = f ? URL.createObjectURL(f) : null;
     };
 
     const clearPhoto = () => {
@@ -268,8 +227,11 @@ const app = createApp({
         xhr.open("POST", url);
 
         xhr.upload.onprogress = (evt) => {
-          if (evt.lengthComputable && typeof onProgress === "function") {
-            const pct = Math.round((evt.loaded / evt.total) * 100);
+          if (typeof onProgress === "function") {
+            const pct =
+              evt && evt.lengthComputable && evt.total > 0
+                ? Math.round((evt.loaded / evt.total) * 100)
+                : 0;
             onProgress(pct);
           }
         };
@@ -383,55 +345,47 @@ const app = createApp({
       }
     };
 
+    async function onCodeScaned(code_result) {
+      state.isValid = validateDN(code_result);
+      if (state.isValid) {
+        stop();
+        hideKeyboard(dnInput);
+        state.DNID = code_result.toUpperCase();
+        hideErrorIcon();
+      } else {
+        showErrorIcon();
+      }
+    }
+
+    // ✅ 实时输入：更新 isValid，并在有效时隐藏错误图标
     function onDNInput(e) {
-      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
+      state.DNID = dnInput.value.value.toUpperCase();
+      state.isValid = validateDN(state.DNID);
     }
 
     async function onOkClick(e) {
-      // 获取并转化输入的 DNID 为大写
-      state.DNID = dnInput.value.value.toUpperCase(); // 转为大写
-      state.isValid = validateDN(state.DNID); // 验证 DNID
-      console.log(state.isValid);
-    
-      // 获取类名为 'dnInput' 的第一个元素
-      const dnInputElement = document.querySelector('.did-input');  // 使用 querySelector 获取类名为 dnInput 的元素
-    
+      // 将输入转为大写并校验
+      state.DNID = dnInput.value.value.toUpperCase();
+      state.isValid = validateDN(state.DNID);
+
+      // 通过类名选中输入区域容器（用于存在性检查）
+      const dnInputElement = document.querySelector(".did-input");
       if (!dnInputElement) {
-        console.error('dnInput element not found!');
+        console.error("did-input element not found!");
         return;
       }
-    
-      // 创建 ❌ 图标元素
-      const errorIcon = document.createElement('span');
-      errorIcon.textContent = '❌';
-      errorIcon.style.fontSize = '20px'; // 适当的字体大小
-      errorIcon.style.marginLeft = '10px'; // 控制图标和输入框的间距
-      errorIcon.style.color = 'red'; // 给图标加上红色，确保显示出来
-    
+
       if (state.isValid) {
-        // 如果验证通过，停止操作并隐藏键盘
+        // 验证通过：停扫描、收键盘、标记、隐藏错误图标
         stop();
         hideKeyboard(dnInput);
         state.hasDN = true;
-    
-        // 移除错误图标（如果之前显示了的话）
-        const errorIconElement = document.getElementById('error-icon');
-        if (errorIconElement) {
-          errorIconElement.style.visibility = 'hidden';
-        }
+        hideErrorIcon();
       } else {
-        // 如果验证不通过，显示错误图标
-        let errorIconElement = document.getElementById('error-icon');
-        if (!errorIconElement) {
-          errorIconElement = errorIcon;
-          errorIconElement.id = 'error-icon'; // 给图标添加唯一 ID
-          dnInputElement.appendChild(errorIconElement); // 将 ❌ 图标添加到 dnInput 元素的父容器
-        }
-        errorIconElement.style.visibility = 'visible'; // 确保图标显示
+        showErrorIcon();
       }
-    
+
       try {
-        // 获取位置信息并保存到 state.location
         const location = await getLocation();
         state.location = {
           lat: location?.lat ?? null,
@@ -439,11 +393,9 @@ const app = createApp({
         };
       } catch (e) {
         console.error("Failed to get location:", e);
-        // 如果获取位置信息失败，存储空值
         state.location = { lat: null, lng: null };
       }
     }
-    
 
     function hideKeyboard(inputEl) {
       try {
