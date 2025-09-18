@@ -75,7 +75,7 @@ const configuration = {
       scanner.dispose();
       state.DNID = result.barcodes[0].text;
       state.isValid = true;
-      state.hasDN = true;
+      // state.hasDN = true;
     }
   },
 };
