@@ -491,7 +491,7 @@ body,
 
 @media (max-width: 603px) {
   #container {
-    width: 300px;
+    width: 100%;
     margin: 10px auto;
     -moz-box-shadow: none;
     -webkit-box-shadow: none;
