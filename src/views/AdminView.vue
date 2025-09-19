@@ -187,7 +187,7 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { createI18n, detectLang } from '../i18n/core';
+import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
 import 'viewerjs/dist/viewer.css';
@@ -209,15 +209,14 @@ const applyTranslations = () => {
 const changeLang = async (lang) => {
   if (!i18nInstance) return;
   await i18nInstance.setLang(lang);
-  currentLang.value = lang;
-  applyTranslations();
-  document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : lang);
-  localStorage.setItem('lang', lang);
 };
 
 onMounted(async () => {
-  const savedLang = localStorage.getItem('lang') || detectLang('zh');
-  i18nInstance = createI18n({ namespaces: ['admin'], lang: savedLang, fallbackLang: 'en' });
+  i18nInstance = createI18n({
+    namespaces: ['admin'],
+    fallbackLang: 'en',
+    defaultLang: 'zh',
+  });
   await i18nInstance.init();
   currentLang.value = i18nInstance.state.lang;
   applyTranslations();

@@ -213,7 +213,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Toastify from 'toastify-js';
-import { createI18n, detectLang } from '../i18n/core';
+import { createI18n } from '../i18n/core';
 import { useBodyTheme } from '../composables/useBodyTheme';
 
 const LICENSE_KEY =
@@ -225,10 +225,11 @@ if (window?.Dynamsoft?.DBR?.BarcodeScanner) {
 
 const i18n = createI18n({
   namespaces: ['index'],
-  lang: detectLang('id'),
   fallbackLang: 'id',
+  defaultLang: 'id',
 });
 await i18n.init();
+document.documentElement.setAttribute('lang', i18n.state.lang === 'zh' ? 'zh-CN' : i18n.state.lang);
 
 useBodyTheme('scan-theme');
 

@@ -1,44 +1,75 @@
 <template>
   <div class="wrap dashboard-view" ref="dashboardRoot">
+    <div class="lang-switch" aria-label="Language switch">
+      <button
+        :class="{ active: currentLang === 'zh' }"
+        aria-label="切换为中文"
+        @click="() => changeLang('zh')"
+      >
+        <img src="https://flagcdn.com/w20/cn.png" alt="CN" />中文
+      </button>
+      <button
+        :class="{ active: currentLang === 'en' }"
+        aria-label="Switch to English"
+        @click="() => changeLang('en')"
+      >
+        <img src="https://flagcdn.com/w20/gb.png" alt="GB" />English
+      </button>
+      <button
+        :class="{ active: currentLang === 'id' }"
+        aria-label="Beralih ke Bahasa Indonesia"
+        @click="() => changeLang('id')"
+      >
+        <img src="https://flagcdn.com/w20/id.png" alt="ID" />Indonesia
+      </button>
+    </div>
+
     <header class="header">
       <div>
-        <div class="title"><span class="big">Overall Deliveries</span></div>
-        <div class="sub" id="meta">Date：— ・ Total: —</div>
+        <div class="title"><span class="big" data-i18n="title">Overall Deliveries</span></div>
+        <div class="sub" id="meta" data-i18n="metaPlaceholder">Date：— ・ Total: —</div>
       </div>
       <div class="controls">
-        <input id="q" class="input" placeholder="Filter Region/Project…" />
+        <input
+          id="q"
+          class="input"
+          placeholder="Filter Region/Project…"
+          data-i18n-placeholder="filterPlaceholder"
+        />
         <select id="datePicker" class="select"></select>
         <button
           id="toggleZero"
           class="btn primary"
           title="切换是否弱化为 0 的单元格"
+          data-i18n="controls.highlightNonZero"
+          data-i18n-title="controls.toggleZeroTitle"
         >
           Highlight Non-Zero
         </button>
-        <button id="dl" class="btn">Export CSV</button>
+        <button id="dl" class="btn" data-i18n="controls.exportCsv">Export CSV</button>
       </div>
     </header>
 
     <section class="grid cols-3" style="margin: 16px 0">
       <div class="infocard">
         <div>
-          <div class="k">POD</div>
+          <div class="k" data-i18n="infocard.pod.title">POD</div>
           <div id="podTotal" class="v">—</div>
-          <div class="k">Successful Delivery</div>
+          <div class="k" data-i18n="infocard.pod.desc">Successful Delivery</div>
         </div>
       </div>
       <div class="infocard">
         <div>
-          <div class="k">Replan</div>
+          <div class="k" data-i18n="infocard.replan.title">Replan</div>
           <div id="replanTotal" class="v">—</div>
-          <div class="k">REPLANs made by LSP or Project</div>
+          <div class="k" data-i18n="infocard.replan.desc">REPLANs made by LSP or Project</div>
         </div>
       </div>
       <div class="infocard">
         <div>
-          <div class="k">Closed</div>
+          <div class="k" data-i18n="infocard.closed.title">Closed</div>
           <div id="closedTotal" class="v">—</div>
-          <div class="k">Closed or cancelled</div>
+          <div class="k" data-i18n="infocard.closed.desc">Closed or cancelled</div>
         </div>
       </div>
     </section>
@@ -60,15 +91,16 @@
         style="padding: 12px; border-top: 1px solid var(--line); background: #f8fafc"
       >
         <div class="legend">
-          <span class="chip">POD</span><span class="desc">已交付证明</span>
+          <span class="chip" data-i18n="legend.pod">POD</span
+          ><span class="desc" data-i18n="legend.pod.desc">已交付证明</span>
         </div>
         <div class="legend">
-          <span class="chip">WAITING PIC FEEDBACK</span
-          ><span class="desc">等待图片反馈</span>
+          <span class="chip" data-i18n="legend.waitingPic">WAITING PIC FEEDBACK</span
+          ><span class="desc" data-i18n="legend.waitingPic.desc">等待图片反馈</span>
         </div>
         <div class="legend">
-          <span class="chip">REPLAN MOS…</span
-          ><span class="desc">因项目/LSP 延误需要重排</span>
+          <span class="chip" data-i18n="legend.replan">REPLAN MOS…</span
+          ><span class="desc" data-i18n="legend.replan.desc">因项目/LSP 延误需要重排</span>
         </div>
       </div>
     </section>
@@ -85,20 +117,56 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { createI18n } from '../i18n/core';
+import { applyI18n } from '../i18n/dom';
 import { setupDashboardPage } from './dashboard/setupDashboardPage';
 import { useBodyTheme } from '../composables/useBodyTheme';
 
 const dashboardRoot = ref(null);
-let cleanup = () => {};
+const currentLang = ref('en');
+let pageController = null;
+let i18nInstance = null;
 
 useBodyTheme('dashboard-theme');
 
-onMounted(() => {
-  cleanup = setupDashboardPage(dashboardRoot.value);
+const applyTranslations = () => {
+  if (dashboardRoot.value && i18nInstance) {
+    applyI18n(dashboardRoot.value, i18nInstance);
+  }
+};
+
+const changeLang = async (lang) => {
+  if (!i18nInstance || !lang || lang === currentLang.value) return;
+  await i18nInstance.setLang(lang);
+};
+
+onMounted(async () => {
+  i18nInstance = createI18n({
+    namespaces: ['dashboard'],
+    fallbackLang: 'en',
+    defaultLang: 'en',
+  });
+  await i18nInstance.init();
+  currentLang.value = i18nInstance.state.lang;
+  applyTranslations();
+  document.documentElement.setAttribute(
+    'lang',
+    currentLang.value === 'zh' ? 'zh-CN' : currentLang.value
+  );
+
+  const translator = (key, vars) => i18nInstance.t(key, vars);
+  pageController = setupDashboardPage(dashboardRoot.value, { t: translator });
+
+  i18nInstance.onChange((lang) => {
+    currentLang.value = lang;
+    applyTranslations();
+    document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : lang);
+    pageController?.updateI18n?.({ t: translator });
+  });
 });
 
 onBeforeUnmount(() => {
-  cleanup?.();
+  pageController?.destroy?.();
 });
 </script>
 
