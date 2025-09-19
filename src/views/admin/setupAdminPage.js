@@ -56,6 +56,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   let currentRoleKey = null;
   let currentUserInfo = null;
   let cachedItems = [];
+  let removeI18nListener = null;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
@@ -154,6 +155,12 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       normalizeDnInput({ enforceFormat: false });
     }
   };
+
+  if (i18n && typeof i18n.onChange === 'function') {
+    removeI18nListener = i18n.onChange(() => {
+      applyAllTranslations();
+    });
+  }
 
   function toAbsUrl(u) {
     if (!u) return '';
@@ -1338,6 +1345,11 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
 
   return () => {
     controller.abort();
+    try {
+      removeI18nListener?.();
+    } catch (err) {
+      console.error(err);
+    }
     if (viewer) {
       try {
         viewer.destroy();
