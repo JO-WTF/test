@@ -1,4 +1,5 @@
 const STATUS_ORDER = [
+  'NEW MOS',
   'PREPARE VEHICLE',
   'ON THE WAY',
   'ON SITE',
@@ -8,11 +9,11 @@ const STATUS_ORDER = [
   'REPLAN MOS DUE TO LSP DELAY',
   'CLOSE BY RN',
   'CANCEL MOS',
-  'NO STATUS',
   'TOTAL',
 ];
 
 const STATUS_LABEL_KEYS = {
+  'NEW MOS': 'status.newMos',
   'PREPARE VEHICLE': 'status.prepareVehicle',
   'ON THE WAY': 'status.onTheWay',
   'ON SITE': 'status.onSite',
@@ -22,9 +23,13 @@ const STATUS_LABEL_KEYS = {
   'REPLAN MOS DUE TO LSP DELAY': 'status.replanLspDelay',
   'CLOSE BY RN': 'status.closeByRn',
   'CANCEL MOS': 'status.cancelMos',
-  'NO STATUS': 'status.noStatus',
   TOTAL: 'status.total',
 };
+
+const STATUS_INDEX = STATUS_ORDER.reduce((acc, key, idx) => {
+  acc[key] = idx;
+  return acc;
+}, {});
 
 const API_BASE =
   (window.APP_CONFIG && window.APP_CONFIG.API_BASE) ||
@@ -138,9 +143,17 @@ export function setupDashboardPage(rootEl, opts = {}) {
     const podTotal = $('#podTotal');
     const replanTotal = $('#replanTotal');
     const closedTotal = $('#closedTotal');
-    if (podTotal) podTotal.textContent = totals[3];
-    if (replanTotal) replanTotal.textContent = totals[4] + totals[6];
-    if (closedTotal) closedTotal.textContent = totals[7] + totals[8];
+    const idxPod = STATUS_INDEX.POD ?? STATUS_ORDER.indexOf('POD');
+    if (podTotal) podTotal.textContent = totals[idxPod] ?? 0;
+
+    const idxReplanProject = STATUS_INDEX['REPLAN MOS PROJECT'] ?? STATUS_ORDER.indexOf('REPLAN MOS PROJECT');
+    const idxReplanLsp = STATUS_INDEX['REPLAN MOS DUE TO LSP DELAY'] ?? STATUS_ORDER.indexOf('REPLAN MOS DUE TO LSP DELAY');
+    if (replanTotal)
+      replanTotal.textContent = (totals[idxReplanProject] ?? 0) + (totals[idxReplanLsp] ?? 0);
+
+    const idxCloseRn = STATUS_INDEX['CLOSE BY RN'] ?? STATUS_ORDER.indexOf('CLOSE BY RN');
+    const idxCancel = STATUS_INDEX['CANCEL MOS'] ?? STATUS_ORDER.indexOf('CANCEL MOS');
+    if (closedTotal) closedTotal.textContent = (totals[idxCloseRn] ?? 0) + (totals[idxCancel] ?? 0);
 
     const thead = $('#thead-row');
     if (thead) {

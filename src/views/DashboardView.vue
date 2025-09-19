@@ -95,7 +95,7 @@
           ><span class="desc" data-i18n="legend.pod.desc">已交付证明</span>
         </div>
         <div class="legend">
-          <span class="chip" data-i18n="legend.waitingPic">WAITING PIC FEEDBACK</span
+          <span class="chip" data-i18n="legend.waitingPic">WAITING PHOTO FEEDBACK</span
           ><span class="desc" data-i18n="legend.waitingPic.desc">等待图片反馈</span>
         </div>
         <div class="legend">
