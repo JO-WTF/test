@@ -19,6 +19,7 @@
     "photoTip": "Dukung kamera atau galeri",
     "removePhoto": "Hapus Foto",
     "needSelectStatus": "Silakan pilih status pengiriman",
+    "needWatermarkedPhoto": "Harap unggah foto penyerahan dengan watermark sebelum mengirim.",
     "invalidId": "ID DU tidak valid",
     "submit": "Kirim",
     "submitting": "Mengirim…",

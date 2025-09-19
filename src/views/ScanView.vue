@@ -474,6 +474,16 @@ const submitUpdate = async () => {
     return;
   }
 
+  if (!state.photoFile && !state.photoPreview) {
+    Toastify({
+      text: t('needWatermarkedPhoto'),
+      duration: 3000,
+      gravity: 'bottom',
+      position: 'center',
+    }).showToast();
+    return;
+  }
+
   state.submitting = true;
   state.uploadPct = 0;
   state.submitMsg = '';
