@@ -1,30 +1,28 @@
-const STATUS_ORDER = [
-  'NEW MOS',
-  'PREPARE VEHICLE',
-  'ON THE WAY',
-  'ON SITE',
-  'POD',
-  'REPLAN MOS PROJECT',
-  'WAITING PIC FEEDBACK',
-  'REPLAN MOS DUE TO LSP DELAY',
-  'CLOSE BY RN',
-  'CANCEL MOS',
-  'TOTAL',
-];
+import { STATUS_ORDERED_LIST, STATUS_TRANSLATION_KEYS } from '../../config.js';
 
-const STATUS_LABEL_KEYS = {
-  'NEW MOS': 'status.newMos',
-  'PREPARE VEHICLE': 'status.prepareVehicle',
-  'ON THE WAY': 'status.onTheWay',
-  'ON SITE': 'status.onSite',
-  POD: 'status.pod',
-  'REPLAN MOS PROJECT': 'status.replanProject',
-  'WAITING PIC FEEDBACK': 'status.waitingFeedback',
-  'REPLAN MOS DUE TO LSP DELAY': 'status.replanLspDelay',
-  'CLOSE BY RN': 'status.closeByRn',
-  'CANCEL MOS': 'status.cancelMos',
-  TOTAL: 'status.total',
+const TOTAL_STATUS_KEY = 'TOTAL';
+
+const EXTRA_STATUS_TRANSLATIONS = {
+  [TOTAL_STATUS_KEY]: 'status.total',
 };
+
+const EXTRA_STATUS_FALLBACKS = {
+  [TOTAL_STATUS_KEY]: 'Total',
+};
+
+const STATUS_ORDER = [...STATUS_ORDERED_LIST, TOTAL_STATUS_KEY];
+
+const STATUS_LABEL_KEYS = STATUS_ORDER.reduce((acc, status) => {
+  const key =
+    STATUS_TRANSLATION_KEYS[status] || EXTRA_STATUS_TRANSLATIONS[status] || '';
+  if (key) acc[status] = key;
+  return acc;
+}, {});
+
+const STATUS_FALLBACK_LABEL_MAP = STATUS_ORDER.reduce((acc, status) => {
+  acc[status] = EXTRA_STATUS_FALLBACKS[status] || status;
+  return acc;
+}, {});
 
 const STATUS_INDEX = STATUS_ORDER.reduce((acc, key, idx) => {
   acc[key] = idx;
@@ -82,7 +80,8 @@ export function setupDashboardPage(rootEl, opts = {}) {
 
   const statusLabel = (status) => {
     const key = STATUS_LABEL_KEYS[status];
-    return key ? translate(key, undefined, status) : status;
+    const fallback = STATUS_FALLBACK_LABEL_MAP[status] || status;
+    return key ? translate(key, undefined, fallback) : fallback;
   };
 
   const updateToggleZeroButton = () => {
