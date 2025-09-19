@@ -57,7 +57,7 @@ body {
 }
 
 .input {
-  width: 220px;
+  max-width: 180px;
   border: 1px solid var(--line);
   background: #ffffff;
   padding: 8px 12px;
@@ -191,7 +191,7 @@ td.sticky {
   left: 0;
   z-index: 11;
   background: inherit;
-  min-width: 220px;
+  min-width: 150px;
 }
 
 .chip {
@@ -258,11 +258,14 @@ tfoot th {
 /* 移动端适配 */
 @media (max-width: 720px) {
   .wrap {
-    padding: 16px;
+    padding: 8px;
+    width: 98%;
   }
 
   .controls {
     width: 100%;
+    flex-wrap: wrap; /* 允许换行 */
+    justify-content: flex-start; /* 按钮靠左对齐 */
   }
 
   .input {
@@ -277,12 +280,23 @@ tfoot th {
   .grid.cols-3 {
     grid-template-columns: 1fr;
   }
+
+  /* 取消隐藏表格 */
+  .table-section {
+    display: block;
+  }
+
+  /* 保持卡片部分的显示 */
+  .cards-section {
+    display: none;
+  }
 }
+
 
 /* 超小屏提供卡片视图（自动显示） */
 @media (max-width: 560px) {
   .table-section {
-    display: none;
+    display: block;
   }
 
   .cards-section {
