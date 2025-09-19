@@ -36,5 +36,9 @@
     "remarkLabel": "Remark",
     "photoLabel": "Photo",
     "didLabel": "Scan barcode or enter DN manually",
-    "switchCamera": "switch Camera"
+    "switchCamera": "Switch Camera",
+    "lng": "Longitude",
+    "lat": "Latitude",
+    "torchFailed": "Unable to toggle torch",
+    "onlyOneCamera": "Only one camera available"
 }
