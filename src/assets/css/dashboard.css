@@ -20,7 +20,8 @@
     box-sizing: border-box
     }
 body.dashboard-theme {
-    margin: 0;
+    margin: auto;
+    max-width: 90%;
     font-family: "Arial", sans-serif;
     color: var(--ink);
     background: linear-gradient(to bottom, var(--bg), #fff)
@@ -40,7 +41,8 @@ body.dashboard-theme {
     }
 .dashboard-view .title {
     font-weight: 700;
-    letter-spacing: -0.02em
+    letter-spacing: -0.02em;
+    margin: 20px 0;
     }
 .dashboard-view .title .big {
     font-size: clamp(20px, 3.2vw, 32px)
