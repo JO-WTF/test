@@ -86,9 +86,12 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { setupDashboardPage } from './dashboard/setupDashboardPage';
+import { useBodyTheme } from '../composables/useBodyTheme';
 
 const dashboardRoot = ref(null);
 let cleanup = () => {};
+
+useBodyTheme('dashboard-theme');
 
 onMounted(() => {
   cleanup = setupDashboardPage(dashboardRoot.value);

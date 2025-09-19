@@ -191,11 +191,14 @@ import { createI18n, detectLang } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
 import 'viewerjs/dist/viewer.css';
+import { useBodyTheme } from '../composables/useBodyTheme';
 
 const adminRoot = ref(null);
 const currentLang = ref('zh');
 let cleanup = () => {};
 let i18nInstance = null;
+
+useBodyTheme('admin-theme');
 
 const applyTranslations = () => {
   if (adminRoot.value && i18nInstance) {

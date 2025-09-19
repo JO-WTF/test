@@ -214,6 +214,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Toastify from 'toastify-js';
 import { createI18n, detectLang } from '../i18n/core';
+import { useBodyTheme } from '../composables/useBodyTheme';
 
 const LICENSE_KEY =
   'DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0NTQzNDEwLU1UQTBOVFF6TkRFd0xYZGxZaTFVY21saGJGQnliMm8iLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tZGxzLmR5bmFtc29mdG9ubGluZS5jb20iLCJvcmdhbml6YXRpb25JRCI6IjEwNDU0MzQxMCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NkbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsImNoZWNrQ29kZSI6MTg2NjI4MDUzMX0=';
@@ -228,6 +229,8 @@ const i18n = createI18n({
   fallbackLang: 'id',
 });
 await i18n.init();
+
+useBodyTheme('scan-theme');
 
 const state = reactive({
   lang: i18n.state.lang,

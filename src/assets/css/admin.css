@@ -1,50 +1,44 @@
-body {
+body.admin-theme {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     margin: 0;
     background: #0b1020;
     color: #eaf2ff
-}
-
-.container {
+    }
+.admin-page * {
+    box-sizing: border-box
+    }
+.admin-page .container {
     max-width: 1100px;
     margin: 0 auto;
     padding: 16px
-}
-
-.card {
+    }
+.admin-page .card {
     background: #101831;
     border: 1px solid #1f2a4d;
     border-radius: 14px;
     padding: 14px;
     margin-top: 14px
-}
-
-label {
+    }
+.admin-page label {
     font-size: 12px;
     color: #8aa2c8
-}
-
-input,
-select,
-textarea {
+    }
+.admin-page input, .admin-page select, .admin-page textarea {
     background: #0e1631;
     color: #eaf2ff;
     border: 1px solid #2a3a66;
     border-radius: 10px;
     padding: 8px 10px
-}
-
-input[type="date"] {
+    }
+.admin-page input[type="date"] {
     min-width: 180px
-}
-
-textarea {
+    }
+.admin-page textarea {
     min-height: 140px;
     resize: none;
     line-height: 1.5
-}
-
-.btn {
+    }
+.admin-page .btn {
     appearance: none;
     border: 0;
     border-radius: 999px;
@@ -53,127 +47,105 @@ textarea {
     background: #69a8ff;
     color: #07122b;
     cursor: pointer
-}
-
-.ghost {
+    }
+.admin-page .ghost {
     background: #12182b;
     color: #eaf2ff
-}
-
-.danger {
+    }
+.admin-page .danger {
     background: #ff6b6b;
     color: #07122b
-}
-
-table {
+    }
+.admin-page table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px
-}
-
-th,
-td {
+    }
+.admin-page th, .admin-page td {
     padding: 8px;
     border-bottom: 1px solid #1f2a4d;
     text-align: left;
     font-size: 14px;
     vertical-align: top
-}
-
-a {
+    }
+.admin-page a {
     color: #69a8ff
-}
-
-.muted {
+    }
+.admin-page .muted {
     color: #8aa2c8;
     font-size: 12px
-}
-
-.pager {
+    }
+.admin-page .pager {
     display: flex;
     gap: 8px;
     align-items: center;
     justify-content: flex-end;
     margin-top: 8px
-}
-
-.actions {
+    }
+.admin-page .actions {
     display: flex;
     gap: 8px
-}
-
-.grid-2col {
+    }
+.admin-page .grid-2col {
     display: grid;
     grid-template-columns: 1fr 1.6fr;
     gap: 12px;
-    align-items: stretch;
-}
-
-.du-col {
+    align-items: stretch
+    }
+.admin-page .du-col {
     display: flex;
     flex-direction: column
-}
-
-.du-col textarea {
+    }
+.admin-page .du-col textarea {
     flex: 1
-}
-
-.rhs {
+    }
+.admin-page .rhs {
     display: grid;
     grid-template-rows: auto auto;
     gap: 12px
-}
-
-.row-line {
+    }
+.admin-page .row-line {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
     align-items: end
-}
-
-.field {
+    }
+.admin-page .field {
     display: flex;
     flex-direction: column;
     gap: 6px
-}
-
-.field.grow {
+    }
+.admin-page .field.grow {
     flex: 1;
     min-width: 220px
-}
-
-.w120 {
+    }
+.admin-page .w120 {
     width: 120px
-}
-
-.modal-mask {
+    }
+.admin-page .modal-mask {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, .35);
+    background: rgba(0, 0, 0, 0.35);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 999;
-}
-
-.modal {
+    z-index: 999
+    }
+.admin-page .modal {
     background: #0f1730;
     border: 1px solid #283760;
     border-radius: 14px;
     max-width: 520px;
     width: 92%;
-    padding: 14px;
-}
-
-.du-wrap {
+    padding: 14px
+    }
+.admin-page .du-wrap {
     position: relative;
     width: 100%;
     min-height: 140px;
-    box-sizing: border-box;
-}
-
-.du-wrap textarea,
-.du-wrap .du-hilite {
+    box-sizing: border-box
+    }
+.admin-page .du-wrap textarea, .admin-page .du-wrap .du-hilite {
     font: inherit;
     line-height: 1.5;
     padding: 8px 10px;
@@ -181,10 +153,9 @@ a {
     min-height: 140px;
     white-space: pre-wrap;
     word-wrap: break-word;
-    box-sizing: border-box;
-}
-
-.du-hilite {
+    box-sizing: border-box
+    }
+.admin-page .du-hilite {
     position: absolute;
     inset: 0;
     color: transparent;
@@ -192,54 +163,63 @@ a {
     border: 1px solid #2a3a66;
     pointer-events: none;
     z-index: 0;
-    overflow: hidden;
-}
-
-.du-wrap textarea {
+    overflow: hidden
+    }
+.admin-page .du-wrap textarea {
     position: relative;
     background: transparent;
     border: 1px solid #2a3a66;
     z-index: 1;
     height: 100%;
     width: 100%;
-    resize: none;
-}
-
-.hl-ok {
-    background: rgba(34, 197, 94, .25);
+    resize: none
+    }
+.admin-page .hl-ok {
+    background: rgba(34, 197, 94, 0.25);
     border-radius: 4px;
-    padding: 0 2px;
-}
-
-.hl-bad {
-    background: rgba(239, 68, 68, .28);
+    padding: 0 2px
+    }
+.admin-page .hl-bad {
+    background: rgba(239, 68, 68, 0.28);
     border-radius: 4px;
-    padding: 0 2px;
-}
-
-.hl-sep {
+    padding: 0 2px
+    }
+.admin-page .hl-sep {
     background: transparent;
-    color: transparent;
-}
-
-.hl-did-act {
-    background: rgba(148, 163, 184, .22);
+    color: transparent
+    }
+.admin-page .hl-did-act {
+    background: rgba(148, 163, 184, 0.22);
     border-radius: 4px;
-    padding: 0;
-}
-
-.hl-did-inact {
-    background: rgba(100, 116, 139, .12);
+    padding: 0
+    }
+.admin-page .hl-did-inact {
+    background: rgba(100, 116, 139, 0.12);
     border-radius: 4px;
-    padding: 0 2px;
-}
-
-.lang-switch{
-    display:flex; gap:8px; align-items:center; margin:14px 0 10px;
-  }
-  .lang-switch button{
-    border:1px solid #2a3a66; background:#0e1631; color:#eaf2ff;
-    border-radius:10px; padding:6px 10px; cursor:pointer; display:flex; align-items:center; gap:6px;
-  }
-  .lang-switch button.active{ outline:2px solid #5b8cff; }
-  .lang-switch img{ width:18px; height:12px; border-radius:2px; }
+    padding: 0 2px
+    }
+.admin-page .lang-switch {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 14px 0 10px
+    }
+.admin-page .lang-switch button {
+    border: 1px solid #2a3a66;
+    background: #0e1631;
+    color: #eaf2ff;
+    border-radius: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px
+    }
+.admin-page .lang-switch button.active {
+    outline: 2px solid #5b8cff
+    }
+.admin-page .lang-switch img {
+    width: 18px;
+    height: 12px;
+    border-radius: 2px
+    }
