@@ -56,8 +56,76 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   let currentRoleKey = null;
   let currentUserInfo = null;
   let cachedItems = [];
+  let removeI18nListener = null;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
+  const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
+
+  function getLocalStorageSafe() {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    return null;
+  }
+
+  function sanitizeUserInfo(user) {
+    if (!user || typeof user !== 'object') return null;
+    const info = {};
+    if (user.id != null) info.id = user.id;
+    if (user.name != null) info.name = user.name;
+    return Object.keys(info).length ? info : null;
+  }
+
+  function persistAuthState(roleKey, userInfo) {
+    const storage = getLocalStorageSafe();
+    if (!storage) return;
+    try {
+      if (!roleKey) {
+        storage.removeItem(AUTH_STORAGE_KEY);
+        return;
+      }
+      const payload = {
+        roleKey,
+        userInfo: sanitizeUserInfo(userInfo),
+      };
+      storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function loadStoredAuthState() {
+    const storage = getLocalStorageSafe();
+    if (!storage) return null;
+    try {
+      const raw = storage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      const { roleKey } = parsed;
+      if (!roleKey || !ROLE_MAP.has(roleKey)) {
+        storage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
+      return {
+        roleKey,
+        userInfo: sanitizeUserInfo(parsed.userInfo),
+      };
+    } catch (err) {
+      console.error(err);
+      try {
+        const storageRef = getLocalStorageSafe();
+        storageRef?.removeItem(AUTH_STORAGE_KEY);
+      } catch (removeErr) {
+        console.error(removeErr);
+      }
+    }
+    return null;
+  }
 
   const DU_RE_FULL = /^DID\d{13}$/;
   const DU_RE_HEAD = /^DID\d{0,13}$/;
@@ -87,6 +155,12 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       normalizeDnInput({ enforceFormat: false });
     }
   };
+
+  if (i18n && typeof i18n.onChange === 'function') {
+    removeI18nListener = i18n.onChange(() => {
+      applyAllTranslations();
+    });
+  }
 
   function toAbsUrl(u) {
     if (!u) return '';
@@ -369,7 +443,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
 
   function setRole(nextRoleKey, userInfo = null) {
     currentRoleKey = nextRoleKey || null;
-    currentUserInfo = userInfo || null;
+    currentUserInfo = sanitizeUserInfo(userInfo);
     updateAuthButtonLabel();
     updateRoleBadge();
     refreshDnEntryVisibility();
@@ -377,6 +451,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     refreshStatusOptionsForRole(currentVal);
     updateModalFieldVisibility();
     rerenderTableActions();
+    persistAuthState(currentRoleKey, currentUserInfo);
   }
 
   function findRoleByPassword(password) {
@@ -1081,6 +1156,9 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       if (e.key === 'Enter') {
         e.preventDefault();
         handleAuthSubmit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeAuthModal();
       }
     },
     { signal }
@@ -1101,6 +1179,31 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     'click',
     (e) => {
       if (e.target === dnModal) closeDnModal();
+    },
+    { signal }
+  );
+
+  const isModalVisible = (modal) => modal && modal.style.display === 'flex';
+
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Escape') {
+        if (isModalVisible(dnModal)) {
+          e.preventDefault();
+          closeDnModal();
+          return;
+        }
+        if (isModalVisible(authModal)) {
+          e.preventDefault();
+          closeAuthModal();
+          return;
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && isModalVisible(dnModal)) {
+        e.preventDefault();
+        handleDnConfirm();
+      }
     },
     { signal }
   );
@@ -1215,17 +1318,38 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     { signal }
   );
 
+  function restoreAuthFromStorage() {
+    const stored = loadStoredAuthState();
+    if (stored && stored.roleKey) {
+      setRole(stored.roleKey, stored.userInfo);
+    } else {
+      updateAuthButtonLabel();
+      updateRoleBadge();
+      refreshDnEntryVisibility();
+      const currentVal = mStatus?.value || '';
+      refreshStatusOptionsForRole(currentVal);
+      updateModalFieldVisibility();
+      rerenderTableActions();
+    }
+  }
+
   function init() {
     if (!duInput?.value.trim()) renderTokens(['DID']);
     if (hint) hint.textContent = '输入条件后点击查询。';
     fetchList();
   }
 
+  restoreAuthFromStorage();
   init();
   applyAllTranslations();
 
   return () => {
     controller.abort();
+    try {
+      removeI18nListener?.();
+    } catch (err) {
+      console.error(err);
+    }
     if (viewer) {
       try {
         viewer.destroy();
