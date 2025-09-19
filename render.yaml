@@ -14,6 +14,7 @@ services:
       EOCONFIG
     staticPublishPath: dist
     routes:
+      # Fallback rewrite so SPA routes load correctly on direct visits
       - type: rewrite
-        source: /.*/
+        source: /*
         destination: /index.html
