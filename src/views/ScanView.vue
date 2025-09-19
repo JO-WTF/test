@@ -176,25 +176,13 @@
 
         <div class="result-box" v-if="state.showResult">
           <h3>{{ t('submittedTitle') }}</h3>
-          <div class="result-row">
-            <span class="k">{{ t('duIdLabel') }}:</span
-            ><span class="v mono">{{ state.submitView.duId }}</span>
-          </div>
-          <div class="result-row">
-            <span class="k">{{ t('statusLabel') }}:</span
-            ><span class="v">{{ statusLabel(state.submitView.status) }}</span>
-          </div>
-          <div class="result-row">
-            <span class="k">{{ t('remarkLabel') }}:</span
-            ><span class="v">{{ state.submitView.remark || '-' }}</span>
-          </div>
-          <div class="result-row">
-            <span class="k">{{ t('lng') }}:</span
-            ><span class="v">{{ state.submitView.lng || '-' }}</span>
-          </div>
-          <div class="result-row">
-            <span class="k">{{ t('lat') }}:</span
-            ><span class="v">{{ state.submitView.lat || '-' }}</span>
+          <div
+            class="result-row"
+            v-for="row in submitSummaryRows"
+            :key="row.key"
+          >
+            <span class="k">{{ row.label }}:</span>
+            <span class="v" :class="{ mono: row.mono }">{{ row.value }}</span>
           </div>
           <div class="result-row" v-if="state.submitView.photo">
             <span class="k">{{ t('photoLabel') }}:</span>
@@ -268,6 +256,40 @@ const t = (key, vars) => i18n.t(key, vars);
 
 const showScanControls = computed(() => !state.isValid);
 const torchTagVisible = computed(() => state.running && !state.isValid);
+const submitSummaryRows = computed(() => {
+  // depend on language changes so labels re-render with the active locale
+  state.lang;
+  const view = state.submitView || {};
+
+  return [
+    {
+      key: 'duId',
+      label: t('duIdLabel'),
+      value: formatResultText(view.duId),
+      mono: true,
+    },
+    {
+      key: 'status',
+      label: t('statusLabel'),
+      value: formatResultText(statusLabel(view.status)),
+    },
+    {
+      key: 'remark',
+      label: t('remarkLabel'),
+      value: formatResultText(view.remark, true),
+    },
+    {
+      key: 'lng',
+      label: t('lng'),
+      value: formatCoordinate(view.lng),
+    },
+    {
+      key: 'lat',
+      label: t('lat'),
+      value: formatCoordinate(view.lat),
+    },
+  ];
+});
 
 const validateDN = (text) => /^(?=.{14,18}$)[A-Za-z]{1,5}[0-9A-Za-z]+$/.test(text);
 
@@ -392,6 +414,24 @@ const statusLabel = (v) => {
   if (v === '过夜') return t('overnight');
   if (v === '已到达') return t('arrived');
   return v || '-';
+};
+
+const formatResultText = (val, allowTrim = false) => {
+  if (val == null) return '-';
+  if (typeof val === 'string') {
+    const text = allowTrim ? val.trim() : val;
+    return text === '' ? '-' : text;
+  }
+  return String(val);
+};
+
+const formatCoordinate = (val) => {
+  if (val == null) return '-';
+  const num = Number(val);
+  if (Number.isFinite(num)) {
+    return String(Math.round(num * 1e6) / 1e6);
+  }
+  return formatResultText(val);
 };
 
 function uploadWithProgress({ url, formData, onProgress, timeoutMs = 15000 }) {
