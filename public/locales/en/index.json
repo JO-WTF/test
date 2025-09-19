@@ -19,6 +19,7 @@
     "photoTip": "Take or choose from gallery",
     "removePhoto": "Remove Photo",
     "needSelectStatus": "Please select a shipping status",
+    "needWatermarkedPhoto": "Please upload a watermarked delivery photo before submitting.",
     "invalidId": "Invalid DU ID",
     "submit": "Submit",
     "submitting": "Submitting…",

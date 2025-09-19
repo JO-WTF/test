@@ -19,6 +19,7 @@
     "photoTip": "支持拍照或从相册选择",
     "removePhoto": "移除照片",
     "needSelectStatus": "请先选择运输状态",
+    "needWatermarkedPhoto": "请上传带有水印的交付照片再提交。",
     "invalidId": "无效的DU ID",
     "submit": "提交",
     "submitting": "提交中…",
