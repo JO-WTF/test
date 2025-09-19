@@ -1,4 +1,6 @@
 import Viewer from 'viewerjs';
+import Toastify from 'toastify-js';
+import { ROLE_LIST } from '../../config.js';
 
 const API_BASE =
   (window.APP_CONFIG && window.APP_CONFIG.API_BASE) ||
@@ -25,24 +27,56 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   const mId = el('modal-id');
   const mStatus = el('m-status');
   const mRemark = el('m-remark');
+  const mRemarkField = el('m-remark-field');
   const mPhoto = el('m-photo');
+  const mPhotoField = el('m-photo-field');
   const mMsg = el('m-msg');
 
+  const authModal = el('auth-modal');
+  const authBtn = el('btn-auth');
+  const authCancel = el('auth-cancel');
+  const authConfirm = el('auth-confirm');
+  const authInput = el('auth-password');
+  const authMsg = el('auth-msg');
+  const authRoleTag = el('auth-role-tag');
+
+  const dnBtn = el('btn-dn-entry');
+  const dnModal = el('dn-modal');
+  const dnInput = el('dn-input');
+  const dnPreview = el('dn-preview');
+  const dnClose = el('dn-close');
+  const dnCancel = el('dn-cancel');
+  const dnConfirm = el('dn-confirm');
+
   let editingId = 0;
+  let currentRoleKey = null;
+  let cachedItems = [];
+
+  const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
 
   const DU_RE_FULL = /^DID\d{13}$/;
   const DU_RE_HEAD = /^DID\d{0,13}$/;
   const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
+  const DN_SEP_RE = /[\s,，；;、\u3001]+/gu;
+  const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{12,16}$/;
 
   const usp = new URLSearchParams(window.location.search);
   const actionsParam = usp.get('actions');
-  const SHOW_ACTIONS_FINAL = actionsParam === '1';
+  const ACTIONS_FLAG = actionsParam === null ? true : actionsParam === '1';
 
   const applyAllTranslations = () => {
     if (typeof applyTranslations === 'function') {
       applyTranslations();
     }
     translateStatusCells();
+    updateAuthButtonLabel();
+    updateRoleBadge();
+    refreshDnEntryVisibility();
+    const currentVal = mStatus?.value || '';
+    refreshStatusOptionsForRole(currentVal);
+    if (dnInput) {
+      normalizeDnInput({ enforceFormat: false });
+    }
   };
 
   function toAbsUrl(u) {
@@ -61,15 +95,31 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       .replace(/'/g, '&#39;');
   }
 
+  function decodeHtmlEntities(s) {
+    return String(s)
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
+  }
+
+  const STATUS_I18N_MAP = {
+    '运输中': 'status.inTransit',
+    '过夜': 'status.overnight',
+    '已到达': 'status.arrived',
+    '准备车辆': 'status.prepareVehicle',
+    '开始运输': 'status.startTransport',
+    '重新排期(LSP)': 'status.rescheduleLsp',
+    '项目重排(Project)': 'status.projectReschedule',
+    '取消MOS': 'status.cancelMos',
+    'RN关闭': 'status.rnClosed',
+  };
+
   function i18nStatusDisplay(raw) {
     const text = (raw || '').trim();
     if (!text) return '';
-    const map = {
-      '运输中': 'status.inTransit',
-      '过夜': 'status.overnight',
-      '已到达': 'status.arrived',
-    };
-    const key = map[text];
+    const key = STATUS_I18N_MAP[text];
     if (i18n && key) {
       try {
         return i18n.t(key);
@@ -78,6 +128,331 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       }
     }
     return text;
+  }
+
+  function getCurrentRole() {
+    return currentRoleKey ? ROLE_MAP.get(currentRoleKey) || null : null;
+  }
+
+  function getCurrentPermissions() {
+    const role = getCurrentRole();
+    return role && role.permissions ? role.permissions : null;
+  }
+
+  function updateAuthButtonLabel() {
+    if (!authBtn) return;
+    const role = getCurrentRole();
+    const key = role ? 'auth.switch' : 'auth.trigger';
+    const fallback = role ? '切换用户组' : '授权';
+    try {
+      authBtn.textContent = i18n ? i18n.t(key) : fallback;
+    } catch (err) {
+      console.error(err);
+      authBtn.textContent = fallback;
+    }
+  }
+
+  function updateRoleBadge() {
+    if (!authRoleTag) return;
+    const role = getCurrentRole();
+    if (!role) {
+      authRoleTag.textContent = '';
+      authRoleTag.classList.remove('active');
+      return;
+    }
+    const label = getRoleLabel(role);
+    let text = `当前角色：${label}`;
+    if (i18n) {
+      try {
+        text = i18n.t('auth.current', { role: label });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    authRoleTag.textContent = text;
+    authRoleTag.classList.add('active');
+  }
+
+  function refreshDnEntryVisibility() {
+    if (!dnBtn) return;
+    const allowed = currentRoleKey === 'customer' || currentRoleKey === 'transportManager';
+    dnBtn.style.display = allowed ? '' : 'none';
+  }
+
+  function refreshStatusOptionsForRole(currentStatus = '') {
+    if (!mStatus) return;
+    const perms = getCurrentPermissions();
+    const options = Array.isArray(perms?.statusOptions) ? perms.statusOptions : [];
+    const keepOption = mStatus.querySelector('option[value=""]');
+    Array.from(mStatus.querySelectorAll('option')).forEach((opt) => {
+      if (opt.value !== '') opt.remove();
+    });
+    options.forEach((status) => {
+      const option = document.createElement('option');
+      option.value = status;
+      option.textContent = i18nStatusDisplay(status);
+      mStatus.appendChild(option);
+    });
+    if (keepOption) {
+      const required = Boolean(perms?.requireStatusSelection);
+      keepOption.disabled = required;
+      try {
+        keepOption.textContent = i18n
+          ? i18n.t(required ? 'modal.status.required' : 'modal.status.keep')
+          : required
+          ? '请选择状态'
+          : '（不修改）';
+      } catch (err) {
+        console.error(err);
+        keepOption.textContent = required ? '请选择状态' : '（不修改）';
+      }
+    }
+    if (!options.length) {
+      mStatus.value = '';
+      mStatus.disabled = true;
+    } else {
+      mStatus.disabled = false;
+      if (currentStatus && options.includes(currentStatus)) {
+        mStatus.value = currentStatus;
+      } else if (perms?.requireStatusSelection && options[0]) {
+        mStatus.value = options[0];
+      } else {
+        mStatus.value = '';
+      }
+    }
+  }
+
+  function showToast(text, type = 'info') {
+    const baseStyle = {
+      background: '#334155',
+      color: '#e2e8f0',
+    };
+    if (type === 'success') {
+      baseStyle.background = '#22c55e';
+      baseStyle.color = '#02120a';
+    } else if (type === 'error') {
+      baseStyle.background = '#ef4444';
+      baseStyle.color = '#051014';
+    }
+    Toastify({
+      text,
+      duration: 3200,
+      close: true,
+      gravity: 'top',
+      position: 'right',
+      style: baseStyle,
+    }).showToast();
+  }
+
+  function updateModalFieldVisibility(perms = getCurrentPermissions()) {
+    const allowRemark = perms ? Boolean(perms.allowRemark) : true;
+    const allowPhoto = perms ? Boolean(perms.allowPhoto) : true;
+    if (mRemark) {
+      mRemark.disabled = !allowRemark;
+      if (!allowRemark) mRemark.value = '';
+    }
+    if (mRemarkField) {
+      mRemarkField.style.display = allowRemark ? '' : 'none';
+    }
+    if (mPhoto) {
+      mPhoto.disabled = !allowPhoto;
+      if (!allowPhoto) {
+        try {
+          mPhoto.value = '';
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
+    if (mPhotoField) {
+      mPhotoField.style.display = allowPhoto ? '' : 'none';
+    }
+  }
+
+  function getRoleLabel(role) {
+    if (!role) return '';
+    const fallback = role.label || role.description || role.key;
+    if (!i18n) return fallback;
+    try {
+      const key = `roles.${role.key}`;
+      const translated = i18n.t(key);
+      if (translated && translated !== key) return translated;
+    } catch (err) {
+      console.error(err);
+    }
+    return fallback;
+  }
+
+  function splitDnTokens(raw) {
+    const normalized = (raw || '').toUpperCase();
+    return normalized
+      .split(DN_SEP_RE)
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+
+  function isValidDn(token) {
+    return DN_VALID_RE.test(token || '');
+  }
+
+  function renderDnTokens(tokens) {
+    if (!dnPreview) return;
+    if (!tokens.length) {
+      const placeholder = i18n ? i18n.t('dn.preview.empty') : '在此查看格式化结果';
+      dnPreview.innerHTML = `<div class="placeholder">${escapeHtml(placeholder)}</div>`;
+      return;
+    }
+    const html = tokens
+      .map((token) => {
+        const valid = isValidDn(token);
+        return `<span class="dn-token ${valid ? 'ok' : 'bad'}">${escapeHtml(token)}</span>`;
+      })
+      .join('');
+    dnPreview.innerHTML = html;
+  }
+
+  function normalizeDnInput({ enforceFormat = false } = {}) {
+    if (!dnInput) return [];
+    const tokens = splitDnTokens(dnInput.value);
+    if (enforceFormat) {
+      dnInput.value = tokens.join('\n');
+    }
+    renderDnTokens(tokens);
+    return tokens;
+  }
+
+  function openAuthModal() {
+    if (!authModal) return;
+    authModal.style.display = 'flex';
+    if (authMsg) authMsg.textContent = '';
+    if (authInput) {
+      authInput.value = '';
+      setTimeout(() => {
+        try {
+          authInput.focus();
+        } catch (err) {
+          console.error(err);
+        }
+      }, 30);
+    }
+  }
+
+  function closeAuthModal() {
+    if (authModal) authModal.style.display = 'none';
+  }
+
+  function setRole(nextRoleKey) {
+    currentRoleKey = nextRoleKey || null;
+    updateAuthButtonLabel();
+    updateRoleBadge();
+    refreshDnEntryVisibility();
+    const currentVal = mStatus?.value || '';
+    refreshStatusOptionsForRole(currentVal);
+    updateModalFieldVisibility();
+    rerenderTableActions();
+  }
+
+  async function sha256Hex(value) {
+    if (!value) return '';
+    if (window.crypto?.subtle) {
+      try {
+        const data = new TextEncoder().encode(value);
+        const digest = await window.crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(digest))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+      } catch (err) {
+        console.error(err);
+        return '';
+      }
+    }
+    console.warn('SubtleCrypto not available for hashing.');
+    return '';
+  }
+
+  async function handleAuthSubmit() {
+    if (!authInput) return;
+    const pwd = authInput.value || '';
+    if (!pwd.trim()) {
+      if (authMsg)
+        authMsg.textContent = i18n ? i18n.t('auth.modal.required') : '请输入密码';
+      return;
+    }
+    if (authMsg) authMsg.textContent = i18n ? i18n.t('auth.modal.checking') : '验证中…';
+    try {
+      const hash = await sha256Hex(pwd);
+      if (!hash) {
+        if (authMsg)
+          authMsg.textContent = i18n
+            ? i18n.t('auth.modal.unsupported')
+            : '当前环境暂不支持鉴权';
+        return;
+      }
+      const role = (ROLE_LIST || []).find((item) => item.passwordHash === hash);
+      if (!role) {
+        if (authMsg)
+          authMsg.textContent = i18n
+            ? i18n.t('auth.modal.failed')
+            : '密码不正确，请重试';
+        return;
+      }
+      setRole(role.key);
+      closeAuthModal();
+      const label = getRoleLabel(role);
+      const message = i18n
+        ? i18n.t('auth.toast.success', { role: label })
+        : `已授权：${label}`;
+      showToast(message, 'success');
+    } catch (err) {
+      console.error(err);
+      if (authMsg)
+        authMsg.textContent = i18n
+          ? i18n.t('auth.modal.failed')
+          : '鉴权失败，请稍后再试';
+    }
+  }
+
+  function canUseDnEntry() {
+    return currentRoleKey === 'customer' || currentRoleKey === 'transportManager';
+  }
+
+  function openDnModal() {
+    if (!canUseDnEntry()) {
+      const msg = i18n ? i18n.t('dn.toast.denied') : '当前角色无权录入 DN';
+      showToast(msg, 'error');
+      return;
+    }
+    if (dnModal) dnModal.style.display = 'flex';
+    normalizeDnInput({ enforceFormat: false });
+    if (dnInput) {
+      setTimeout(() => {
+        try {
+          dnInput.focus();
+        } catch (err) {
+          console.error(err);
+        }
+      }, 30);
+    }
+  }
+
+  function closeDnModal() {
+    if (dnModal) dnModal.style.display = 'none';
+  }
+
+  function handleDnConfirm() {
+    const tokens = normalizeDnInput({ enforceFormat: true });
+    const validCount = tokens.filter((token) => isValidDn(token)).length;
+    const invalidCount = Math.max(tokens.length - validCount, 0);
+    let msg;
+    if (i18n) {
+      const base = i18n.t('dn.toast.successBase', { valid: validCount });
+      const extra = invalidCount ? i18n.t('dn.toast.invalidNote', { invalid: invalidCount }) : '';
+      msg = `${base}${extra}`;
+    } else {
+      msg = `已录入 ${validCount} 条合法 DN${invalidCount ? `，${invalidCount} 条格式有误` : ''}`;
+    }
+    showToast(msg, 'success');
+    closeDnModal();
   }
 
   function normalizeRawSoft(raw) {
@@ -318,12 +693,35 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     }
   }
 
+  function buildActionCell(it, remark) {
+    const perms = getCurrentPermissions();
+    if (!ACTIONS_FLAG || !perms || (!perms.canEdit && !perms.canDelete)) return '';
+    const buttons = [];
+    const statusAttr = escapeHtml(it.status || '');
+    if (perms.canEdit) {
+      buttons.push(
+        `<button class="btn" data-act="edit" data-id="${it.id}" data-du="${it.du_id}" data-status="${statusAttr}" data-remark="${escapeHtml(
+          remark
+        )}" data-i18n="actions.edit">编辑</button>`
+      );
+    }
+    if (perms.canDelete) {
+      buttons.push(
+        `<button class="btn danger" data-act="del" data-id="${it.id}" data-i18n="actions.delete">删除</button>`
+      );
+    }
+    if (!buttons.length) return '';
+    return `<div class="actions">${buttons.join('')}</div>`;
+  }
+
   function renderRows(items) {
     if (!tbody) return;
-    tbody.innerHTML = items
+    cachedItems = Array.isArray(items) ? items.slice() : [];
+    tbody.innerHTML = cachedItems
       .map((it) => {
         const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
         const remark = it.remark ? String(it.remark).replace(/[<>]/g, '') : '';
+        const remarkCell = escapeHtml(remark);
         const lonlat =
           it.lng && it.lat
             ? `<a href="https://www.google.com/maps?q=${it.lat},${it.lng}" target="_blank" data-i18n="table.view">${it.lat},${it.lng}</a>`
@@ -337,19 +735,13 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
           it.status
         )}</td>`;
 
-        const act = SHOW_ACTIONS_FINAL
-          ? `<div class="actions">
-             <button class="btn" data-act="edit" data-id="${it.id}" data-du="${it.du_id}"
-                     data-status="${it.status || ''}" data-remark="${escapeHtml(remark)}" data-i18n="actions.edit">编辑</button>
-             <button class="btn danger" data-act="del" data-id="${it.id}" data-i18n="actions.delete">删除</button>
-           </div>`
-          : '';
+        const act = buildActionCell(it, remark);
 
         return `<tr>
           <td>${it.id}</td>
           <td>${it.du_id}</td>
           ${statusCell}
-          <td>${remark}</td>
+          <td>${remarkCell}</td>
           <td>${photoCell}</td>
           <td>${lonlat}</td>
           <td>${t}</td>
@@ -357,6 +749,13 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
         </tr>`;
       })
       .join('');
+  }
+
+  function rerenderTableActions() {
+    if (!tbody) return;
+    renderRows(cachedItems);
+    bindRowActions();
+    translateStatusCells();
   }
 
   function bindRowActions() {
@@ -432,11 +831,24 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   }
 
   function openModalEdit(item) {
+    const perms = getCurrentPermissions();
+    if (!perms?.canEdit) {
+      showToast(i18n ? i18n.t('auth.toast.denied') : '当前角色无权编辑该记录', 'error');
+      return;
+    }
     editingId = Number(item.id);
     if (mId) mId.textContent = `#${editingId} / ${item.du_id || ''}`;
-    if (mStatus) mStatus.value = item.status || '';
-    if (mRemark) mRemark.value = item.remark || '';
-    if (mPhoto) mPhoto.value = '';
+    const remarkVal = decodeHtmlEntities(item.remark || '');
+    if (mRemark) mRemark.value = perms.allowRemark ? remarkVal : '';
+    if (mPhoto) {
+      try {
+        mPhoto.value = '';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    refreshStatusOptionsForRole(item.status || '');
+    updateModalFieldVisibility(perms);
     if (mMsg) mMsg.textContent = '';
     if (mask) mask.style.display = 'flex';
   }
@@ -451,12 +863,48 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     'click',
     async () => {
       if (!editingId) return;
-      if (mMsg) mMsg.textContent = '保存中…';
+      const perms = getCurrentPermissions();
+      if (!perms?.canEdit) {
+        if (mMsg)
+          mMsg.textContent = i18n
+            ? i18n.t('auth.toast.denied')
+            : '当前角色无权编辑该记录';
+        return;
+      }
+      const statusVal = mStatus?.value || '';
+      const remarkVal = perms.allowRemark ? (mRemark?.value || '').trim() : '';
+      const allowPhoto = perms.allowPhoto && mPhoto?.files && mPhoto.files[0];
+
+      if (perms.requireStatusSelection && !statusVal) {
+        if (mMsg)
+          mMsg.textContent = i18n
+            ? i18n.t('modal.status.requiredHint')
+            : '请选择允许的状态后再保存。';
+        return;
+      }
+
+      if (statusVal && Array.isArray(perms.statusOptions) && !perms.statusOptions.includes(statusVal)) {
+        if (mMsg)
+          mMsg.textContent = i18n
+            ? i18n.t('modal.status.invalid')
+            : '选择的状态不在当前角色的权限范围内。';
+        return;
+      }
+
+      if (!statusVal && !remarkVal && !allowPhoto) {
+        if (mMsg)
+          mMsg.textContent = i18n
+            ? i18n.t('modal.nothingToSave')
+            : '没有可保存的更改。';
+        return;
+      }
+
+      if (mMsg) mMsg.textContent = i18n ? i18n.t('modal.saving') : '保存中…';
       try {
         const fd = new FormData();
-        if (mStatus?.value) fd.append('status', mStatus.value);
-        if (mRemark?.value) fd.append('remark', mRemark.value);
-        if (mPhoto?.files && mPhoto.files[0]) fd.append('photo', mPhoto.files[0]);
+        if (statusVal) fd.append('status', statusVal);
+        if (remarkVal) fd.append('remark', remarkVal);
+        if (allowPhoto) fd.append('photo', mPhoto.files[0]);
 
         const resp = await fetch(`${API_BASE}/api/du/update/${editingId}`, {
           method: 'PUT',
@@ -472,11 +920,14 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
         if (!resp.ok)
           throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
 
-        if (mMsg) mMsg.textContent = '保存成功';
+        if (mMsg) mMsg.textContent = i18n ? i18n.t('modal.success') : '保存成功';
         closeModal();
         await fetchList();
       } catch (err) {
-        if (mMsg) mMsg.textContent = `保存失败：${err?.message || err}`;
+        if (mMsg)
+          mMsg.textContent = i18n
+            ? i18n.t('modal.error', { msg: err?.message || err })
+            : `保存失败：${err?.message || err}`;
       }
     },
     { signal }
@@ -484,6 +935,11 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
 
   async function onDelete(id) {
     if (!id) return;
+    const perms = getCurrentPermissions();
+    if (!perms?.canDelete) {
+      showToast(i18n ? i18n.t('auth.toast.denied') : '当前角色无权删除该记录', 'error');
+      return;
+    }
     if (!window.confirm(`确认要删除记录 #${id} 吗？`)) return;
     if (hint) hint.textContent = `正在删除 #${id} …`;
     try {
@@ -598,6 +1054,83 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       const raw = td.getAttribute('data-raw-status') || '';
       td.textContent = i18nStatusDisplay(raw);
     });
+  }
+
+  authBtn?.addEventListener('click', openAuthModal, { signal });
+  authCancel?.addEventListener('click', () => closeAuthModal(), { signal });
+  authConfirm?.addEventListener('click', () => handleAuthSubmit(), { signal });
+  authInput?.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAuthSubmit();
+      }
+    },
+    { signal }
+  );
+  authModal?.addEventListener(
+    'click',
+    (e) => {
+      if (e.target === authModal) closeAuthModal();
+    },
+    { signal }
+  );
+
+  dnBtn?.addEventListener('click', openDnModal, { signal });
+  dnClose?.addEventListener('click', () => closeDnModal(), { signal });
+  dnCancel?.addEventListener('click', () => closeDnModal(), { signal });
+  dnConfirm?.addEventListener('click', () => handleDnConfirm(), { signal });
+  dnModal?.addEventListener(
+    'click',
+    (e) => {
+      if (e.target === dnModal) closeDnModal();
+    },
+    { signal }
+  );
+
+  if (dnInput) {
+    dnInput.addEventListener(
+      'input',
+      () => {
+        normalizeDnInput({ enforceFormat: false });
+      },
+      { signal }
+    );
+    dnInput.addEventListener(
+      'blur',
+      () => {
+        normalizeDnInput({ enforceFormat: true });
+      },
+      { signal }
+    );
+    dnInput.addEventListener(
+      'paste',
+      (e) => {
+        try {
+          const text = (e.clipboardData || window.clipboardData).getData('text');
+          if (text != null) {
+            e.preventDefault();
+            const start = typeof dnInput.selectionStart === 'number' ? dnInput.selectionStart : dnInput.value.length;
+            const end = typeof dnInput.selectionEnd === 'number' ? dnInput.selectionEnd : start;
+            const before = dnInput.value.slice(0, start);
+            const after = dnInput.value.slice(end);
+            dnInput.value = `${before}${text}${after}`;
+            const tokens = normalizeDnInput({ enforceFormat: true });
+            if (tokens.length) {
+              try {
+                dnInput.selectionStart = dnInput.selectionEnd = dnInput.value.length;
+              } catch (err) {
+                console.error(err);
+              }
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      },
+      { signal }
+    );
   }
 
   el('btn-search')?.addEventListener(
