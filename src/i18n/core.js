@@ -2,10 +2,35 @@ const STORE = {
   cache: new Map(),
 };
 
-export function detectLang(defaultLang = 'zh') {
+function safeGetLocalStorage(key) {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage ? window.localStorage.getItem(key) : null;
+  } catch (err) {
+    console.warn('Failed to read language from localStorage:', err);
+    return null;
+  }
+}
+
+function safeSetLocalStorage(key, value) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch (err) {
+    console.warn('Failed to persist language to localStorage:', err);
+  }
+}
+
+export function detectLang(defaultLang = 'zh', storageKey = 'lang') {
   if (typeof window === 'undefined') return defaultLang;
   const urlLang = new URLSearchParams(window.location.search).get('lang');
   if (urlLang) return urlLang;
+  if (storageKey) {
+    const saved = safeGetLocalStorage(storageKey);
+    if (saved) return saved;
+  }
   const nav = (navigator.language || '').toLowerCase();
   if (nav.startsWith('zh')) return 'zh';
   if (nav.startsWith('en')) return 'en';
@@ -52,7 +77,11 @@ function template(str, vars) {
 
 export function createI18n(opts = {}) {
   const state = {
-    lang: opts.lang || detectLang('zh'),
+    storageKey: opts.storageKey === null ? null : opts.storageKey || 'lang',
+    defaultLang: opts.defaultLang || 'zh',
+    lang:
+      opts.lang ||
+      detectLang(opts.defaultLang || 'zh', opts.storageKey === null ? null : opts.storageKey || 'lang'),
     fallbackLang: opts.fallbackLang || 'en',
     namespaces: Array.isArray(opts.namespaces) ? opts.namespaces : ['common'],
     dict: {},
@@ -82,6 +111,7 @@ export function createI18n(opts = {}) {
     if (!newLang || newLang === state.lang) return;
     state.lang = newLang;
     await loadDict(state.lang);
+    if (state.storageKey) safeSetLocalStorage(state.storageKey, state.lang);
     state.listeners.forEach((fn) => {
       try {
         fn(state.lang);

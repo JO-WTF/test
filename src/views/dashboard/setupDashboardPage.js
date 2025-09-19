@@ -12,12 +12,31 @@ const STATUS_ORDER = [
   'TOTAL',
 ];
 
+const STATUS_LABEL_KEYS = {
+  'PREPARE VEHICLE': 'status.prepareVehicle',
+  'ON THE WAY': 'status.onTheWay',
+  'ON SITE': 'status.onSite',
+  POD: 'status.pod',
+  'REPLAN MOS PROJECT': 'status.replanProject',
+  'WAITING PIC FEEDBACK': 'status.waitingFeedback',
+  'REPLAN MOS DUE TO LSP DELAY': 'status.replanLspDelay',
+  'CLOSE BY RN': 'status.closeByRn',
+  'CANCEL MOS': 'status.cancelMos',
+  'NO STATUS': 'status.noStatus',
+  TOTAL: 'status.total',
+};
+
 const API_BASE =
   (window.APP_CONFIG && window.APP_CONFIG.API_BASE) ||
   'https://back.idnsc.dpdns.org';
 
-export function setupDashboardPage(rootEl) {
-  if (!rootEl) return () => {};
+export function setupDashboardPage(rootEl, opts = {}) {
+  if (!rootEl) {
+    return {
+      destroy() {},
+      updateI18n() {},
+    };
+  }
   const controller = new AbortController();
   const { signal } = controller;
 
@@ -32,6 +51,43 @@ export function setupDashboardPage(rootEl) {
   let sortDir = 'asc';
   let query = '';
   let RAW_ROWS = [];
+
+  const applyVars = (str, vars) => {
+    if (!vars) return str;
+    return String(str).replace(/\{(\w+)\}/g, (_, k) =>
+      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
+    );
+  };
+
+  const defaultTranslate = (key, vars) => applyVars(key, vars);
+
+  let translateFn = typeof opts.t === 'function' ? opts.t : defaultTranslate;
+
+  const setTranslator = (fn) => {
+    translateFn = typeof fn === 'function' ? fn : defaultTranslate;
+  };
+
+  const translate = (key, vars, fallback) => {
+    if (!key) return fallback ?? '';
+    const res = translateFn(key, vars);
+    if (typeof res === 'string' && res !== key) return res;
+    if (fallback != null) return applyVars(fallback, vars);
+    return typeof res === 'string' ? applyVars(res, vars) : fallback ?? key;
+  };
+
+  const statusLabel = (status) => {
+    const key = STATUS_LABEL_KEYS[status];
+    return key ? translate(key, undefined, status) : status;
+  };
+
+  const updateToggleZeroButton = () => {
+    const btn = $('#toggleZero');
+    if (!btn) return;
+    btn.classList.toggle('primary', mutedZero);
+    const labelKey = mutedZero ? 'controls.highlightNonZero' : 'controls.showAll';
+    const fallback = mutedZero ? 'Highlight Non-Zero' : 'Show All';
+    btn.textContent = translate(labelKey, undefined, fallback);
+  };
 
   function fmtDate(iso) {
     const d = new Date(`${iso}T00:00:00`);
@@ -65,13 +121,18 @@ export function setupDashboardPage(rootEl) {
   }
 
   function render() {
+    updateToggleZeroButton();
     if (!RAW_ROWS.length) return;
     const rows = currentRows();
     const totals = computeTotals(RAW_ROWS);
 
     const meta = $('#meta');
     if (meta && RAW_ROWS[0]) {
-      meta.textContent = `Date：${RAW_ROWS[0].date} ・ Total: ${totals[totals.length - 1]}`;
+      meta.textContent = translate(
+        'meta',
+        { date: RAW_ROWS[0].date, total: totals[totals.length - 1] },
+        'Date: {date} ・ Total: {total}'
+      );
     }
 
     const podTotal = $('#podTotal');
@@ -86,13 +147,13 @@ export function setupDashboardPage(rootEl) {
       thead.innerHTML = '';
       const thGroup = document.createElement('th');
       thGroup.className = 'sticky';
-      thGroup.textContent = 'Region / Project';
+      thGroup.textContent = translate('table.regionProject', undefined, 'Region / Project');
       thGroup.dataset.key = 'group';
       thead.appendChild(thGroup);
       STATUS_ORDER.forEach((s, idx) => {
         const th = document.createElement('th');
         th.className = 'num';
-        th.textContent = s;
+        th.textContent = statusLabel(s);
         th.dataset.key = String(idx);
         thead.appendChild(th);
       });
@@ -119,7 +180,7 @@ export function setupDashboardPage(rootEl) {
         row.values.forEach((v, ci) => {
           const td = document.createElement('td');
           td.className = 'num';
-          td.title = STATUS_ORDER[ci];
+          td.title = statusLabel(STATUS_ORDER[ci]);
           if (mutedZero && v === 0) td.classList.add('muted');
           if (v > 0 && ci === 3) td.style.fontWeight = '700';
           td.textContent = v;
@@ -134,7 +195,7 @@ export function setupDashboardPage(rootEl) {
       tf.innerHTML = '';
       const th0 = document.createElement('th');
       th0.className = 'sticky';
-      th0.textContent = '合计';
+      th0.textContent = translate('table.total', undefined, 'Total');
       tf.appendChild(th0);
       totals.forEach((t) => {
         const th = document.createElement('th');
@@ -157,7 +218,7 @@ export function setupDashboardPage(rootEl) {
           : 'XLS';
         const kv = STATUS_ORDER.map(
           (s, i) =>
-            `<div><span class="label">${s}</span><span class="val ${
+            `<div><span class="label">${statusLabel(s)}</span><span class="val ${
               mutedZero && row.values[i] === 0 ? 'muted' : ''
             }">${row.values[i]}</span></div>`
         ).join('');
@@ -244,11 +305,7 @@ export function setupDashboardPage(rootEl) {
     'click',
     () => {
       mutedZero = !mutedZero;
-      const btn = $('#toggleZero');
-      if (btn) {
-        btn.classList.toggle('primary', mutedZero);
-        btn.textContent = mutedZero ? 'Highlight Non-Zero' : 'Show All';
-      }
+      updateToggleZeroButton();
       render();
     },
     { signal }
@@ -258,14 +315,18 @@ export function setupDashboardPage(rootEl) {
     'click',
     () => {
       const rows = currentRows();
-      const header = ['区域/项目', ...STATUS_ORDER].join(',');
+      const header = [
+        translate('csv.regionProject', undefined, 'Region / Project'),
+        ...STATUS_ORDER.map((status) => statusLabel(status)),
+      ].join(',');
       const lines = rows.map((r) => [r.group, ...r.values].join(','));
       const csv = [header, ...lines].join('\n');
       const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Deliveries_${new Date().toISOString().slice(0, 10)}.csv`;
+      const prefix = translate('csv.fileNamePrefix', undefined, 'Deliveries');
+      a.download = `${prefix}_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     },
@@ -284,7 +345,14 @@ export function setupDashboardPage(rootEl) {
   const initialDate = datePicker?.value || getCurrentDate();
   loadData(initialDate);
 
-  return () => {
-    controller.abort();
+  return {
+    destroy() {
+      controller.abort();
+    },
+    updateI18n(newOpts = {}) {
+      if (newOpts.t) setTranslator(newOpts.t);
+      updateToggleZeroButton();
+      render();
+    },
   };
 }
