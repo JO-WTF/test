@@ -731,7 +731,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
         const remarkCell = escapeHtml(remark);
         const lonlat =
           it.lng && it.lat
-            ? `<a href="https://www.google.com/maps?q=${it.lat},${it.lng}" target="_blank" data-i18n="table.view">${it.lat},${it.lng}</a>`
+            ? `<a href="https://www.google.com/maps?q=${it.lat},${it.lng}" target="_blank" data-i18n="table.view">查看</a>`
             : '-';
 
         const photoCell = it.photo_url
