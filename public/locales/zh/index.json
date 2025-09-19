@@ -36,5 +36,9 @@
     "remarkLabel": "备注",
     "photoLabel": "照片",
     "didLabel": "扫码或手动输入单号",
-    "switchCamera": "切换摄像头"
+    "switchCamera": "切换摄像头",
+    "lng": "经度",
+    "lat": "纬度",
+    "torchFailed": "无法切换闪光灯",
+    "onlyOneCamera": "仅有一个摄像头可用"
 }
