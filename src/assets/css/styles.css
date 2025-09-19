@@ -1,0 +1,478 @@
+:root {
+    --fg: #eaf2ff;
+    --bg: #0b1020;
+    --accent: #69a8ff;
+    --muted: #8aa2c8;
+    --ok: #66e6a4;
+    --err: #ff9aa6
+    }
+body.scan-theme * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent
+    }
+html, body.scan-theme {
+    height: 100%
+    }
+html, body.scan-theme {
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation
+    }
+body.scan-theme {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial
+    }
+body.scan-theme .wrap {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px 40px;
+    gap: 16px
+    }
+body.scan-theme h1 {
+    font-size: 18px;
+    margin: 0 0 4px;
+    text-align: center;
+    font-weight: 600
+    }
+/* 语言切换 */
+body.scan-theme .lang-switch {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+    z-index: 1000
+    }
+body.scan-theme .lang-switch button {
+    appearance: none;
+    border: 1px solid #2a3a66;
+    background: #101831;
+    color: var(--fg);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer
+    }
+body.scan-theme .lang-switch img {
+    width: 20px;
+    height: 14px;
+    object-fit: cover;
+    border-radius: 2px
+    }
+body.scan-theme .lang-switch .active {
+    outline: 2px solid var(--accent)
+    }
+/* 扫描框区域：16:9 */
+body.scan-theme .scan-area {
+    position: relative;
+    width: min(84vw, 520px);
+    aspect-ratio: 16/9;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000
+    }
+body.scan-theme video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px
+    }
+body.scan-theme .corners {
+    position: absolute;
+    inset: 0;
+    pointer-events: none
+    }
+body.scan-theme .c {
+    position: absolute;
+    width: 13%;
+    height: 20%;
+    border: 3px solid var(--accent)
+    }
+body.scan-theme .tl {
+    left: 30px;
+    top: 30px;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 12px 0 0 0
+    }
+body.scan-theme .tr {
+    right: 30px;
+    top: 30px;
+    border-left: 0;
+    border-bottom: 0;
+    border-radius: 0 12px 0 0
+    }
+body.scan-theme .bl {
+    left: 30px;
+    bottom: 30px;
+    border-right: 0;
+    border-top: 0;
+    border-radius: 0 0 0 12px
+    }
+body.scan-theme .br {
+    right: 30px;
+    bottom: 30px;
+    border-left: 0;
+    border-top: 0;
+    border-radius: 0 0 12px 0
+    }
+body.scan-theme .row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap
+    }
+body.scan-theme button {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 16px;
+    font-weight: 600;
+    background: #12182b;
+    color: var(--fg);
+    font-size: 16px;
+    cursor: pointer
+    }
+body.scan-theme .primary {
+    background: var(--accent);
+    color: #07122b
+    }
+body.scan-theme .ghost {
+    background: #12182b;
+    color: var(--fg)
+    }
+body.scan-theme button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed
+    }
+body.scan-theme .tag {
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: #0f1730;
+    border: 1px solid #1f2a4d
+    }
+body.scan-theme .card {
+    width: min(92vw, 720px);
+    background: #101831;
+    border: 1px solid #1f2a4d;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px
+    }
+body.scan-theme .card h2 {
+    font-size: 16px;
+    margin: 0
+    }
+body.scan-theme .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace
+    }
+/* 状态更新区块 */
+body.scan-theme .status-box {
+    padding: 14px;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    background: #0b1327;
+    display: flex;
+    flex-direction: column;
+    gap: 12px
+    }
+body.scan-theme .status-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center
+    }
+body.scan-theme .status-row label {
+    font-weight: 700
+    }
+body.scan-theme select.status {
+    min-width: 180px;
+    font-size: 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #2a3a66;
+    background: #0e1631;
+    color: var(--fg)
+    }
+body.scan-theme .flex-2 {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap
+    }
+body.scan-theme .flex-2 > .col {
+    flex: 1 1 300px
+    }
+body.scan-theme textarea {
+    width: 100%;
+    min-height: 96px;
+    resize: vertical;
+    border-radius: 12px;
+    border: 1px solid #2a3a66;
+    background: #0e1631;
+    color: var(--fg);
+    padding: 10px 12px;
+    font-size: 16px
+    }
+body.scan-theme .uploader {
+    border: 1px dashed #2a3a66;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start
+    }
+body.scan-theme .uploader input[type="file"] {
+    display: block;
+    font-size: 16px
+    }
+body.scan-theme .thumb {
+    width: 96px;
+    height: 96px;
+    border-radius: 10px;
+    background: #081028;
+    border: 1px solid #20305a;
+    object-fit: cover
+    }
+/* 关键：输入控件字号 >=16px，避免聚焦自动缩放 */
+body.scan-theme input, body.scan-theme select, body.scan-theme textarea {
+    font-size: 16px
+    }
+body.scan-theme .ok {
+    color: var(--ok)
+    }
+body.scan-theme .err {
+    color: var(--err)
+    }
+/* —— 进度条 —— */
+body.scan-theme .progress {
+    position: relative;
+    height: 10px;
+    background: #0f1730;
+    border: 1px solid #1f2a4d;
+    border-radius: 999px;
+    overflow: hidden
+    }
+body.scan-theme .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.2s ease
+    }
+body.scan-theme .progress.indeterminate .progress-bar {
+    width: 30%;
+    animation: indet 1.2s infinite
+    }
+@keyframes indet {
+    0% {
+        transform: translateX(-100%);
+        } 100% {
+        transform: translateX(300%);
+        }
+    }
+body.scan-theme .progress-text {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted)
+    }
+/* 未选择状态的显著提示 */
+body.scan-theme .invalid {
+    border-color: var(--err) !important;
+    box-shadow: 0 0 0 3px rgba(255, 154, 166, 0.15)
+    }
+body.scan-theme .hint {
+    font-size: 12px;
+    color: var(--err)
+    }
+body.scan-theme .shake {
+    animation: shake 0.25s linear 2
+    }
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+        } 25% {
+        transform: translateX(-3px);
+        } 75% {
+        transform: translateX(3px);
+        }
+    }
+/* 提交结果展示 */
+body.scan-theme .result-box {
+    margin-top: 8px;
+    padding: 14px;
+    border: 2px dashed #2a3a66;
+    border-radius: 12px;
+    background: #0b1327
+    }
+body.scan-theme .result-box h3 {
+    margin: 0 0 8px;
+    font-size: 15px
+    }
+body.scan-theme .result-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0
+    }
+body.scan-theme .result-row .k {
+    min-width: 90px;
+    color: #9fb0d6
+    }
+body.scan-theme .result-row .v {
+    flex: 1
+    }
+/* 修复上传区横向溢出 */
+body.scan-theme .uploader {
+    display: flex;
+    flex-wrap: wrap;
+    /* 小屏自动换行，避免一行挤爆 */
+    gap: 12px;
+    align-items: flex-start;
+    max-width: 100%;
+    overflow: hidden;
+    /* 兜底隐藏溢出的像素 */
+    }
+body.scan-theme .uploader .thumb {
+    flex: 0 0 96px;
+    /* 固定缩略图占位 */
+    width: 96px;
+    height: 96px
+    }
+body.scan-theme .uploader > div {
+    flex: 1 1 220px;
+    /* 右侧列可伸缩 */
+    min-width: 0;
+    /* 关键：允许在 flex 中收缩，否则会把容器撑宽 */
+    }
+/* 约束原生 file input 宽度与文本表现 */
+body.scan-theme .uploader input[type="file"] {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 过长文件名省略 */
+    white-space: nowrap
+    }
+/* （可选）进一步限制说明文字防止超宽 */
+body.scan-theme .uploader small.muted {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+    }
+/* 兜底：整个页面禁用横向滚动（稳妥） */
+html, body.scan-theme, body.scan-theme .wrap {
+    overflow-x: hidden
+    }
+@media (max-width: 360px) {
+    body.scan-theme .uploader .thumb {
+        width: 80px;
+        height: 80px
+        }
+    }
+/* —— DID + 输入框：一体化样式 —— */
+body.scan-theme .did-input .did-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    /* 贴合在一起 */
+    border: 1px solid #20305a;
+    /* 外框 */
+    background: #0c1328;
+    /* 整体底色 */
+    border-radius: 12px;
+    padding: 0;
+    /* 让内边距交给前后两块 */
+    overflow: hidden;
+    /* 圆角裁切 */
+    }
+body.scan-theme #dnInput {
+    flex: 1;
+    margin: 8px 0
+    }
+body.scan-theme .okBtn {
+    color: var(--accent)
+    }
+/* 左侧固定前缀：不可编辑的“DID”方块 */
+body.scan-theme .did-input .prefix {
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    background: #0a1124;
+    /* 略深，表示禁用/只读感 */
+    color: #9fb0d6;
+    font-weight: 700;
+    border-right: 1px solid #20305a;
+    /* 与输入框分隔 */
+    letter-spacing: 0.5px;
+    user-select: none;
+    cursor: default;
+    /* 不可点击的感觉 */
+    }
+/* 右侧输入：弱化边框，透明背景，专注文字 */
+body.scan-theme .did-input input {
+    flex: 1 1 auto;
+    min-width: 0;
+    /* 关键：在 flex 内可收缩 */
+    border: 0;
+    /* 去边框 */
+    outline: 0;
+    background: transparent;
+    /* 与容器融为一体 */
+    color: var(--fg);
+    padding: 10px 12px;
+    font-weight: 600;
+    /* 稍有重量但不喧宾 */
+    }
+/* 占位提示更弱化 */
+body.scan-theme .did-input input::placeholder {
+    color: var(--muted);
+    font-weight: 400
+    }
+/* 聚焦态：外框高亮，而不是单独高亮 input */
+body.scan-theme .did-input .did-row:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(105, 168, 255, 0.15)
+    }
+/* 错误/无效（可选）：给 did-row 加 .invalid 时的样式 */
+body.scan-theme .did-input .did-row.invalid {
+    border-color: var(--err);
+    box-shadow: 0 0 0 3px rgba(255, 154, 166, 0.15)
+    }
+/* 极窄屏优化 */
+@media (max-width: 360px) {
+    body.scan-theme .did-input .prefix {
+        padding: 8px 10px
+        }
+    body.scan-theme .did-input input {
+        padding: 8px 10px
+        }
+    }
+body.scan-theme #container {
+    width: 640px;
+    margin: 20px auto;
+    padding: 10px
+    }
+@media (max-width: 603px) {
+    body.scan-theme #container {
+        width: 100%;
+        margin: 10px auto;
+        -moz-box-shadow: none;
+        -webkit-box-shadow: none;
+        box-shadow: none
+        }
+    body.scan-theme #container form.voucher-form input.voucher-code {
+        width: 180px
+        }
+    }

@@ -36,5 +36,9 @@
     "remarkLabel": "Catatan",
     "photoLabel": "Foto",
     "didLabel": "Pindai kode batang atau masukkan DN secara manual",
-    "switchCamera": "Ganti kamera"
+    "switchCamera": "Ganti kamera",
+    "lng": "Garis bujur",
+    "lat": "Garis lintang",
+    "torchFailed": "Lampu tidak dapat diubah",
+    "onlyOneCamera": "Hanya satu kamera tersedia"
 }
