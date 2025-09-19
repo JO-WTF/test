@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <link rel="stylesheet" href="assets/css/dashboard.css" />
+    <title>IDN Delivery Dashbord</title>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="header">
+        <div>
+          <div class="title"><span class="big">Overall Deliveries</span></div>
+          <div class="sub" id="meta">Date：— ・ Total: —</div>
+        </div>
+        <div class="controls">
+          <input id="q" class="input" placeholder="Filter Region/Project…" />
+          <!-- 新增日期选择框 -->
+          <select id="datePicker" class="select">
+            <!-- 选项会通过 JavaScript 动态填充 -->
+          </select>
+          <button
+            id="toggleZero"
+            class="btn primary"
+            title="切换是否弱化为 0 的单元格"
+          >
+            Highlight Non-Zero
+          </button>
+          <button id="dl" class="btn">Export CSV</button>
+        </div>
+      </header>
+
+      <!-- 关键指标 -->
+      <section class="grid cols-3" style="margin: 16px 0">
+        <div class="infocard">
+          <div>
+            <div class="k">POD</div>
+            <div id="podTotal" class="v">—</div>
+            <div class="k">Successfule Delivery</div>
+          </div>
+        </div>
+        <div class="infocard">
+          <div>
+            <div class="k">Replan</div>
+            <div id="replanTotal" class="v">—</div>
+            <div class="k">REPLANs made by LSP or Project</div>
+          </div>
+        </div>
+        <div class="infocard">
+          <div>
+            <div class="k">Closed</div>
+            <div id="closedTotal" class="v">—</div>
+            <div class="k">Closed or cancelled</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="table-section card">
+        <div class="table-scroll">
+          <table id="tbl">
+            <thead>
+              <tr id="thead-row">
+                <!-- 动态填充表头 -->
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <!-- 动态填充 -->
+            </tbody>
+            <tfoot>
+              <tr id="tfoot-row">
+                <!-- 动态填充合计 -->
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div
+          class="grid cols-3"
+          style="
+            padding: 12px;
+            border-top: 1px solid var(--line);
+            background: #f8fafc;
+          "
+        >
+          <div class="legend">
+            <span class="chip">POD</span><span class="desc">已交付证明</span>
+          </div>
+          <div class="legend">
+            <span class="chip">WAITING PIC FEEDBACK</span
+            ><span class="desc">等待图片反馈</span>
+          </div>
+          <div class="legend">
+            <span class="chip">REPLAN MOS…</span
+            ><span class="desc">因项目/LSP 延误需要重排</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 超小屏卡片视图（<560px） -->
+      <section class="cards-section">
+        <div id="cards"></div>
+      </section>
+    </div>
+    <!-- 遮罩层 -->
+    <div id="loading">
+      <!-- 旋转加载图标 -->
+      <div class="spinner"></div>
+    </div>
+    <script>
+      /* —— 数据 —— */
+      const STATUS_ORDER = [
+        "PREPARE VEHICLE",
+        "ON THE WAY",
+        "ON SITE",
+        "POD",
+        "REPLAN MOS PROJECT",
+        "WAITING PIC FEEDBACK",
+        "REPLAN MOS DUE TO LSP DELAY",
+        "CLOSE BY RN",
+        "CANCEL MOS",
+        "NO STATUS",
+        "TOTAL",
+      ];
+
+      // 加载数据函数
+      async function loadData(date) {
+        const loadingElement = document.getElementById("loading");
+        loadingElement.style.visibility = "visible";
+        console.log(loadingElement.style.visibility);
+
+        try {
+          const response = await fetch(
+            `https://jakartabackend-pr-8.onrender.com/api/dn/stats/${date}`
+          );
+          const data = await response.json();
+
+          // 渲染数据
+          render(data["data"]);
+        } catch (error) {
+          console.error("加载数据失败:", error);
+        } finally {
+          loadingElement.style.visibility = "hidden";
+        }
+      }
+
+      /* —— 状态 —— */
+      let mutedZero = true; // 是否弱化 0
+      let sortKey = "group"; // 'group' 或 0..9
+      let sortDir = "asc";
+      let query = "";
+      let RAW_ROWS = []; // 动态数据将被存储在此变量中
+
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+      function fmtDate(iso) {
+        const d = new Date(iso + "T00:00:00");
+        return d.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        });
+      }
+
+      function computeTotals(rows) {
+        const sums = new Array(STATUS_ORDER.length).fill(0);
+        rows.forEach((r) => r.values.forEach((v, i) => (sums[i] += v)));
+        return sums;
+      }
+
+      function currentRows() {
+        const q = query.trim().toLowerCase();
+        let rows = RAW_ROWS.filter((r) =>
+          q ? r.group.toLowerCase().includes(q) : true
+        );
+        rows = rows.slice().sort((a, b) => {
+          if (sortKey === "group")
+            return sortDir === "asc"
+              ? a.group.localeCompare(b.group)
+              : b.group.localeCompare(a.group);
+          const i = Number(sortKey);
+          const av = a.values[i] ?? 0;
+          const bv = b.values[i] ?? 0;
+          return sortDir === "asc" ? av - bv : bv - av;
+        });
+        console.log(rows);
+        return rows;
+      }
+
+      function render(data) {
+        RAW_ROWS = data; // 使用从接口获取的数据
+
+        const rows = currentRows();
+        console.log(rows);
+        const totals = computeTotals(RAW_ROWS);
+        console.log(totals);
+
+        // 顶部 meta
+        $("#meta").textContent = `Date：${RAW_ROWS[0].date} ・ Total: ${
+          totals[totals.length - 1]
+        }`;
+
+        // 指标卡
+        $("#podTotal").textContent = totals[3];
+        $("#replanTotal").textContent = totals[4] + totals[6];
+        $("#closedTotal").textContent = totals[7] + totals[8];
+
+        // 表头
+        const thead = $("#thead-row");
+        thead.innerHTML = "";
+        const thGroup = document.createElement("th");
+        thGroup.className = "sticky";
+        thGroup.textContent = "Region / Project";
+        thGroup.dataset.key = "group";
+        thead.appendChild(thGroup);
+        STATUS_ORDER.forEach((s, idx) => {
+          const th = document.createElement("th");
+          th.className = "num";
+          th.textContent = s;
+          th.dataset.key = String(idx);
+          thead.appendChild(th);
+        });
+        // 排序提示
+        $$("thead th").forEach((th) => {
+          th.style.cursor = "pointer";
+          th.onclick = () => onSort(th.dataset.key);
+        });
+        decorateSortIndicators();
+
+        // 表体
+        const tb = $("#tbody");
+        tb.innerHTML = "";
+        rows.forEach((row, ri) => {
+          const tr = document.createElement("tr");
+          const td0 = document.createElement("td");
+          td0.className = "sticky";
+
+          // 提取项目名称并只展示一次
+          const [projectName] = row.group.split(" "); // 假设项目名称在第一个空格前
+          td0.innerHTML = `<span class="chip">${projectName}</span> <span style="margin-left:6px; white-space: nowrap;">${row.group.replace(
+            projectName,
+            ""
+          )}</span>`;
+
+          tr.appendChild(td0);
+          row.values.forEach((v, ci) => {
+            const td = document.createElement("td");
+            td.className = "num";
+            td.title = STATUS_ORDER[ci];
+            if (mutedZero && v === 0) td.classList.add("muted");
+            if (v > 0 && ci === 3) td.style.fontWeight = "700";
+            td.textContent = v;
+            tr.appendChild(td);
+          });
+          tb.appendChild(tr);
+        });
+
+        // 合计
+        const tf = $("#tfoot-row");
+        tf.innerHTML = "";
+        const th0 = document.createElement("th");
+        th0.className = "sticky";
+        th0.textContent = "合计";
+        tf.appendChild(th0);
+        totals.forEach((t) => {
+          const th = document.createElement("th");
+          th.className = "num";
+          th.textContent = t;
+          tf.appendChild(th);
+        });
+
+        // 小屏卡片视图
+        const cards = $("#cards");
+        cards.innerHTML = "";
+        rows.forEach((row) => {
+          const div = document.createElement("div");
+          div.className = "rowcard";
+          div.innerHTML = `
+        <div class="head">
+          <div><span class="chip">${
+            row.group.includes("IOH")
+              ? "IOH"
+              : row.group.includes("TSEL")
+              ? "TSEL"
+              : "XLS"
+          }</span> <strong style="margin-left:6px;">${row.group}</strong></div>
+          <small style="color:#64748b">${fmtDate(row.date)}</small>
+        </div>
+        <div class="kv">
+          ${STATUS_ORDER.map(
+            (s, i) =>
+              `<div><span class="label">${s}</span><span class="val ${
+                mutedZero && row.values[i] === 0 ? "muted" : ""
+              }">${row.values[i]}</span></div>`
+          ).join("")}
+        </div>`;
+          cards.appendChild(div);
+        });
+      }
+
+      function decorateSortIndicators() {
+        $$("thead th").forEach((th) => {
+          const key = th.dataset.key;
+          if (!key) return;
+          const arrow =
+            sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+          const base = th.textContent.replace(/[ ▲▼]+$/, "");
+          th.textContent = base + arrow;
+        });
+      }
+
+      function onSort(key) {
+        if (!key) return;
+        if (sortKey === key) sortDir = sortDir === "asc" ? "desc" : "asc";
+        else {
+          sortKey = key;
+          sortDir = key === "group" ? "asc" : "desc";
+        }
+        render();
+      }
+
+      // 事件绑定
+      $("#q").addEventListener("input", (e) => {
+        query = e.target.value;
+        render();
+      });
+      $("#toggleZero").addEventListener("click", () => {
+        mutedZero = !mutedZero;
+        $("#toggleZero").classList.toggle("primary", mutedZero);
+        $("#toggleZero").textContent = mutedZero ? "高亮非零" : "显示全部";
+        render();
+      });
+      $("#dl").addEventListener("click", () => {
+        const rows = currentRows();
+        const header = ["区域/项目", ...STATUS_ORDER].join(",");
+        const lines = rows.map((r) => [r.group, ...r.values].join(","));
+        const csv = [header, ...lines].join("\n");
+
+        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Deliveries_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      // 获取当前日期的函数，格式化为 dd-MMM-yy 格式
+      function getCurrentDate(offsetDays = 0) {
+        const today = new Date();
+        today.setDate(today.getDate() + offsetDays);
+
+        // 月份缩写数组
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+
+        const day = String(today.getDate()).padStart(2, "0"); // 保证日期是两位数
+        const month = months[today.getMonth()]; // 获取三字母月份（例如 'Sep'）
+        const year = String(today.getFullYear()).slice(-2); // 获取年份的后两位（例如 '25'）
+
+        return `${day}-${month}-${year}`;
+      }
+
+      // 动态填充日期下拉框
+      function populateDatePicker() {
+        const datePicker = document.getElementById("datePicker");
+
+        // 清空下拉框，确保每次都重新生成选项
+        datePicker.innerHTML = "";
+
+        for (let i = -5; i <= 5; i++) {
+          const option = document.createElement("option");
+          const dateStr = getCurrentDate(i); // 获取当前日期加减i天的日期，格式为 dd-MMM-yy
+          option.value = dateStr;
+          option.textContent = dateStr; // 显示的日期格式为 dd-MMM-yy
+          if (i === 0) option.selected = true; // 默认选中当前日期
+          datePicker.appendChild(option);
+        }
+      }
+
+      // 监听日期选择变化
+      document
+        .getElementById("datePicker")
+        .addEventListener("change", async (e) => {
+          await loadData(e.target.value); // 触发 loadData 函数加载选定日期的数据
+        });
+
+      // 在页面加载时，填充日期选择框
+      populateDatePicker();
+
+      // 初始加载数据
+      loadData("19-Sep-25"); // 假设我们要加载的日期为 "2025-09-19"
+    </script>
+  </body>
+</html>
