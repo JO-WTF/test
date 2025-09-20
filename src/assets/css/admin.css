@@ -179,6 +179,114 @@ body.admin-theme {
     font-size: 14px;
     vertical-align: top
     }
+.admin-page tr.summary-row.expandable {
+    cursor: pointer
+    }
+.admin-page tr.summary-row.expandable:hover {
+    background: rgba(105, 168, 255, 0.08)
+    }
+.admin-page tr.summary-row.expanded {
+    background: rgba(105, 168, 255, 0.06)
+    }
+.admin-page tr.summary-row.expandable:focus-visible {
+    outline: 2px solid rgba(105, 168, 255, 0.6);
+    outline-offset: -2px
+    }
+.admin-page tr.summary-row .summary-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px
+    }
+.admin-page tr.summary-row .summary-primary {
+    font-weight: 600;
+    color: #eaf2ff
+    }
+.admin-page tr.summary-row .summary-hint {
+    font-size: 11px;
+    color: #7f96c2;
+    margin-top: 4px
+    }
+.admin-page tr.summary-row .row-toggle::before {
+    content: '▸';
+    display: inline-block;
+    color: #69a8ff;
+    transition: transform 0.2s ease
+    }
+.admin-page tr.summary-row.expanded .row-toggle::before {
+    transform: rotate(90deg)
+    }
+.admin-page tr.summary-row:not(.expandable) .row-toggle {
+    visibility: hidden
+    }
+.admin-page tr.detail-row td {
+    border-bottom: none;
+    padding: 0
+    }
+.admin-page tr.detail-row .detail-content {
+    background: #0e162f;
+    padding: 16px;
+    border-top: 1px solid #1f2a4d
+    }
+.admin-page tr.detail-row .detail-title {
+    font-size: 12px;
+    color: #9cc6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px
+    }
+.admin-page tr.detail-row .detail-meta {
+    font-size: 12px;
+    color: #8aa2c8;
+    margin-bottom: 12px;
+    word-break: break-all
+    }
+.admin-page tr.detail-row .detail-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) minmax(0, 3fr);
+    gap: 8px 16px
+    }
+@media (max-width: 720px) {
+    .admin-page tr.detail-row .detail-grid {
+        grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr)
+        }
+    }
+.admin-page tr.detail-row .detail-key {
+    font-size: 12px;
+    color: #8aa2c8;
+    word-break: break-all
+    }
+.admin-page tr.detail-row .detail-value {
+    font-size: 13px;
+    color: #eaf2ff;
+    word-break: break-word
+    }
+.admin-page tr.detail-row .detail-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center
+    }
+.admin-page tr.detail-row .detail-links a {
+    word-break: break-all
+    }
+.admin-page tr.detail-row .detail-json {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word
+    }
+.admin-page .coord-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px
+    }
+.admin-page .coord-cell a {
+    width: fit-content
+    }
 .admin-page a {
     color: #69a8ff
     }
