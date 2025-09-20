@@ -48,6 +48,70 @@ body.admin-theme {
     padding: 14px;
     margin-top: 14px
     }
+.admin-page .status-card-section {
+    margin-bottom: 12px
+    }
+.admin-page .status-card-grid {
+    --status-card-columns: 1;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(var(--status-card-columns), minmax(160px, 1fr))
+    }
+@media (max-width: 720px) {
+    .admin-page .status-card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr))
+        }
+    }
+.admin-page .status-card {
+    appearance: none;
+    border: 1px solid #24345c;
+    border-radius: 12px;
+    background: #121c3a;
+    color: #eaf2ff;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    width: 100%;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    text-align: left;
+    min-height: 96px;
+    position: relative
+    }
+.admin-page .status-card:hover {
+    border-color: #69a8ff;
+    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.45);
+    transform: translateY(-1px)
+    }
+.admin-page .status-card:focus-visible {
+    outline: 2px solid rgba(105, 168, 255, 0.75);
+    outline-offset: 2px
+    }
+.admin-page .status-card.active {
+    border-color: #69a8ff;
+    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.6);
+    background: rgba(105, 168, 255, 0.08)
+    }
+.admin-page .status-card.loading {
+    opacity: 0.7;
+    cursor: progress
+    }
+.admin-page .status-card__count {
+    font-size: 28px;
+    font-weight: 700;
+    color: #9cc6ff;
+    line-height: 1.1
+    }
+.admin-page .status-card.loading .status-card__count {
+    color: #7fa7e6
+    }
+.admin-page .status-card__label {
+    font-size: 13px;
+    color: #c8d8f8;
+    line-height: 1.4
+    }
 .admin-page label {
     font-size: 12px;
     color: #8aa2c8

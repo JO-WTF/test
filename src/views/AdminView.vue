@@ -36,6 +36,14 @@
       <h2 data-i18n="title">DU 提交记录管理</h2>
 
       <div class="card">
+        <div
+          id="status-card-wrapper"
+          class="status-card-section"
+          style="display: none"
+          role="group"
+        >
+          <div class="status-card-grid" id="status-card-container"></div>
+        </div>
         <div class="grid-2col">
           <div class="du-col">
             <label data-i18n="du.label"

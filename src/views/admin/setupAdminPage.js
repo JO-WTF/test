@@ -44,6 +44,9 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   const authMsg = el('auth-msg');
   const authRoleTag = el('auth-role-tag');
 
+  const statusCardWrapper = el('status-card-wrapper');
+  const statusCardContainer = el('status-card-container');
+
   const dnBtn = el('btn-dn-entry');
   const dnModal = el('dn-modal');
   const dnInput = el('dn-input');
@@ -57,6 +60,10 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   let currentUserInfo = null;
   let cachedItems = [];
   let removeI18nListener = null;
+  let statusCardDefs = [];
+  const statusCardRefs = new Map();
+  let statusCardAbortController = null;
+  let statusCardRequestId = 0;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
@@ -148,6 +155,8 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     translateStatusCells();
     updateAuthButtonLabel();
     updateRoleBadge();
+    updateStatusCardLabels();
+    updateStatusCardActiveState();
     refreshDnEntryVisibility();
     const currentVal = mStatus?.value || '';
     refreshStatusOptionsForRole(currentVal);
@@ -221,6 +230,240 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     const fallback = translateStatusValue(raw);
     if (fallback) return fallback;
     return canonical || raw || '';
+  }
+
+  function getRoleStatusHighlights(role) {
+    if (!role) return [];
+    const rawList = Array.isArray(role.statusHighlights) ? role.statusHighlights : [];
+    const seen = new Set();
+    const list = [];
+    rawList.forEach((item) => {
+      if (!item) return;
+      let status = '';
+      let label = '';
+      let labelKey = '';
+      if (typeof item === 'string') {
+        status = normalizeStatusValue(item) || item;
+      } else if (typeof item === 'object') {
+        const target = item.status ?? item.value ?? item.key;
+        status = normalizeStatusValue(target) || target || '';
+        if (typeof item.label === 'string') label = item.label;
+        if (typeof item.labelKey === 'string') labelKey = item.labelKey;
+      }
+      if (!status || seen.has(status)) return;
+      seen.add(status);
+      list.push({ status, label, labelKey });
+    });
+    return list;
+  }
+
+  function getStatusCardLabel(def) {
+    if (!def) return '';
+    if (def.labelKey && i18n) {
+      try {
+        const translated = i18n.t(def.labelKey);
+        if (translated && translated !== def.labelKey) return translated;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    if (def.label) return def.label;
+    return i18nStatusDisplay(def.status);
+  }
+
+  function renderStatusHighlightCards() {
+    if (!statusCardContainer || !statusCardWrapper) return;
+    const role = getCurrentRole();
+    const defs = getRoleStatusHighlights(role);
+    statusCardDefs = defs;
+    statusCardRefs.clear();
+
+    if (!defs.length) {
+      statusCardContainer.innerHTML = '';
+      statusCardWrapper.style.display = 'none';
+      statusCardWrapper.setAttribute('aria-hidden', 'true');
+      statusCardContainer.style.removeProperty('--status-card-columns');
+      if (statusCardAbortController) {
+        try {
+          statusCardAbortController.abort();
+        } catch (err) {
+          console.error(err);
+        }
+        statusCardAbortController = null;
+      }
+      return;
+    }
+
+    statusCardWrapper.style.display = '';
+    statusCardWrapper.setAttribute('aria-hidden', 'false');
+    statusCardContainer.innerHTML = '';
+    const columns = Math.max(1, Math.min(defs.length, 4));
+    statusCardContainer.style.setProperty('--status-card-columns', String(columns));
+
+    defs.forEach((def) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'status-card';
+      btn.setAttribute('data-status', def.status);
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-busy', 'false');
+
+      const countEl = document.createElement('div');
+      countEl.className = 'status-card__count';
+      countEl.textContent = '…';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'status-card__label';
+      labelEl.textContent = getStatusCardLabel(def);
+
+      btn.appendChild(countEl);
+      btn.appendChild(labelEl);
+
+      btn.addEventListener(
+        'click',
+        () => handleStatusCardClick(def.status),
+        { signal }
+      );
+
+      statusCardContainer.appendChild(btn);
+      statusCardRefs.set(def.status, { button: btn, countEl, labelEl });
+    });
+
+    updateStatusCardLabels();
+    updateStatusCardActiveState();
+  }
+
+  function updateStatusCardLabels() {
+    if (!statusCardDefs.length) return;
+    statusCardDefs.forEach((def) => {
+      const ref = statusCardRefs.get(def.status);
+      if (!ref) return;
+      const label = getStatusCardLabel(def);
+      ref.labelEl.textContent = label;
+      const currentCount = ref.countEl.textContent || '';
+      ref.button.setAttribute('aria-label', `${label} ${currentCount}`.trim());
+    });
+  }
+
+  function updateStatusCardActiveState() {
+    if (!statusCardRefs.size) return;
+    const select = el('f-status');
+    const value = select ? select.value : '';
+    const canonical = normalizeStatusValue(value);
+    statusCardRefs.forEach((ref, status) => {
+      const isActive = Boolean(canonical) && status === canonical;
+      ref.button.classList.toggle('active', isActive);
+      ref.button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  }
+
+  async function fetchStatusCount(status, signal) {
+    const params = new URLSearchParams();
+    params.set('status', status);
+    params.set('page', '1');
+    params.set('page_size', '1');
+    const url = `${API_BASE}/api/du/search?${params.toString()}`;
+    const resp = await fetch(url, { signal });
+    const text = await resp.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (err) {
+      console.error(err);
+    }
+    if (!resp.ok) {
+      throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+    }
+    const totalRaw = data?.total ?? data?.count ?? 0;
+    const total = Number(totalRaw);
+    return Number.isFinite(total) ? total : 0;
+  }
+
+  async function refreshStatusHighlightCards() {
+    if (!statusCardDefs.length || !statusCardRefs.size) return;
+    statusCardRequestId += 1;
+    const requestId = statusCardRequestId;
+
+    if (statusCardAbortController) {
+      try {
+        statusCardAbortController.abort();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    const controller = new AbortController();
+    statusCardAbortController = controller;
+    const { signal: cardSignal } = controller;
+
+    statusCardRefs.forEach((ref) => {
+      ref.button.classList.add('loading');
+      ref.button.setAttribute('aria-busy', 'true');
+      ref.countEl.textContent = '…';
+    });
+
+    const tasks = statusCardDefs.map(async (def) => {
+      try {
+        const count = await fetchStatusCount(def.status, cardSignal);
+        if (cardSignal.aborted || requestId !== statusCardRequestId) return;
+        const ref = statusCardRefs.get(def.status);
+        if (!ref) return;
+        const displayCount = Number.isFinite(count) ? count : 0;
+        ref.countEl.textContent = String(displayCount);
+        ref.button.classList.remove('loading');
+        ref.button.setAttribute('aria-busy', 'false');
+        const label = getStatusCardLabel(def);
+        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
+      } catch (err) {
+        if (cardSignal.aborted || requestId !== statusCardRequestId) return;
+        if (err?.name !== 'AbortError') {
+          console.error(err);
+        }
+        const ref = statusCardRefs.get(def.status);
+        if (!ref) return;
+        ref.countEl.textContent = '—';
+        ref.button.classList.remove('loading');
+        ref.button.setAttribute('aria-busy', 'false');
+        const label = getStatusCardLabel(def);
+        ref.button.setAttribute('aria-label', label);
+      }
+    });
+
+    try {
+      await Promise.allSettled(tasks);
+    } catch (err) {
+      if (cardSignal.aborted || requestId !== statusCardRequestId) return;
+      console.error(err);
+    } finally {
+      if (statusCardAbortController === controller) {
+        statusCardAbortController = null;
+      }
+    }
+  }
+
+  function handleStatusCardClick(status) {
+    const canonical = normalizeStatusValue(status);
+    if (!canonical) return;
+    const select = el('f-status');
+    if (select) {
+      let hasOption = false;
+      Array.from(select.options).forEach((opt) => {
+        if (opt.value === canonical) hasOption = true;
+      });
+      if (!hasOption) {
+        const option = document.createElement('option');
+        option.value = canonical;
+        option.textContent = i18nStatusDisplay(canonical);
+        select.appendChild(option);
+      }
+      select.value = canonical;
+      try {
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    q.page = 1;
+    fetchList();
   }
 
   function getCurrentRole() {
@@ -451,6 +694,8 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     refreshStatusOptionsForRole(currentVal);
     updateModalFieldVisibility();
     rerenderTableActions();
+    renderStatusHighlightCards();
+    refreshStatusHighlightCards();
     persistAuthState(currentRoleKey, currentUserInfo);
   }
 
@@ -695,6 +940,14 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     );
   }
 
+  el('f-status')?.addEventListener(
+    'change',
+    () => {
+      updateStatusCardActiveState();
+    },
+    { signal }
+  );
+
   function buildParamsAuto() {
     const p = new URLSearchParams();
     const ids = toTokenList(duInput?.value || '');
@@ -911,6 +1164,8 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       hint.textContent = `查询失败：${err?.message || err}`;
       tbl.style.display = 'none';
       pager.style.display = 'none';
+    } finally {
+      refreshStatusHighlightCards();
     }
   }
 
@@ -1330,6 +1585,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       refreshStatusOptionsForRole(currentVal);
       updateModalFieldVisibility();
       rerenderTableActions();
+      renderStatusHighlightCards();
     }
   }
 
@@ -1350,6 +1606,15 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     } catch (err) {
       console.error(err);
     }
+    try {
+      statusCardAbortController?.abort();
+    } catch (err) {
+      console.error(err);
+    }
+    statusCardAbortController = null;
+    statusCardRefs.clear();
+    statusCardDefs = [];
+    statusCardRequestId = 0;
     if (viewer) {
       try {
         viewer.destroy();

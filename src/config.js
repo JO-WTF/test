@@ -149,6 +149,12 @@ export const ROLE_DEFINITIONS = {
         STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
       ],
     },
+    statusHighlights: [
+      { status: STATUS_VALUES.NEW_MOS },
+      { status: STATUS_VALUES.CANCEL_MOS },
+      { status: STATUS_VALUES.CLOSE_BY_RN },
+      { status: STATUS_VALUES.WAITING_PIC_FEEDBACK },
+    ],
     users: [
       { id: 'lsp-operator-01', name: 'LSP Operator 01', password: 'LSP-123456' },
       { id: 'lsp-operator-02', name: 'LSP Operator 02', password: 'LSP-234567' },
@@ -178,6 +184,10 @@ export const ROLE_DEFINITIONS = {
         STATUS_VALUES.CLOSE_BY_RN,
       ],
     },
+    statusHighlights: [
+      { status: STATUS_VALUES.NEW_MOS },
+      { status: STATUS_VALUES.POD },
+    ],
     users: [
       { id: 'project-team-01', name: 'Project Team 01', password: 'HW-PROJ-888888' },
       { id: 'project-team-02', name: 'Project Team 02', password: 'HW-PROJ-777777' },
@@ -205,6 +215,15 @@ export const ROLE_DEFINITIONS = {
         (status) => status !== STATUS_VALUES.NO_STATUS
       ),
     },
+    statusHighlights: [
+      { status: STATUS_VALUES.NEW_MOS },
+      { status: STATUS_VALUES.CANCEL_MOS },
+      { status: STATUS_VALUES.CLOSE_BY_RN },
+      { status: STATUS_VALUES.REPLAN_MOS_PROJECT },
+      { status: STATUS_VALUES.REPLAN_MOS_LSP_DELAY },
+      { status: STATUS_VALUES.PREPARE_VEHICLE },
+      { status: STATUS_VALUES.ON_THE_WAY },
+    ],
     users: [
       { id: 'tm-lead-01', name: 'Transport Manager 01', password: 'HW-LSM-888888' },
       { id: 'tm-lead-02', name: 'Transport Manager 02', password: 'HW-LSM-777234' },
