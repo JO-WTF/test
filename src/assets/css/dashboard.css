@@ -42,13 +42,13 @@ body.dashboard-theme {
 .dashboard-view .title {
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin: 20px 0;
+    margin: 10px 0;
     }
 .dashboard-view .lang-switch {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 16px;
+    margin: 8px 0;
     }
 .dashboard-view .lang-switch button {
     appearance: none;

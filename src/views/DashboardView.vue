@@ -50,7 +50,7 @@
       </div>
     </header>
 
-    <section class="grid cols-3" style="margin: 16px 0">
+    <section class="grid cols-3" style="margin: 8px 0">
       <div class="infocard">
         <div>
           <div class="k" data-i18n="infocard.pod.title">POD</div>
