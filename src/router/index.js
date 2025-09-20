@@ -12,6 +12,11 @@ const routes = [
     component: () => import('../views/AdminView.vue'),
   },
   {
+    path: '/dn-admin',
+    name: 'dn-admin',
+    component: () => import('../views/DnAdminView.vue'),
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/DashboardView.vue'),
