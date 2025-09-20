@@ -19,6 +19,7 @@
     "photoTip": "Dukung kamera atau galeri",
     "removePhoto": "Hapus Foto",
     "needSelectStatus": "Silakan pilih status pengiriman",
+    "needWatermarkedPhoto": "Harap unggah foto penyerahan dengan watermark sebelum mengirim.",
     "invalidId": "ID DU tidak valid",
     "submit": "Kirim",
     "submitting": "Mengirim…",
@@ -36,5 +37,9 @@
     "remarkLabel": "Catatan",
     "photoLabel": "Foto",
     "didLabel": "Pindai kode batang atau masukkan DN secara manual",
-    "switchCamera": "Ganti kamera"
+    "switchCamera": "Ganti kamera",
+    "lng": "Garis bujur",
+    "lat": "Garis lintang",
+    "torchFailed": "Lampu tidak dapat diubah",
+    "onlyOneCamera": "Hanya satu kamera tersedia"
 }

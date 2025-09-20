@@ -19,6 +19,7 @@
     "photoTip": "Take or choose from gallery",
     "removePhoto": "Remove Photo",
     "needSelectStatus": "Please select a shipping status",
+    "needWatermarkedPhoto": "Please upload a watermarked delivery photo before submitting.",
     "invalidId": "Invalid DU ID",
     "submit": "Submit",
     "submitting": "Submitting…",
@@ -36,5 +37,9 @@
     "remarkLabel": "Remark",
     "photoLabel": "Photo",
     "didLabel": "Scan barcode or enter DN manually",
-    "switchCamera": "switch Camera"
+    "switchCamera": "Switch Camera",
+    "lng": "Longitude",
+    "lat": "Latitude",
+    "torchFailed": "Unable to toggle torch",
+    "onlyOneCamera": "Only one camera available"
 }

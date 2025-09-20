@@ -19,6 +19,7 @@
     "photoTip": "支持拍照或从相册选择",
     "removePhoto": "移除照片",
     "needSelectStatus": "请先选择运输状态",
+    "needWatermarkedPhoto": "请上传带有水印的交付照片再提交。",
     "invalidId": "无效的DU ID",
     "submit": "提交",
     "submitting": "提交中…",
@@ -36,5 +37,9 @@
     "remarkLabel": "备注",
     "photoLabel": "照片",
     "didLabel": "扫码或手动输入单号",
-    "switchCamera": "切换摄像头"
+    "switchCamera": "切换摄像头",
+    "lng": "经度",
+    "lat": "纬度",
+    "torchFailed": "无法切换闪光灯",
+    "onlyOneCamera": "仅有一个摄像头可用"
 }
