@@ -40,9 +40,22 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const statusSelect = el('f-status');
   const remarkInput = el('f-remark');
   const hasSelect = el('f-has');
+  const hasCoordinateSelect = el('f-has-coordinate');
   const fromInput = el('f-from');
   const toInput = el('f-to');
   const pageSizeInput = el('f-ps2');
+  const lspInput = el('f-lsp');
+  const lspOptions = el('f-lsp-options');
+  const regionInput = el('f-region');
+  const regionOptions = el('f-region-options');
+  const planMosDateInput = el('f-plan-mos-date');
+  const planMosDateOptions = el('f-plan-mos-date-options');
+  const subconInput = el('f-subcon');
+  const subconOptions = el('f-subcon-options');
+  const statusWhInput = el('f-status-wh');
+  const statusWhOptions = el('f-status-wh-options');
+  const statusDeliveryInput = el('f-status-delivery');
+  const statusDeliveryOptions = el('f-status-delivery-options');
 
   const mask = el('modal-mask');
   const mId = el('modal-id');
@@ -91,6 +104,83 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const STATUS_VALUE_TO_KEY = STATUS_TRANSLATION_KEYS || {};
   const STATUS_ALIAS_LOOKUP = STATUS_ALIAS_MAP || {};
   const STATUS_KNOWN_VALUES = new Set(Object.keys(STATUS_VALUE_TO_KEY));
+  const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+  const DEFAULT_STATUS_VALUE = statusSelect?.options?.[0]?.value || '';
+  if (statusSelect && DEFAULT_STATUS_VALUE) {
+    statusSelect.value = DEFAULT_STATUS_VALUE;
+  }
+
+  const FILTER_OPTION_LIMIT = 200;
+  const filterDropdowns = new Map();
+
+  function normalizeFilterOptionList(list) {
+    if (!Array.isArray(list)) return [];
+    const seen = new Set();
+    const result = [];
+    list.forEach((item) => {
+      if (item === null || item === undefined) return;
+      const str = String(item).trim();
+      if (!str) return;
+      if (seen.has(str)) return;
+      seen.add(str);
+      result.push(str);
+    });
+    return result;
+  }
+
+  function registerFilterDropdown(key, inputEl, listEl) {
+    if (!inputEl || !listEl) return;
+    const state = {
+      input: inputEl,
+      list: listEl,
+      options: [],
+      updateList(query) {
+        const q = (query || '').trim().toLowerCase();
+        const source = state.options;
+        const filtered = q
+          ? source.filter((option) => option.toLowerCase().includes(q))
+          : source;
+        const limited = filtered.slice(0, FILTER_OPTION_LIMIT);
+        state.list.innerHTML = limited
+          .map((option) => `<option value="${escapeHtml(option)}"></option>`)
+          .join('');
+      },
+    };
+
+    inputEl.setAttribute('autocomplete', 'off');
+
+    inputEl.addEventListener(
+      'focus',
+      () => {
+        state.updateList('');
+      },
+      { signal }
+    );
+
+    inputEl.addEventListener(
+      'input',
+      () => {
+        state.updateList(inputEl.value || '');
+      },
+      { signal }
+    );
+
+    filterDropdowns.set(key, state);
+  }
+
+  function setFilterDropdownOptions(key, options) {
+    const state = filterDropdowns.get(key);
+    if (!state) return;
+    state.options = normalizeFilterOptionList(options);
+    state.updateList(state.input.value || '');
+  }
+
+  registerFilterDropdown('lsp', lspInput, lspOptions);
+  registerFilterDropdown('region', regionInput, regionOptions);
+  registerFilterDropdown('plan_mos_date', planMosDateInput, planMosDateOptions);
+  registerFilterDropdown('subcon', subconInput, subconOptions);
+  registerFilterDropdown('status_wh', statusWhInput, statusWhOptions);
+  registerFilterDropdown('status_delivery', statusDeliveryInput, statusDeliveryOptions);
 
   const expandedRowKeys = new Set();
   const SUMMARY_BASE_COLUMN_COUNT = 9;
@@ -1481,6 +1571,34 @@ ${cellsHtml}
     });
   }
 
+  async function fetchFilterCandidates() {
+    try {
+      const resp = await fetch(`${API_BASE}/api/dn/filters`, { signal });
+      const text = await resp.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (err) {
+        console.error(err);
+      }
+      if (!resp.ok) {
+        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+      }
+
+      const payload = data?.data && typeof data.data === 'object' ? data.data : data;
+      setFilterDropdownOptions('lsp', payload?.lsp);
+      setFilterDropdownOptions('region', payload?.region);
+      setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
+      setFilterDropdownOptions('subcon', payload?.subcon);
+      setFilterDropdownOptions('status_wh', payload?.status_wh);
+      const deliveryOptions = payload?.status_delivery || payload?.status_deliver;
+      setFilterDropdownOptions('status_delivery', deliveryOptions);
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      console.error('Failed to load DN filter options', err);
+    }
+  }
+
   function buildParamsAuto() {
     const params = new URLSearchParams();
     const tokens = normalizeDnInput({ enforceFormat: false });
@@ -1492,20 +1610,38 @@ ${cellsHtml}
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = statusSelect?.value;
+      const st = statusSelect?.value || '';
       const rk = (remarkInput?.value || '').trim();
       const hp = hasSelect?.value;
+      const hc = hasCoordinateSelect?.value;
       const df = fromInput?.value;
       const dt = toInput?.value;
       const du = (duFilterInput?.value || '').trim();
+      const lsp = (lspInput?.value || '').trim();
+      const region = (regionInput?.value || '').trim();
+      const planMosDate = (planMosDateInput?.value || '').trim();
+      const subcon = (subconInput?.value || '').trim();
+      const statusWh = (statusWhInput?.value || '').trim();
+      const statusDelivery = (statusDeliveryInput?.value || '').trim();
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
-      if (st) params.set('status', st);
+      if (st === STATUS_NOT_EMPTY_VALUE) {
+        params.set('status_not_empty', 'true');
+      } else if (st) {
+        params.set('status', st);
+      }
       if (rk) params.set('remark', rk);
       if (hp) params.set('has_photo', hp);
+      if (hc) params.set('has_coordinate', hc);
       if (df) params.set('date_from', new Date(`${df}T00:00:00`).toISOString());
       if (dt) params.set('date_to', new Date(`${dt}T23:59:59`).toISOString());
+      if (lsp) params.set('lsp', lsp);
+      if (region) params.set('region', region);
+      if (planMosDate) params.set('date', planMosDate);
+      if (subcon) params.set('subcon', subcon);
+      if (statusWh) params.set('status_wh', statusWh);
+      if (statusDelivery) params.set('status_delivery', statusDelivery);
     }
 
     params.set('page', q.page);
@@ -2193,9 +2329,30 @@ ${cellsHtml}
   el('btn-reset')?.addEventListener(
     'click',
     () => {
-      ['f-status', 'f-remark', 'f-has', 'f-from', 'f-to', 'f-ps2', 'f-du'].forEach((id) => {
+      const defaultValues = {
+        'f-status': DEFAULT_STATUS_VALUE,
+        'f-remark': '',
+        'f-has': '',
+        'f-has-coordinate': '',
+        'f-from': '',
+        'f-to': '',
+        'f-ps2': '20',
+        'f-du': '',
+        'f-lsp': '',
+        'f-region': '',
+        'f-plan-mos-date': '',
+        'f-subcon': '',
+        'f-status-wh': '',
+        'f-status-delivery': '',
+      };
+      Object.entries(defaultValues).forEach(([id, value]) => {
         const node = el(id);
-        if (node) node.value = id === 'f-ps2' ? '20' : '';
+        if (!node) return;
+        try {
+          node.value = value;
+        } catch (err) {
+          console.error(err);
+        }
       });
       if (dnInput) dnInput.value = '';
       normalizeDnInput({ enforceFormat: false });
@@ -2263,10 +2420,11 @@ ${cellsHtml}
     }
   }
 
-  function init() {
+  async function init() {
     normalizeDnInput({ enforceFormat: false });
     if (hint) hint.textContent = i18n?.t('hint.ready') || '输入条件后点击查询。';
-    fetchList();
+    await fetchFilterCandidates();
+    await fetchList();
   }
 
   restoreAuthFromStorage();

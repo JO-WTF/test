@@ -67,7 +67,6 @@
               <div class="field">
                 <label data-i18n="status.label">状态</label>
                 <select id="f-status">
-                  <option value="" data-i18n="status.all">（全部）</option>
                   <option
                     v-for="option in statusFilterOptions"
                     :key="option.value"
@@ -129,6 +128,80 @@
               <div class="field">
                 <label data-i18n="date.to">结束日期</label>
                 <input id="f-to" type="date" />
+              </div>
+            </div>
+
+            <div class="row-line">
+              <div class="field">
+                <label data-i18n="lsp.label">LSP</label>
+                <input
+                  id="f-lsp"
+                  list="f-lsp-options"
+                  data-i18n-placeholder="lsp.placeholder"
+                  placeholder="输入或选择"
+                />
+                <datalist id="f-lsp-options"></datalist>
+              </div>
+              <div class="field">
+                <label data-i18n="region.label">Region</label>
+                <input
+                  id="f-region"
+                  list="f-region-options"
+                  data-i18n-placeholder="region.placeholder"
+                  placeholder="输入或选择"
+                />
+                <datalist id="f-region-options"></datalist>
+              </div>
+              <div class="field">
+                <label data-i18n="planMosDate.label">Plan MOS Date</label>
+                <input
+                  id="f-plan-mos-date"
+                  list="f-plan-mos-date-options"
+                  data-i18n-placeholder="planMosDate.placeholder"
+                  placeholder="输入或选择"
+                />
+                <datalist id="f-plan-mos-date-options"></datalist>
+              </div>
+              <div class="field">
+                <label data-i18n="subcon.label">Subcon</label>
+                <input
+                  id="f-subcon"
+                  list="f-subcon-options"
+                  data-i18n-placeholder="subcon.placeholder"
+                  placeholder="输入或选择"
+                />
+                <datalist id="f-subcon-options"></datalist>
+              </div>
+            </div>
+
+            <div class="row-line">
+              <div class="field">
+                <label data-i18n="statusWh.label">Status WH</label>
+                <input
+                  id="f-status-wh"
+                  list="f-status-wh-options"
+                  data-i18n-placeholder="statusWh.placeholder"
+                  placeholder="输入或选择"
+                />
+                <datalist id="f-status-wh-options"></datalist>
+              </div>
+              <div class="field">
+                <label data-i18n="statusDelivery.label">Status Delivery</label>
+                <input
+                  id="f-status-delivery"
+                  list="f-status-delivery-options"
+                  data-i18n-placeholder="statusDelivery.placeholder"
+                  placeholder="输入或选择"
+                />
+                <datalist id="f-status-delivery-options"></datalist>
+              </div>
+              <div class="field">
+                <label data-i18n="hasCoord.label">经纬度</label>
+                <select id="f-has-coordinate">
+                  <option value="" data-i18n="hasCoord.any">（不限）</option>
+                  <option value="true" data-i18n="hasCoord.true">有经纬度</option>
+                  <option value="false" data-i18n="hasCoord.false">无经纬度</option>
+                </select>
               </div>
             </div>
 
@@ -279,11 +352,6 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupDnAdminPage } from './dn-admin/setupDnAdminPage';
-import {
-  STATUS_ORDERED_LIST,
-  STATUS_TRANSLATION_KEYS,
-  STATUS_FALLBACK_LABELS,
-} from '../config.js';
 import 'viewerjs/dist/viewer.css';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
@@ -293,11 +361,40 @@ const currentLang = ref('zh');
 let cleanup = () => {};
 let i18nInstance = null;
 
-const statusFilterOptions = STATUS_ORDERED_LIST.map((value) => ({
-  value,
-  i18nKey: STATUS_TRANSLATION_KEYS[value] || '',
-  fallback: STATUS_FALLBACK_LABELS[value] || value,
-}));
+const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+
+const statusFilterOptions = [
+  {
+    value: STATUS_NOT_EMPTY_VALUE,
+    i18nKey: 'status.filter.notEmpty',
+    fallback: '所有状态',
+  },
+  {
+    value: 'ARRIVED AT WH',
+    i18nKey: 'status.filter.arrivedAtWh',
+    fallback: '到达仓库',
+  },
+  {
+    value: 'TRANSPORTING FROM WH',
+    i18nKey: 'status.filter.transportingFromWh',
+    fallback: '从仓库发出',
+  },
+  {
+    value: 'ARRIVED AT XD/PM',
+    i18nKey: 'status.filter.arrivedAtXdPm',
+    fallback: '到达XD/PM',
+  },
+  {
+    value: 'TRANSPORTING FROM XD/PM',
+    i18nKey: 'status.filter.transportingFromXdPm',
+    fallback: '从XD/PM发出',
+  },
+  {
+    value: 'ARRIVED AT SITE',
+    i18nKey: 'status.filter.arrivedAtSite',
+    fallback: '到达站点',
+  },
+];
 
 useBodyTheme('admin-theme');
 
