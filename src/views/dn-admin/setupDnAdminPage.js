@@ -2397,6 +2397,66 @@ ${cellsHtml}
     { signal }
   );
 
+  const syncSheetBtn = el('btn-sync-google-sheet');
+  syncSheetBtn?.addEventListener(
+    'click',
+    async () => {
+      if (!syncSheetBtn) return;
+      syncSheetBtn.disabled = true;
+      try {
+        const resp = await fetch(`${API_BASE}/api/dn/sync`, { method: 'POST' });
+        const contentType = resp.headers?.get('content-type') || '';
+        let payload = null;
+        let text = '';
+        if (contentType.includes('application/json')) {
+          try {
+            payload = await resp.json();
+          } catch (err) {
+            console.error(err);
+          }
+        } else {
+          try {
+            text = await resp.text();
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        const messageFromResp =
+          (payload && (payload.message || payload.msg || payload.detail)) || text || '';
+
+        if (!resp.ok) {
+          const baseError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
+          const errorMessage = messageFromResp
+            ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: messageFromResp }) ||
+              `${baseError}：${messageFromResp}`
+            : baseError;
+          showToast(errorMessage, 'error');
+          return;
+        }
+
+        const baseSuccess =
+          i18n?.t('actions.syncGoogleSheetSuccess') || '已触发 Google Sheet 数据更新';
+        const successMessage = messageFromResp
+          ? i18n?.t('actions.syncGoogleSheetSuccessWithMsg', { msg: messageFromResp }) ||
+            `${baseSuccess}：${messageFromResp}`
+          : baseSuccess;
+        showToast(successMessage, 'success');
+      } catch (err) {
+        const fallbackError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
+        const message = err?.message || err;
+        const composed = message
+          ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: message }) ||
+            `${fallbackError}：${message}`
+          : fallbackError;
+        showToast(composed, 'error');
+      } finally {
+        syncSheetBtn.disabled = false;
+      }
+    },
+    { signal }
+  );
+
   el('btn-trust-backend-link')?.addEventListener(
     'click',
     () => {

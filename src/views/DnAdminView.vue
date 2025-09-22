@@ -202,6 +202,13 @@
                   </button>
                   <button
                     class="btn ghost"
+                    id="btn-sync-google-sheet"
+                    data-i18n="actions.syncGoogleSheet"
+                  >
+                    更新Google Sheet数据
+                  </button>
+                  <button
+                    class="btn ghost"
                     id="btn-dn-entry"
                     style="display: none"
                     data-i18n="actions.dnEntry"
