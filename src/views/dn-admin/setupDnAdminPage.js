@@ -12,7 +12,7 @@ const API_BASE =
   window.location.origin;
 
 const DN_SEP_RE = /[\s,，；;、\u3001]+/gu;
-const DN_VALID_RE = /^[A-Z0-9-]{1,64}$/;
+const DN_VALID_RE = /^(?=.{14,18}$)[A-Z]{3,5}[0-9]+$/;
 
 export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   if (!rootEl) return () => {};
