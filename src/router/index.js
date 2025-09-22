@@ -12,6 +12,18 @@ const routes = [
     component: () => import('../views/AdminView.vue'),
   },
   {
+    path: '/du-admin',
+    name: 'du-admin',
+    component: () => import('../views/AdminView.vue'),
+    alias: ['/duadmin'],
+  },
+  {
+    path: '/dn-admin',
+    name: 'dn-admin',
+    component: () => import('../views/DnAdminView.vue'),
+    alias: ['/dnadmin'],
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/DashboardView.vue'),
