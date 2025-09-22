@@ -266,9 +266,9 @@ const submitSummaryRows = computed(() => {
 
   return [
     {
-      key: 'dnId',
+      key: 'dnNumber',
       label: t('dnNumberLabel'),
-      value: formatResultText(view.dnId),
+      value: formatResultText(view.dnNumber),
       mono: true,
     },
     {
@@ -512,7 +512,7 @@ const submitUpdate = async () => {
       state.submitMsg = t('submitSuccess') || 'Submitted';
 
       state.submitView = {
-        dnId: state.dnNumber,
+        dnNumber: state.dnNumber,
         status: state.dnStatus,
         remark: state.remark,
         photo: state.photoPreview || null,
@@ -527,7 +527,7 @@ const submitUpdate = async () => {
     const url = API_BASE.replace(/\/+$/, '') + '/api/dn/update';
 
     const fd = new FormData();
-    fd.append('dnId', state.dnNumber);
+    fd.append('dnNumber', state.dnNumber);
     fd.append('status', state.dnStatus ?? '');
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
