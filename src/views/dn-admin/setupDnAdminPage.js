@@ -233,6 +233,18 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
 
   const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
 
+  function buildSearchUrl(paramInput, mode = q.mode) {
+    const params =
+      typeof paramInput === 'string'
+        ? paramInput
+        : paramInput && typeof paramInput.toString === 'function'
+        ? paramInput.toString()
+        : '';
+    const basePath =
+      mode === 'batch' ? '/api/dn/batch/list/search?' : '/api/dn/list/search?';
+    return `${API_BASE}${basePath}${params}`;
+  }
+
   const viewerHost = document.createElement('div');
   viewerHost.id = 'viewer-host-dn';
   viewerHost.style.cssText =
@@ -1019,7 +1031,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     params.set('status', status);
     params.set('page', '1');
     params.set('page_size', '1');
-    const url = `${API_BASE}/api/dn/search?${params.toString()}`;
+    const url = `${API_BASE}/api/dn/list/search?${params.toString()}`;
     const resp = await fetch(url, { signal });
     const text = await resp.text();
     let data = null;
@@ -1306,7 +1318,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       pager.style.display = 'none';
 
       const params = buildParamsAuto();
-      const url = `${API_BASE}${q.mode === 'batch' ? '/api/dn/batch?' : '/api/dn/search?'}${params}`;
+      const url = buildSearchUrl(params);
       const resp = await fetch(url);
       const text = await resp.text();
       let data = null;
@@ -1636,7 +1648,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       const p1 = new URLSearchParams(q.lastParams);
       p1.set('page', '1');
       p1.set('page_size', String(per));
-      const firstUrl = `${API_BASE}${q.mode === 'batch' ? '/api/dn/batch?' : '/api/dn/search?'}${p1.toString()}`;
+      const firstUrl = buildSearchUrl(p1);
 
       const fResp = await fetch(firstUrl);
       const fRaw = await fResp.text();
@@ -1657,7 +1669,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
         const params = new URLSearchParams(q.lastParams);
         params.set('page', String(p));
         params.set('page_size', String(per));
-        const url = `${API_BASE}${q.mode === 'batch' ? '/api/dn/batch?' : '/api/dn/search?'}${params.toString()}`;
+        const url = buildSearchUrl(params);
         const r = await fetch(url);
         const raw = await r.text();
         let d = null;
