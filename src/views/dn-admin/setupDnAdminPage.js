@@ -2404,7 +2404,7 @@ ${cellsHtml}
       if (!syncSheetBtn) return;
       syncSheetBtn.disabled = true;
       try {
-        const resp = await fetch(`${API_BASE}/api/dn/sync`, { method: 'POST' });
+        const resp = await fetch(`${API_BASE}/api/dn/sync`, { method: 'GET' });
         const contentType = resp.headers?.get('content-type') || '';
         let payload = null;
         let text = '';
