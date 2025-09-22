@@ -109,16 +109,15 @@
             <div class="row-line">
               <div class="field">
                 <label data-i18n="status.label">状态</label>
-                <select id="f-status">
-                  <option
-                    v-for="option in statusFilterOptions"
-                    :key="option.value"
-                    :value="option.value"
-                    :data-i18n="option.i18nKey || null"
-                  >
-                    {{ option.fallback }}
-                  </option>
-                </select>
+                <ASelect
+                  v-model:value="selectedStatuses"
+                  mode="multiple"
+                  :allow-clear="true"
+                  :options="statusSelectOptions"
+                  :placeholder="statusPlaceholder"
+                  :get-popup-container="getStatusPopupContainer"
+                  style="width: 100%"
+                />
               </div>
               <div class="field">
                 <label data-i18n="statusWh.label">仓库状态</label>
@@ -344,7 +343,8 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Select as ASelect } from 'ant-design-vue';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupDnAdminPage } from './dn-admin/setupDnAdminPage';
@@ -360,11 +360,6 @@ let i18nInstance = null;
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
 
 const statusFilterOptions = [
-  {
-    value: '',
-    i18nKey: 'status.filter.any',
-    fallback: '任意',
-  },
   {
     value: STATUS_NOT_EMPTY_VALUE,
     i18nKey: 'status.filter.notEmpty',
@@ -397,6 +392,109 @@ const statusFilterOptions = [
   },
 ];
 
+const selectedStatuses = ref([]);
+const statusFilterListeners = new Set();
+let statusUpdateFromApi = false;
+let statusUpdateSilent = false;
+
+const normalizeStatusValues = (values) => {
+  if (!Array.isArray(values)) return [];
+  const seen = new Set();
+  const result = [];
+  values.forEach((value) => {
+    if (value === null || value === undefined) return;
+    const str = String(value).trim();
+    if (!str) return;
+    if (seen.has(str)) return;
+    seen.add(str);
+    result.push(str);
+  });
+  return result;
+};
+
+const notifyStatusFilterListeners = (values) => {
+  statusFilterListeners.forEach((listener) => {
+    if (typeof listener !== 'function') return;
+    try {
+      listener(values.slice());
+    } catch (err) {
+      console.error(err);
+    }
+  });
+};
+
+const statusFilterApi = {
+  getValues: () => selectedStatuses.value.slice(),
+  setValues: (values, opts = {}) => {
+    statusUpdateFromApi = true;
+    statusUpdateSilent = Boolean(opts?.silent);
+    selectedStatuses.value = normalizeStatusValues(values);
+    nextTick(() => {
+      statusUpdateFromApi = false;
+    });
+  },
+  onChange: (listener) => {
+    if (typeof listener !== 'function') return () => {};
+    statusFilterListeners.add(listener);
+    return () => statusFilterListeners.delete(listener);
+  },
+  getDefaultValues: () => [],
+  getAvailableValues: () => statusFilterOptions.map((option) => option.value),
+};
+
+watch(
+  selectedStatuses,
+  (newValue) => {
+    const values = Array.isArray(newValue) ? newValue.slice() : [];
+    if (statusUpdateFromApi) {
+      if (!statusUpdateSilent) {
+        notifyStatusFilterListeners(values);
+      }
+      statusUpdateSilent = false;
+      return;
+    }
+    notifyStatusFilterListeners(values);
+  },
+  { deep: true }
+);
+
+const getStatusPopupContainer = (triggerNode) =>
+  triggerNode?.parentNode ?? document.body;
+
+const statusSelectOptions = computed(() => {
+  const lang = currentLang.value;
+  void lang;
+  return statusFilterOptions.map((option) => {
+    const key = option.i18nKey;
+    let label = option.fallback;
+    if (i18nInstance && key) {
+      try {
+        const translated = i18nInstance.t(key);
+        if (translated && translated !== key) {
+          label = translated;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    return {
+      value: option.value,
+      label,
+    };
+  });
+});
+
+const statusPlaceholder = computed(() => {
+  switch (currentLang.value) {
+    case 'en':
+      return 'Select status';
+    case 'id':
+      return 'Pilih status';
+    default:
+      return '选择状态';
+  }
+});
+
 useBodyTheme('admin-theme');
 
 const applyTranslations = () => {
@@ -427,6 +525,7 @@ onMounted(async () => {
   cleanup = setupDnAdminPage(adminRoot.value, {
     i18n: i18nInstance,
     applyTranslations,
+    statusFilterApi,
   });
 
   i18nInstance.onChange((lang) => {
@@ -438,6 +537,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   cleanup?.();
+  statusFilterListeners.clear();
 });
 </script>
 

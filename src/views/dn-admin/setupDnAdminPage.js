@@ -19,7 +19,10 @@ const DN_VALID_RE = /^[A-Z0-9-]{1,64}$/;
 const DU_RE_FULL = /^DID\d{13}$/;
 const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
-export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
+export function setupDnAdminPage(
+  rootEl,
+  { i18n, applyTranslations, statusFilterApi } = {}
+) {
   if (!rootEl) return () => {};
 
   const controller = new AbortController();
@@ -105,13 +108,195 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const STATUS_ALIAS_LOOKUP = STATUS_ALIAS_MAP || {};
   const STATUS_KNOWN_VALUES = new Set(Object.keys(STATUS_VALUE_TO_KEY));
   const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
-  const DEFAULT_STATUS_VALUE = statusSelect?.options?.[0]?.value || '';
-  if (statusSelect && DEFAULT_STATUS_VALUE) {
-    statusSelect.value = DEFAULT_STATUS_VALUE;
-  }
-
   const FILTER_OPTION_LIMIT = 200;
   const filterDropdowns = new Map();
+  const cleanupCallbacks = [];
+
+  function normalizeStatusSelectionList(values) {
+    if (!Array.isArray(values)) return [];
+    const seen = new Set();
+    const result = [];
+    values.forEach((value) => {
+      if (value === null || value === undefined) return;
+      const str = String(value).trim();
+      if (!str) return;
+      if (seen.has(str)) return;
+      seen.add(str);
+      result.push(str);
+    });
+    return result;
+  }
+
+  function createStatusFilterControl(selectEl, providedApi) {
+    if (providedApi && typeof providedApi === 'object') {
+      const listeners = new Set();
+      const emit = (values) => {
+        const normalized = normalizeStatusSelectionList(values);
+        listeners.forEach((listener) => {
+          if (typeof listener !== 'function') return;
+          try {
+            listener(normalized);
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      let detach = null;
+      if (typeof providedApi.onChange === 'function') {
+        try {
+          detach = providedApi.onChange((values) => emit(values));
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      return {
+        getValues() {
+          if (typeof providedApi.getValues === 'function') {
+            return normalizeStatusSelectionList(providedApi.getValues());
+          }
+          return [];
+        },
+        setValues(values, opts = {}) {
+          if (typeof providedApi.setValues === 'function') {
+            try {
+              providedApi.setValues(normalizeStatusSelectionList(values), opts);
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        },
+        onChange(listener) {
+          if (typeof listener !== 'function') return () => {};
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
+        findValue(value) {
+          const available =
+            typeof providedApi.getAvailableValues === 'function'
+              ? normalizeStatusSelectionList(providedApi.getAvailableValues())
+              : [];
+          const canonical = normalizeStatusValue(value);
+          const matched = available.find(
+            (item) => normalizeStatusValue(item) === canonical
+          );
+          return matched !== undefined ? matched : canonical;
+        },
+        getDefaultValues() {
+          if (typeof providedApi.getDefaultValues === 'function') {
+            return normalizeStatusSelectionList(providedApi.getDefaultValues());
+          }
+          return [];
+        },
+        destroy() {
+          listeners.clear();
+          if (typeof detach === 'function') {
+            try {
+              detach();
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        },
+      };
+    }
+
+    if (selectEl) {
+      const listeners = new Set();
+      const emit = () => {
+        const values = control.getValues();
+        listeners.forEach((listener) => {
+          if (typeof listener !== 'function') return;
+          try {
+            listener(values);
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      const control = {
+        getValues() {
+          if (!selectEl) return [];
+          if (selectEl.multiple) {
+            return Array.from(selectEl.selectedOptions || []).map(
+              (option) => option.value
+            );
+          }
+          const value = selectEl.value;
+          return value ? [value] : [];
+        },
+        setValues(values, opts = {}) {
+          if (!selectEl) return;
+          const list = normalizeStatusSelectionList(values);
+          if (selectEl.multiple) {
+            const chosen = new Set(list);
+            Array.from(selectEl.options || []).forEach((option) => {
+              option.selected = chosen.has(option.value);
+            });
+          } else {
+            selectEl.value = list[0] ?? '';
+          }
+          if (!opts?.silent) {
+            emit();
+          }
+        },
+        onChange(listener) {
+          if (typeof listener !== 'function') return () => {};
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
+        findValue(value) {
+          if (!selectEl) return value;
+          const canonical = normalizeStatusValue(value);
+          const option = Array.from(selectEl.options || []).find(
+            (opt) => normalizeStatusValue(opt.value) === canonical
+          );
+          return option ? option.value : canonical;
+        },
+        getDefaultValues() {
+          if (!selectEl) return [];
+          if (selectEl.multiple) {
+            return Array.from(selectEl.selectedOptions || []).map(
+              (option) => option.value
+            );
+          }
+          const value = selectEl.value;
+          return value ? [value] : [];
+        },
+        destroy() {
+          listeners.clear();
+        },
+      };
+
+      selectEl.addEventListener('change', emit, { signal });
+      return control;
+    }
+
+    return null;
+  }
+
+  const statusFilterControl = createStatusFilterControl(
+    statusSelect,
+    statusFilterApi
+  );
+
+  if (statusFilterControl?.destroy) {
+    cleanupCallbacks.push(() => {
+      try {
+        statusFilterControl.destroy();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  const DEFAULT_STATUS_VALUES =
+    statusFilterControl?.getDefaultValues?.() ?? [];
+  if (statusFilterControl) {
+    statusFilterControl.setValues(DEFAULT_STATUS_VALUES, { silent: true });
+  }
 
   function normalizeFilterOptionList(list) {
     if (!Array.isArray(list)) return [];
@@ -1309,10 +1494,14 @@ ${cellsHtml}
 
   function updateStatusCardActiveState() {
     if (!statusCardRefs.size) return;
-    const value = statusSelect ? statusSelect.value : '';
-    const canonical = normalizeStatusValue(value);
+    const values = statusFilterControl ? statusFilterControl.getValues() : [];
+    const canonicalSelected = new Set(
+      (values || [])
+        .map((value) => normalizeStatusValue(value))
+        .filter((value) => Boolean(value))
+    );
     statusCardRefs.forEach((ref, status) => {
-      const isActive = Boolean(canonical) && status === canonical;
+      const isActive = canonicalSelected.has(status);
       ref.button.classList.toggle('active', isActive);
       ref.button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
@@ -1392,12 +1581,22 @@ ${cellsHtml}
   }
 
   function handleStatusCardClick(status) {
-    if (!statusSelect) return;
+    if (!statusFilterControl) return;
     const canonical = normalizeStatusValue(status);
-    const option = Array.from(statusSelect.options).find(
-      (opt) => normalizeStatusValue(opt.value) === canonical
+    const current = statusFilterControl.getValues() || [];
+    const selectedSet = new Set(
+      current.map((value) => normalizeStatusValue(value)).filter(Boolean)
     );
-    statusSelect.value = option ? option.value : canonical;
+    let nextValues = [];
+    if (canonical && selectedSet.has(canonical) && selectedSet.size === 1) {
+      nextValues = [];
+    } else if (canonical) {
+      const matched = statusFilterControl.findValue
+        ? statusFilterControl.findValue(canonical)
+        : canonical;
+      nextValues = matched ? [matched] : [];
+    }
+    statusFilterControl.setValues(nextValues, { silent: true });
     updateStatusCardActiveState();
     q.page = 1;
     fetchList();
@@ -1610,7 +1809,9 @@ ${cellsHtml}
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = statusSelect?.value || '';
+      const statusValues = statusFilterControl
+        ? statusFilterControl.getValues()
+        : [];
       const rk = (remarkInput?.value || '').trim();
       const hp = hasSelect?.value;
       const hc = hasCoordinateSelect?.value;
@@ -1626,10 +1827,26 @@ ${cellsHtml}
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
-      if (st === STATUS_NOT_EMPTY_VALUE) {
-        params.set('status_not_empty', 'true');
-      } else if (st) {
-        params.set('status', st);
+      if (Array.isArray(statusValues) && statusValues.length) {
+        const canonicalStatuses = [];
+        let includeNotEmpty = false;
+        statusValues.forEach((value) => {
+          if (!value) return;
+          if (value === STATUS_NOT_EMPTY_VALUE) {
+            includeNotEmpty = true;
+            return;
+          }
+          const canonical = normalizeStatusValue(value);
+          if (canonical) {
+            canonicalStatuses.push(canonical);
+          }
+        });
+        if (includeNotEmpty) {
+          params.set('status_not_empty', 'true');
+        }
+        Array.from(new Set(canonicalStatuses)).forEach((value) => {
+          params.append('status', value);
+        });
       }
       if (rk) params.set('remark', rk);
       if (hp) params.set('has_photo', hp);
@@ -2244,13 +2461,18 @@ ${cellsHtml}
     { signal }
   );
 
-  statusSelect?.addEventListener(
-    'change',
-    () => {
-      updateStatusCardActiveState();
-    },
-    { signal }
-  );
+  if (statusFilterControl?.onChange) {
+    try {
+      const detachStatusListener = statusFilterControl.onChange(() => {
+        updateStatusCardActiveState();
+      });
+      if (typeof detachStatusListener === 'function') {
+        cleanupCallbacks.push(detachStatusListener);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   dnInput?.addEventListener(
     'input',
@@ -2432,6 +2654,17 @@ ${cellsHtml}
   applyAllTranslations();
 
   return () => {
+    if (cleanupCallbacks.length) {
+      cleanupCallbacks.forEach((fn) => {
+        if (typeof fn !== 'function') return;
+        try {
+          fn();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+      cleanupCallbacks.length = 0;
+    }
     try {
       controller.abort();
     } catch (err) {
