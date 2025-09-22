@@ -67,7 +67,6 @@
               <div class="field">
                 <label data-i18n="status.label">状态</label>
                 <select id="f-status">
-                  <option value="" data-i18n="status.all">（全部）</option>
                   <option
                     v-for="option in statusFilterOptions"
                     :key="option.value"
@@ -129,6 +128,76 @@
               <div class="field">
                 <label data-i18n="date.to">结束日期</label>
                 <input id="f-to" type="date" />
+              </div>
+            </div>
+
+            <div class="row-line">
+              <div class="field">
+                <label data-i18n="lsp.label">LSP</label>
+                <input
+                  id="f-lsp"
+                  data-i18n-placeholder="lsp.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+              <div class="field">
+                <label data-i18n="region.label">Region</label>
+                <input
+                  id="f-region"
+                  data-i18n-placeholder="region.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+              <div class="field">
+                <label data-i18n="area.label">Area</label>
+                <input
+                  id="f-area"
+                  data-i18n-placeholder="area.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+              <div class="field">
+                <label data-i18n="subcon.label">Subcon</label>
+                <input
+                  id="f-subcon"
+                  data-i18n-placeholder="subcon.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+            </div>
+
+            <div class="row-line">
+              <div class="field">
+                <label data-i18n="project.label">Project</label>
+                <input
+                  id="f-project"
+                  data-i18n-placeholder="project.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+              <div class="field">
+                <label data-i18n="statusWh.label">Status WH</label>
+                <input
+                  id="f-status-wh"
+                  data-i18n-placeholder="statusWh.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+              <div class="field">
+                <label data-i18n="statusDelivery.label">Status Delivery</label>
+                <input
+                  id="f-status-delivery"
+                  data-i18n-placeholder="statusDelivery.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+              <div class="field">
+                <label data-i18n="hasCoord.label">经纬度</label>
+                <select id="f-has-coordinate">
+                  <option value="" data-i18n="hasCoord.any">（不限）</option>
+                  <option value="true" data-i18n="hasCoord.true">有经纬度</option>
+                  <option value="false" data-i18n="hasCoord.false">无经纬度</option>
+                </select>
               </div>
             </div>
 
@@ -279,11 +348,6 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupDnAdminPage } from './dn-admin/setupDnAdminPage';
-import {
-  STATUS_ORDERED_LIST,
-  STATUS_TRANSLATION_KEYS,
-  STATUS_FALLBACK_LABELS,
-} from '../config.js';
 import 'viewerjs/dist/viewer.css';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
@@ -293,11 +357,40 @@ const currentLang = ref('zh');
 let cleanup = () => {};
 let i18nInstance = null;
 
-const statusFilterOptions = STATUS_ORDERED_LIST.map((value) => ({
-  value,
-  i18nKey: STATUS_TRANSLATION_KEYS[value] || '',
-  fallback: STATUS_FALLBACK_LABELS[value] || value,
-}));
+const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+
+const statusFilterOptions = [
+  {
+    value: STATUS_NOT_EMPTY_VALUE,
+    i18nKey: 'status.filter.notEmpty',
+    fallback: '所有状态',
+  },
+  {
+    value: 'ARRIVED AT WH',
+    i18nKey: 'status.filter.arrivedAtWh',
+    fallback: '到达仓库',
+  },
+  {
+    value: 'TRANSPORTING FROM WH',
+    i18nKey: 'status.filter.transportingFromWh',
+    fallback: '从仓库发出',
+  },
+  {
+    value: 'ARRIVED AT XD/PM',
+    i18nKey: 'status.filter.arrivedAtXdPm',
+    fallback: '到达XD/PM',
+  },
+  {
+    value: 'TRANSPORTING FROM XD/PM',
+    i18nKey: 'status.filter.transportingFromXdPm',
+    fallback: '从XD/PM发出',
+  },
+  {
+    value: 'ARRIVED AT SITE',
+    i18nKey: 'status.filter.arrivedAtSite',
+    fallback: '到达站点',
+  },
+];
 
 useBodyTheme('admin-theme');
 

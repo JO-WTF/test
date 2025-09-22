@@ -40,9 +40,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const statusSelect = el('f-status');
   const remarkInput = el('f-remark');
   const hasSelect = el('f-has');
+  const hasCoordinateSelect = el('f-has-coordinate');
   const fromInput = el('f-from');
   const toInput = el('f-to');
   const pageSizeInput = el('f-ps2');
+  const lspInput = el('f-lsp');
+  const regionInput = el('f-region');
+  const areaInput = el('f-area');
+  const subconInput = el('f-subcon');
+  const projectInput = el('f-project');
+  const statusWhInput = el('f-status-wh');
+  const statusDeliveryInput = el('f-status-delivery');
 
   const mask = el('modal-mask');
   const mId = el('modal-id');
@@ -91,6 +99,11 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const STATUS_VALUE_TO_KEY = STATUS_TRANSLATION_KEYS || {};
   const STATUS_ALIAS_LOOKUP = STATUS_ALIAS_MAP || {};
   const STATUS_KNOWN_VALUES = new Set(Object.keys(STATUS_VALUE_TO_KEY));
+  const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+  const DEFAULT_STATUS_VALUE = statusSelect?.options?.[0]?.value || '';
+  if (statusSelect && DEFAULT_STATUS_VALUE) {
+    statusSelect.value = DEFAULT_STATUS_VALUE;
+  }
 
   const expandedRowKeys = new Set();
   const SUMMARY_BASE_COLUMN_COUNT = 9;
@@ -1492,20 +1505,40 @@ ${cellsHtml}
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = statusSelect?.value;
+      const st = statusSelect?.value || '';
       const rk = (remarkInput?.value || '').trim();
       const hp = hasSelect?.value;
+      const hc = hasCoordinateSelect?.value;
       const df = fromInput?.value;
       const dt = toInput?.value;
       const du = (duFilterInput?.value || '').trim();
+      const lsp = (lspInput?.value || '').trim();
+      const region = (regionInput?.value || '').trim();
+      const area = (areaInput?.value || '').trim();
+      const subcon = (subconInput?.value || '').trim();
+      const project = (projectInput?.value || '').trim();
+      const statusWh = (statusWhInput?.value || '').trim();
+      const statusDelivery = (statusDeliveryInput?.value || '').trim();
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
-      if (st) params.set('status', st);
+      if (st === STATUS_NOT_EMPTY_VALUE) {
+        params.set('status_not_empty', 'true');
+      } else if (st) {
+        params.set('status', st);
+      }
       if (rk) params.set('remark', rk);
       if (hp) params.set('has_photo', hp);
+      if (hc) params.set('has_coordinate', hc);
       if (df) params.set('date_from', new Date(`${df}T00:00:00`).toISOString());
       if (dt) params.set('date_to', new Date(`${dt}T23:59:59`).toISOString());
+      if (lsp) params.set('lsp', lsp);
+      if (region) params.set('region', region);
+      if (area) params.set('area', area);
+      if (subcon) params.set('subcon', subcon);
+      if (project) params.set('project', project);
+      if (statusWh) params.set('status_wh', statusWh);
+      if (statusDelivery) params.set('status_delivery', statusDelivery);
     }
 
     params.set('page', q.page);
@@ -2193,9 +2226,31 @@ ${cellsHtml}
   el('btn-reset')?.addEventListener(
     'click',
     () => {
-      ['f-status', 'f-remark', 'f-has', 'f-from', 'f-to', 'f-ps2', 'f-du'].forEach((id) => {
+      const defaultValues = {
+        'f-status': DEFAULT_STATUS_VALUE,
+        'f-remark': '',
+        'f-has': '',
+        'f-has-coordinate': '',
+        'f-from': '',
+        'f-to': '',
+        'f-ps2': '20',
+        'f-du': '',
+        'f-lsp': '',
+        'f-region': '',
+        'f-area': '',
+        'f-subcon': '',
+        'f-project': '',
+        'f-status-wh': '',
+        'f-status-delivery': '',
+      };
+      Object.entries(defaultValues).forEach(([id, value]) => {
         const node = el(id);
-        if (node) node.value = id === 'f-ps2' ? '20' : '';
+        if (!node) return;
+        try {
+          node.value = value;
+        } catch (err) {
+          console.error(err);
+        }
       });
       if (dnInput) dnInput.value = '';
       normalizeDnInput({ enforceFormat: false });
