@@ -1993,56 +1993,121 @@ ${cellsHtml}
     URL.revokeObjectURL(a.href);
   }
 
+  function getExportSearchParams() {
+    const paramsRaw = q.lastParams || buildParamsAuto() || '';
+    const params = new URLSearchParams(paramsRaw);
+    params.delete('page');
+    params.delete('page_size');
+    return params;
+  }
+
+  function buildExportUrl(basePath, params) {
+    const search = params && typeof params.toString === 'function' ? params.toString() : '';
+    const query = search ? `?${search}` : '';
+    return `${API_BASE}${basePath}${query}`;
+  }
+
+  function extractItemsFromResponse(payload) {
+    const visited = new Set();
+    const keys = ['items', 'data', 'list', 'results', 'records', 'rows'];
+
+    const walk = (value) => {
+      if (!value) return [];
+      if (Array.isArray(value)) return value;
+      if (typeof value !== 'object') return [];
+      if (visited.has(value)) return [];
+      visited.add(value);
+
+      for (const key of keys) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+          const direct = value[key];
+          if (Array.isArray(direct)) return direct;
+        }
+      }
+
+      for (const key of keys) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+          const nested = walk(value[key]);
+          if (Array.isArray(nested)) return nested;
+        }
+      }
+
+      return [];
+    };
+
+    return walk(payload);
+  }
+
   async function exportAll() {
     if (!hint) return;
     try {
       hint.textContent = i18n?.t('actions.exporting') || '正在导出全部数据，请稍候…';
-      const per = q.page_size || 20;
+      const params = getExportSearchParams();
+      const basePath = q.mode === 'batch' ? '/api/dn/batch/list' : '/api/dn/list';
+      const url = buildExportUrl(basePath, params);
 
-      const p1 = new URLSearchParams(q.lastParams);
-      p1.set('page', '1');
-      p1.set('page_size', String(per));
-      const firstUrl = buildSearchUrl(p1);
-
-      const fResp = await fetch(firstUrl);
-      const fRaw = await fResp.text();
-      let fData = null;
+      const resp = await fetch(url);
+      const raw = await resp.text();
+      let data = null;
       try {
-        fData = fRaw ? JSON.parse(fRaw) : null;
+        data = raw ? JSON.parse(raw) : null;
       } catch (err) {
         console.error(err);
       }
-      if (!fResp.ok)
-        throw new Error((fData && (fData.detail || fData.message)) || `HTTP ${fResp.status}`);
-
-      const total = fData?.total || 0;
-      let items = Array.isArray(fData?.items) ? fData.items.slice() : [];
-      const pages = Math.max(1, Math.ceil(total / per));
-
-      for (let p = 2; p <= pages; p++) {
-        const params = new URLSearchParams(q.lastParams);
-        params.set('page', String(p));
-        params.set('page_size', String(per));
-        const url = buildSearchUrl(params);
-        const r = await fetch(url);
-        const raw = await r.text();
-        let d = null;
-        try {
-          d = raw ? JSON.parse(raw) : null;
-        } catch (err) {
-          console.error(err);
-        }
-        if (!r.ok)
-          throw new Error((d && (d.detail || d.message)) || `HTTP ${r.status}`);
-        if (Array.isArray(d?.items)) items = items.concat(d.items);
+      if (!resp.ok) {
+        const message =
+          data && typeof data === 'object' && !Array.isArray(data)
+            ? data.detail || data.message
+            : '';
+        throw new Error(message || `HTTP ${resp.status}`);
       }
+
+      const items = extractItemsFromResponse(data);
 
       if (!items.length) {
         window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
-        hint.textContent = total ? '' : i18n?.t('hint.empty') || '没有数据';
+        hint.textContent = '';
         return;
       }
       downloadCSV(toCsvRows(items));
+      hint.textContent = '';
+    } catch (err) {
+      hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
+    }
+  }
+
+  async function exportUpdateRecords() {
+    if (!hint) return;
+    try {
+      hint.textContent = i18n?.t('actions.exporting') || '正在导出全部数据，请稍候…';
+      const params = getExportSearchParams();
+      const url = buildExportUrl('/api/dn/records', params);
+
+      const resp = await fetch(url);
+      const raw = await resp.text();
+      let data = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch (err) {
+        console.error(err);
+      }
+      if (!resp.ok) {
+        const message =
+          data && typeof data === 'object' && !Array.isArray(data)
+            ? data.detail || data.message
+            : '';
+        throw new Error(message || `HTTP ${resp.status}`);
+      }
+
+      const items = extractItemsFromResponse(data);
+
+      if (!items.length) {
+        window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
+        hint.textContent = '';
+        return;
+      }
+
+      downloadCSV(toCsvRows(items), 'dn_update_records.csv');
       hint.textContent = '';
     } catch (err) {
       hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
@@ -2392,6 +2457,21 @@ ${cellsHtml}
         await exportAll();
       } finally {
         exportAllBtn.disabled = false;
+      }
+    },
+    { signal }
+  );
+
+  const exportRecordsBtn = el('btn-export-records');
+  exportRecordsBtn?.addEventListener(
+    'click',
+    async () => {
+      if (!exportRecordsBtn) return;
+      exportRecordsBtn.disabled = true;
+      try {
+        await exportUpdateRecords();
+      } finally {
+        exportRecordsBtn.disabled = false;
       }
     },
     { signal }

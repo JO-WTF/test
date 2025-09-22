@@ -58,6 +58,7 @@
     "actions.query": "Search",
     "actions.reset": "Reset",
     "actions.exportAll": "Export All",
+    "actions.exportRecords": "Export DN Update Records",
     "actions.trustBackend": "Trust Backend",
     "actions.syncGoogleSheet": "Update Google Sheet Data",
     "actions.syncGoogleSheetSuccess": "Google Sheet sync triggered",
