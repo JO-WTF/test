@@ -2,8 +2,8 @@
 
 This project is a Vue 3 single-page application powered by Vite. It provides three main views:
 
-- **Scanner** – barcode scanning and DU status update workflow (default route `/`).
-- **Admin** – DU submission management tools with filtering, editing, and exporting (`/admin`).
+- **Scanner** – barcode scanning and DN status update workflow (default route `/`).
+- **Admin** – DN submission management tools with filtering, editing, and exporting (`/admin`).
 - **Dashboard** – delivery statistics dashboard with sorting, CSV export, and responsive cards (`/dashboard`).
 
 ## Development

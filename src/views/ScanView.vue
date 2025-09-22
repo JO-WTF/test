@@ -62,7 +62,7 @@
           ref="dnInput"
           class="mono"
           maxlength="20"
-          v-model="state.DNID"
+          v-model="state.dnNumber"
           style="flex: 1"
           @input="onDNInput"
         />
@@ -101,12 +101,12 @@
       <template v-if="state.isValid">
         <div class="status-box">
           <div class="status-row" :class="{ shake: state.needsStatusShake }">
-            <label for="duStatus">{{ t('updateStatus') }}：</label>
+            <label for="dnStatus">{{ t('updateStatus') }}：</label>
             <select
-              id="duStatus"
+              id="dnStatus"
               class="status"
               :class="{ invalid: state.needsStatusHint }"
-              v-model="state.duStatus"
+              v-model="state.dnStatus"
               aria-invalid="true"
               @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }"
             >
@@ -228,8 +228,8 @@ const state = reactive({
   lang: i18n.state.lang,
   location: null,
   hasDN: false,
-  DNID: '',
-  duStatus: '',
+  dnNumber: '',
+  dnStatus: '',
   remark: '',
   photoFile: null,
   photoPreview: null,
@@ -266,9 +266,9 @@ const submitSummaryRows = computed(() => {
 
   return [
     {
-      key: 'duId',
-      label: t('duIdLabel'),
-      value: formatResultText(view.duId),
+      key: 'dnId',
+      label: t('dnNumberLabel'),
+      value: formatResultText(view.dnId),
       mono: true,
     },
     {
@@ -382,7 +382,7 @@ const resume = async () => {
   state.showResult = false;
   state.submitMsg = '';
   state.submitOk = false;
-  state.duStatus = '';
+  state.dnStatus = '';
   state.remark = '';
   state.photoFile = null;
   if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
@@ -391,7 +391,7 @@ const resume = async () => {
   state.needsStatusShake = false;
   state.hasDN = false;
   state.isValid = false;
-  state.DNID = '';
+  state.dnNumber = '';
   try {
     await start();
   } catch (e) {
@@ -481,7 +481,7 @@ function uploadWithProgress({ url, formData, onProgress, timeoutMs = 15000 }) {
 
 const submitUpdate = async () => {
   if (!state.isValid) return;
-  if (!state.duStatus) {
+  if (!state.dnStatus) {
     state.needsStatusHint = true;
     state.needsStatusShake = true;
     return;
@@ -512,8 +512,8 @@ const submitUpdate = async () => {
       state.submitMsg = t('submitSuccess') || 'Submitted';
 
       state.submitView = {
-        duId: state.DNID,
-        status: state.duStatus,
+        dnId: state.dnNumber,
+        status: state.dnStatus,
         remark: state.remark,
         photo: state.photoPreview || null,
         lng: state.location?.lng,
@@ -527,8 +527,8 @@ const submitUpdate = async () => {
     const url = API_BASE.replace(/\/+$/, '') + '/api/dn/update';
 
     const fd = new FormData();
-    fd.append('duId', state.DNID);
-    fd.append('status', state.duStatus ?? '');
+    fd.append('dnId', state.dnNumber);
+    fd.append('status', state.dnStatus ?? '');
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
@@ -555,8 +555,8 @@ const submitUpdate = async () => {
     state.submitMsg = t('submitSuccess') || 'Submitted';
 
     state.submitView = {
-      duId: state.DNID,
-      status: state.duStatus,
+      dnNumber: state.dnNumber,
+      status: state.dnStatus,
       remark: state.remark,
       photo: state.photoPreview || null,
       lng: state.location?.lng,
@@ -579,18 +579,18 @@ const onCodeScanned = async (codeResult) => {
   if (state.isValid) {
     await stop();
     hideKeyboard();
-    state.DNID = codeResult.toUpperCase();
+    state.dnNumber = codeResult.toUpperCase();
   }
 };
 
 const onDNInput = () => {
-  state.DNID = (dnInput.value?.value || '').toUpperCase();
-  state.isValid = validateDN(state.DNID);
+  state.dnNumber = (dnInput.value?.value || '').toUpperCase();
+  state.isValid = validateDN(state.dnNumber);
 };
 
 const onOkClick = async () => {
-  state.DNID = (dnInput.value?.value || '').toUpperCase();
-  state.isValid = validateDN(state.DNID);
+  state.dnNumber = (dnInput.value?.value || '').toUpperCase();
+  state.isValid = validateDN(state.dnNumber);
 
   if (state.isValid) {
     await stop();

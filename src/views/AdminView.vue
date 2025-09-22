@@ -47,7 +47,7 @@
         <div class="grid-2col">
           <div class="du-col">
             <label data-i18n="du.label"
-              >DU ID（支持多行/逗号/空格分隔；多于1个则批量查询）</label
+              >DN Number（支持多行/逗号/空格分隔；多于1个则批量查询）</label
             >
             <div class="du-wrap">
               <div id="du-hilite" class="du-hilite" aria-hidden="true"></div>
@@ -156,7 +156,7 @@
           <thead>
             <tr>
               <th data-i18n="table.id">ID</th>
-              <th data-i18n="table.du">DU ID</th>
+              <th data-i18n="table.du">DN Number</th>
               <th data-i18n="table.status">状态</th>
               <th data-i18n="table.remark">备注</th>
               <th data-i18n="table.photo">照片</th>

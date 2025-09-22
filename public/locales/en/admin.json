@@ -1,6 +1,6 @@
 {
     "title": "DU Submission Records Management",
-    "du.label": "DU ID (supports multiple lines/commas/spaces; more than one means batch query)",
+    "du.label": "DN Number (supports multiple lines/commas/spaces; more than one means batch query)",
     "du.placeholder": "Example:\nDID123...\nDID456...\nOr: DID123..., DID456...",
     "du.tip": "Hint: Valid format is DID + 13 digits. You can input only digits.",
     "status.label": "Status",
@@ -54,7 +54,7 @@
     "roles.transportManager": "Transport Manager",
     "hint.ready": "Enter conditions and click Search.",
     "table.id": "ID",
-    "table.du": "DU ID",
+    "table.du": "DN Number",
     "table.status": "Status",
     "table.remark": "Remark",
     "table.photo": "Photo",

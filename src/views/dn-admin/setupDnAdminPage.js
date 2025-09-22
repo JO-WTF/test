@@ -1678,7 +1678,7 @@ ${cellsHtml}
     if (payload.duChanged && payload.duVal && !DU_RE_FULL.test(payload.duVal)) {
       if (mMsg)
         mMsg.textContent =
-          i18n?.t('modal.du.invalid') || '关联 DU ID 需为 DID 开头加 13 位数字。';
+          i18n?.t('modal.du.invalid') || '关联 DN Number 需为 DID 开头加 13 位数字。';
       return false;
     }
 

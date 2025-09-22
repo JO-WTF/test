@@ -1324,7 +1324,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   }
 
   function toCsvRows(items) {
-    const header = ['ID', 'DU ID', '状态', '备注', '照片URL', '时间'];
+    const header = ['ID', 'DN Number', '状态', '备注', '照片URL', '时间'];
     const rows = [header];
     for (const it of items) {
       const t = it.created_at ? new Date(it.created_at).toLocaleString() : '';
