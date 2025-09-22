@@ -340,13 +340,23 @@ body.admin-theme {
     justify-content: flex-end;
     margin-top: 8px
     }
+
+.admin-page .pager__page-size {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.admin-page .pager__page-size input {
+    margin-left: 4px;
+}
 .admin-page .actions {
     display: flex;
     gap: 6px
     }
 .admin-page .grid-2col {
     display: grid;
-    grid-template-columns: 1fr 1.6fr;
+    grid-template-columns: 1fr 3fr;
     gap: 12px;
     align-items: stretch
     }
