@@ -11,8 +11,13 @@ const API_BASE =
   window.API_BASE ||
   window.location.origin;
 
-const DN_SEP_RE = /[\s,，；;、\u3001]+/gu;
+const DN_SEPARATOR_SOURCE = '[\\s,，；;、\\u3001]+';
+const DN_SEP_RE = new RegExp(DN_SEPARATOR_SOURCE, 'gu');
+const DN_SEP_CAPTURE_RE = new RegExp(`(${DN_SEPARATOR_SOURCE})`, 'gu');
+const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
 const DN_VALID_RE = /^[A-Z0-9-]{1,64}$/;
+const DU_RE_FULL = /^DID\d{13}$/;
+const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
 export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   if (!rootEl) return () => {};
@@ -1009,49 +1014,80 @@ ${cellsHtml}
     }
   }
 
+  function normalizeDnRawSoft(raw) {
+    return (raw || '').replace(ZERO_WIDTH_RE, '').toUpperCase();
+  }
+
   function splitDnTokens(raw) {
-    const normalized = (raw || '').toUpperCase();
+    const normalized = normalizeDnRawSoft(raw);
     return normalized
       .split(DN_SEP_RE)
       .map((v) => v.trim())
       .filter(Boolean);
   }
 
-  function renderDnPreview(tokensOverride) {
-    if (!dnPreview || !dnInput) return;
-    const tokens = Array.isArray(tokensOverride)
-      ? tokensOverride
-      : splitDnTokens(dnInput.value);
-    if (!tokens.length) {
-      const placeholder =
-        i18n?.t('dn.preview.empty') || '在此查看格式化结果';
-      dnPreview.innerHTML = `<div class="placeholder">${placeholder}</div>`;
-      return;
+  function buildDnHighlightHTML(raw) {
+    const normalized = normalizeDnRawSoft(raw);
+    if (!normalized) return '';
+    const parts = normalized.split(DN_SEP_CAPTURE_RE);
+    const out = [];
+    for (const chunk of parts) {
+      if (!chunk) continue;
+      if (DN_SEP_TEST_RE.test(chunk)) {
+        out.push(`<span class="hl-sep">${escapeHtml(chunk)}</span>`);
+        continue;
+      }
+      const token = chunk.trim();
+      if (!token) continue;
+      const valid = DN_VALID_RE.test(token);
+      out.push(`<span class="${valid ? 'hl-ok' : 'hl-bad'}">${escapeHtml(chunk)}</span>`);
     }
-    const html = tokens
-      .map((token) => {
-        const valid = DN_VALID_RE.test(token);
-        return `<span class="dn-token ${valid ? 'ok' : 'bad'}">${token}</span>`;
-      })
-      .join('');
+    out.push('<span class="hl-sep">\n</span>');
+    return out.join('');
+  }
+
+  function isValidDn(token) {
+    return DN_VALID_RE.test(token || '');
+  }
+
+  function renderDnPreview() {
+    if (!dnPreview || !dnInput) return;
+    const html = buildDnHighlightHTML(dnInput.value);
     dnPreview.innerHTML = html;
+    dnPreview.scrollTop = dnInput.scrollTop;
+    dnPreview.scrollLeft = dnInput.scrollLeft;
   }
 
   function renderDnTokens(tokens) {
     if (!dnInput) return [];
     const list = Array.isArray(tokens) ? tokens : [];
     dnInput.value = list.join('\n');
-    renderDnPreview(list);
+    renderDnPreview();
     return list;
   }
 
   function normalizeDnInput({ enforceFormat = false } = {}) {
     if (!dnInput) return [];
+    const before = dnInput.value;
+    const after = normalizeDnRawSoft(before);
+    if (after !== before) {
+      const atEnd =
+        dnInput.selectionStart === before.length &&
+        dnInput.selectionEnd === before.length;
+      dnInput.value = after;
+      if (atEnd) {
+        try {
+          dnInput.selectionStart = dnInput.selectionEnd = dnInput.value.length;
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
     const tokens = splitDnTokens(dnInput.value);
     if (enforceFormat) {
       renderDnTokens(tokens);
     } else {
-      renderDnPreview(tokens);
+      renderDnPreview();
     }
     return tokens;
   }
@@ -1566,7 +1602,7 @@ ${cellsHtml}
     if (mDuInput) {
       const currentDu = item.du_id || '';
       mDuInput.value = currentDu;
-      mDuInput.dataset.originalValue = currentDu;
+      mDuInput.dataset.originalValue = currentDu.trim().toUpperCase();
     }
     const canonicalStatus = normalizeStatusValue(item.status);
     populateModalStatusOptions(canonicalStatus);
@@ -1590,8 +1626,8 @@ ${cellsHtml}
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
     const rawDu = mDuInput ? (mDuInput.value || '') : '';
-    const duVal = rawDu.trim();
-    const originalDu = mDuInput?.dataset?.originalValue ?? '';
+    const duVal = rawDu.trim().toUpperCase();
+    const originalDu = (mDuInput?.dataset?.originalValue ?? '').trim().toUpperCase();
     const duChanged = mDuInput ? duVal !== originalDu : false;
 
     if (statusVal) form.set('status', statusVal);
@@ -1602,7 +1638,7 @@ ${cellsHtml}
     if (duChanged) {
       form.set('duId', duVal || '');
     }
-    return { form, statusVal, remarkVal, allowPhoto, duChanged };
+    return { form, statusVal, remarkVal, allowPhoto, duChanged, duVal };
   }
 
   function validateBeforeSave(payload) {
@@ -1636,6 +1672,13 @@ ${cellsHtml}
         mMsg.textContent = i18n
           ? i18n.t('modal.status.invalid')
           : '选择的状态不在当前角色的权限范围内。';
+      return false;
+    }
+
+    if (payload.duChanged && payload.duVal && !DU_RE_FULL.test(payload.duVal)) {
+      if (mMsg)
+        mMsg.textContent =
+          i18n?.t('modal.du.invalid') || '关联 DU ID 需为 DID 开头加 13 位数字。';
       return false;
     }
 
@@ -1978,13 +2021,13 @@ ${cellsHtml}
       : splitDnTokens(dnEntryInput.value);
     if (!tokens.length) {
       const placeholder = i18n ? i18n.t('dn.preview.empty') : '在此查看格式化结果';
-      dnEntryPreview.innerHTML = `<div class="placeholder">${placeholder}</div>`;
+      dnEntryPreview.innerHTML = `<div class="placeholder">${escapeHtml(placeholder)}</div>`;
       return;
     }
     dnEntryPreview.innerHTML = tokens
       .map((token) => {
-        const valid = DN_VALID_RE.test(token);
-        return `<span class="dn-token ${valid ? 'ok' : 'bad'}">${token}</span>`;
+        const valid = isValidDn(token);
+        return `<span class="dn-token ${valid ? 'ok' : 'bad'}">${escapeHtml(token)}</span>`;
       })
       .join('');
   }
@@ -2099,6 +2142,40 @@ ${cellsHtml}
         }
       } catch (err) {
         console.error(err);
+      }
+    },
+    { signal }
+  );
+
+  dnInput?.addEventListener(
+    'scroll',
+    () => {
+      if (!dnPreview) return;
+      dnPreview.scrollTop = dnInput.scrollTop;
+      dnPreview.scrollLeft = dnInput.scrollLeft;
+    },
+    { signal }
+  );
+
+  mDuInput?.addEventListener(
+    'input',
+    () => {
+      const before = mDuInput.value || '';
+      const after = before.replace(ZERO_WIDTH_RE, '').toUpperCase();
+      if (after === before) return;
+      const start = mDuInput.selectionStart;
+      const end = mDuInput.selectionEnd;
+      mDuInput.value = after;
+      if (typeof start === 'number' && typeof end === 'number') {
+        const offset = after.length - before.length;
+        try {
+          const nextStart = Math.max(0, start + offset);
+          const nextEnd = Math.max(0, end + offset);
+          mDuInput.selectionStart = nextStart;
+          mDuInput.selectionEnd = nextEnd;
+        } catch (err) {
+          console.error(err);
+        }
       }
     },
     { signal }
