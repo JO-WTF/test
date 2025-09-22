@@ -524,7 +524,7 @@ const submitUpdate = async () => {
       return;
     }
 
-    const url = API_BASE.replace(/\/+$/, '') + '/api/du/update';
+    const url = API_BASE.replace(/\/+$/, '') + '/api/dn/update';
 
     const fd = new FormData();
     fd.append('duId', state.DNID);

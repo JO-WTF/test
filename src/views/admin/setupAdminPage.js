@@ -362,7 +362,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     params.set('status', status);
     params.set('page', '1');
     params.set('page_size', '1');
-    const url = `${API_BASE}/api/du/search?${params.toString()}`;
+    const url = `${API_BASE}/api/dn/list/search?${params.toString()}`;
     const resp = await fetch(url, { signal });
     const text = await resp.text();
     let data = null;
@@ -1133,7 +1133,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       const params = buildParamsAuto();
       q.lastParams = params;
 
-      const url = `${API_BASE}${q.mode === 'batch' ? '/api/du/batch?' : '/api/du/search?'}${params}`;
+      const url = `${API_BASE}${q.mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?'}${params}`;
       const resp = await fetch(url);
       const text = await resp.text();
       let data = null;
@@ -1249,7 +1249,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
         if (remarkVal) fd.append('remark', remarkVal);
         if (allowPhoto) fd.append('photo', mPhoto.files[0]);
 
-        const resp = await fetch(`${API_BASE}/api/du/update/${editingId}`, {
+        const resp = await fetch(`${API_BASE}/api/dn/update/${editingId}`, {
           method: 'PUT',
           body: fd,
         });
@@ -1286,7 +1286,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     if (!window.confirm(`确认要删除记录 #${id} 吗？`)) return;
     if (hint) hint.textContent = `正在删除 #${id} …`;
     try {
-      const resp = await fetch(`${API_BASE}/api/du/update/${id}`, { method: 'DELETE' });
+      const resp = await fetch(`${API_BASE}/api/dn/update/${id}`, { method: 'DELETE' });
       const text = await resp.text();
       let data = null;
       try {
@@ -1344,7 +1344,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       const p1 = new URLSearchParams(q.lastParams);
       p1.set('page', '1');
       p1.set('page_size', String(per));
-      const firstUrl = `${API_BASE}${q.mode === 'batch' ? '/api/du/batch?' : '/api/du/search?'}${p1.toString()}`;
+      const firstUrl = `${API_BASE}${q.mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?'}${p1.toString()}`;
 
       const fResp = await fetch(firstUrl);
       const fRaw = await fResp.text();
@@ -1365,7 +1365,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
         const params = new URLSearchParams(q.lastParams);
         params.set('page', String(p));
         params.set('page_size', String(per));
-        const url = `${API_BASE}${q.mode === 'batch' ? '/api/du/batch?' : '/api/du/search?'}${params.toString()}`;
+        const url = `${API_BASE}${q.mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?'}${params.toString()}`;
         const r = await fetch(url);
         const raw = await r.text();
         let d = null;
