@@ -27,6 +27,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const duFilterInput = el('f-du');
   const tbl = el('tbl');
   const tbody = tbl?.querySelector('tbody');
+  const actionsHeader = tbl?.querySelector('thead th[data-column="actions"]');
   const hint = el('hint');
   const pager = el('pager');
   const pginfo = el('pginfo');
@@ -87,7 +88,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const STATUS_KNOWN_VALUES = new Set(Object.keys(STATUS_VALUE_TO_KEY));
 
   const expandedRowKeys = new Set();
-  const SUMMARY_COLUMN_COUNT = 9;
+  const SUMMARY_BASE_COLUMN_COUNT = 9;
+  const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 10;
   const DETAIL_KEY_PRIORITY = [
     'id',
     'dn_id',
@@ -101,6 +103,19 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'provider',
     'provider_name',
     'provider_code',
+    'region',
+    'region_name',
+    'regionName',
+    'area',
+    'territory',
+    'plan_mos_date',
+    'plan_mos',
+    'plan_date',
+    'plan_mos_datetime',
+    'plan_mos_at',
+    'plan_mos_time',
+    'plan_mos_dt',
+    'plan_delivery_date',
     'origin_location',
     'origin',
     'origin_address',
@@ -137,6 +152,43 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'longitude',
     'created_at',
     'updated_at',
+    'updatedAt',
+    'createdAt',
+    'last_updated',
+    'lastUpdate',
+    'lastUpdated',
+    'modified_at',
+    'modifiedAt',
+    'timestamp',
+  ];
+  const REGION_FIELD_CANDIDATES = [
+    'region',
+    'region_name',
+    'regionName',
+    'area',
+    'territory',
+  ];
+  const PLAN_MOS_DATE_FIELD_CANDIDATES = [
+    'plan_mos_date',
+    'plan_mos',
+    'plan_date',
+    'plan_mos_datetime',
+    'plan_mos_at',
+    'plan_mos_time',
+    'plan_mos_dt',
+    'plan_delivery_date',
+  ];
+  const UPDATED_AT_FIELD_CANDIDATES = [
+    'updated_at',
+    'created_at',
+    'updatedAt',
+    'createdAt',
+    'last_updated',
+    'lastUpdate',
+    'lastUpdated',
+    'modified_at',
+    'modifiedAt',
+    'timestamp',
   ];
   const LSP_FIELD_CANDIDATES = [
     'lsp',
@@ -227,9 +279,65 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'provider',
     'provider_name',
     'provider_code',
-    ...ORIGIN_FIELD_CANDIDATES,
-    ...DESTINATION_FIELD_CANDIDATES,
+    'region',
+    'region_name',
+    'regionName',
+    'area',
+    'territory',
+    'plan_mos_date',
+    'plan_mos',
+    'plan_date',
+    'plan_mos_datetime',
+    'plan_mos_at',
+    'plan_mos_time',
+    'plan_mos_dt',
+    'plan_delivery_date',
+    'created_at',
+    'updated_at',
+    'updatedAt',
+    'createdAt',
+    'last_updated',
+    'lastUpdate',
+    'lastUpdated',
+    'modified_at',
+    'modifiedAt',
+    'timestamp',
   ]);
+
+  const ICON_MARKUP = Object.freeze({
+    photo:
+      '<svg aria-hidden="true" focusable="false" class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M4 7a2 2 0 0 1 2-2h2l1-1h6l1 1h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12" r="3.25" fill="currentColor"/></svg>',
+    map:
+      '<svg aria-hidden="true" focusable="false" class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 2a6 6 0 0 0-6 6c0 4.63 6 12 6 12s6-7.37 6-12a6 6 0 0 0-6-6zm0 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>',
+    edit:
+      '<svg aria-hidden="true" focusable="false" class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M5 17.5V21h3.5L18.37 11.13a1 1 0 0 0 0-1.41l-2.09-2.09a1 1 0 0 0-1.41 0L5 17.5zm12.71-9.21 1.4-1.4a1 1 0 0 0 0-1.42l-1.6-1.6a1 1 0 0 0-1.42 0l-1.4 1.4z"/></svg>',
+    delete:
+      '<svg aria-hidden="true" focusable="false" class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M9 3h6l.62 1.25H21V6H3V4.25h5.38L9 3zm-3 4h12l-.84 10.07A2 2 0 0 1 15.18 21H8.82a2 2 0 0 1-1.98-1.93z"/></svg>',
+  });
+
+  function getIconMarkup(name) {
+    return ICON_MARKUP[name] || '';
+  }
+
+  function shouldShowActionsColumn() {
+    return Boolean(currentRoleKey);
+  }
+
+  function getSummaryColumnCount(showActions = shouldShowActionsColumn()) {
+    return showActions ? SUMMARY_COLUMN_WITH_ACTIONS_COUNT : SUMMARY_BASE_COLUMN_COUNT;
+  }
+
+  function updateActionColumnVisibility() {
+    const show = shouldShowActionsColumn();
+    if (actionsHeader) {
+      actionsHeader.style.display = show ? '' : 'none';
+    }
+    if (tbl) {
+      tbl.classList.toggle('has-actions', show);
+    }
+  }
+
+  updateActionColumnVisibility();
 
   const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
 
@@ -386,6 +494,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       .replace(/'/g, '&#39;');
   }
 
+  function translateInstant(key, fallback = '') {
+    if (!i18n) return fallback;
+    try {
+      const translated = i18n.t(key);
+      if (translated && translated !== key) return translated;
+    } catch (err) {
+      console.error(err);
+    }
+    return fallback;
+  }
+
   function normalizeTextValue(value) {
     if (value === null || value === undefined) return '';
     if (typeof value === 'string') return value.trim();
@@ -481,6 +600,18 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return getLocationDisplay(item, DESTINATION_FIELD_CANDIDATES, DESTINATION_FALLBACK_REGEX);
   }
 
+  function getRegionDisplay(item) {
+    return getFirstNonEmpty(item, REGION_FIELD_CANDIDATES);
+  }
+
+  function getPlanMosDateDisplay(item) {
+    return getFirstNonEmpty(item, PLAN_MOS_DATE_FIELD_CANDIDATES);
+  }
+
+  function getUpdatedAtDisplay(item) {
+    return getFirstNonEmpty(item, UPDATED_AT_FIELD_CANDIDATES);
+  }
+
   function getCoordinateParts(item) {
     const lat = getFirstNonEmpty(item, LAT_FIELD_CANDIDATES);
     const lng = getFirstNonEmpty(item, LNG_FIELD_CANDIDATES);
@@ -499,14 +630,18 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return fallback.length ? fallback[0] : '';
   }
 
-  function buildCoordinateCell(item) {
+  function buildLocationCell(item) {
     const [lat, lng] = getCoordinateParts(item);
     if (lat && lng) {
       const coordsText = `${lat}, ${lng}`;
       const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(
         lng
       )}`;
-      return `<div class="coord-cell"><div>${escapeHtml(coordsText)}</div><a href="${mapUrl}" target="_blank" rel="noopener" data-i18n="table.view">查看</a></div>`;
+      const safeMapUrl = escapeHtml(mapUrl);
+      const label = translateInstant('table.mapIconLabel', 'Open in Google Maps') || 'Open in Google Maps';
+      const safeLabel = escapeHtml(label);
+      const icon = getIconMarkup('map');
+      return `<div class="coord-cell"><div>${escapeHtml(coordsText)}</div><a href="${safeMapUrl}" target="_blank" rel="noopener" class="icon-link map-link" aria-label="${safeLabel}" data-i18n-aria-label="table.mapIconLabel" title="${safeLabel}" data-i18n-title="table.mapIconLabel">${icon}</a></div>`;
     }
     if (lat || lng) {
       return escapeHtml([lat, lng].filter(Boolean).join(', '));
@@ -521,7 +656,9 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     }
     const absUrl = toAbsUrl(photo);
     const safeUrl = escapeHtml(absUrl);
-    return `<a href="#" class="view-link" data-url="${safeUrl}" data-i18n="table.view">查看</a>`;
+    const label = translateInstant('table.photoIconLabel', 'View photo') || 'View photo';
+    const safeLabel = escapeHtml(label);
+    return `<a href="#" class="icon-link view-link" data-url="${safeUrl}" aria-label="${safeLabel}" data-i18n-aria-label="table.photoIconLabel" title="${safeLabel}" data-i18n-title="table.photoIconLabel">${getIconMarkup('photo')}</a>`;
   }
 
   function collectDetailEntries(item) {
@@ -594,7 +731,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return `<div class="detail-content">${title}${meta}<div class="detail-grid">${rows}</div></div>`;
   }
 
-  function buildSummaryRow(item, detailEntries, { rowKey, expanded, hasDetails }) {
+  function buildSummaryRow(item, detailEntries, { rowKey, expanded, hasDetails, showActions }) {
     const detailAvailable =
       typeof hasDetails === 'boolean'
         ? hasDetails && detailEntries.length > 0
@@ -608,8 +745,9 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const ariaAttr = detailAvailable ? ` aria-expanded="${expanded ? 'true' : 'false'}"` : '';
     const dnNumber = item?.dn_number ? escapeHtml(String(item.dn_number)) : '<span class="muted">-</span>';
     const lsp = getLspDisplay(item);
-    const origin = getOriginDisplay(item);
-    const destination = getDestinationDisplay(item);
+    const region = getRegionDisplay(item);
+    const planMos = getPlanMosDateDisplay(item);
+    const updatedAt = getUpdatedAtDisplay(item);
     const remarkText = normalizeTextValue(item?.remark);
     const remarkDisplay = remarkText
       ? escapeHtml(remarkText).replace(/\n/g, '<br>')
@@ -620,35 +758,50 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       statusRaw
     )}</td>`;
     const photoCell = buildPhotoCell(item);
-    const coordsCell = buildCoordinateCell(item);
+    const locationCell = buildLocationCell(item);
     const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
-    const originCell = origin ? escapeHtml(origin) : '<span class="muted">-</span>';
-    const destinationCell = destination ? escapeHtml(destination) : '<span class="muted">-</span>';
+    const regionCell = region ? escapeHtml(region) : '<span class="muted">-</span>';
+    const planCell = planMos ? escapeHtml(planMos) : '<span class="muted">-</span>';
+    const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
     const hint = detailAvailable
       ? '<div class="summary-hint" data-i18n="table.expandHint">点击查看全部字段</div>'
       : '';
-    const actionsCell = buildActionCell(item, remarkText || '');
+    const actionsContent = showActions ? buildActionCell(item, remarkText || '') : '';
 
-    return `<tr class="${classAttr}" data-row-key="${escapeHtml(rowKey)}"${tabAttr}${ariaAttr}>
-      <td>
+    const firstCell = `      <td>
         <div class="summary-cell">
           <span class="row-toggle" aria-hidden="true"></span>
           <div class="summary-primary">${dnNumber}</div>
         </div>
         ${hint}
-      </td>
-      <td>${lspCell}</td>
-      <td>${originCell}</td>
-      <td>${destinationCell}</td>
-      ${statusCell}
-      <td>${remarkDisplay}</td>
-      <td>${photoCell}</td>
-      <td>${coordsCell}</td>
-      <td>${actionsCell}</td>
+      </td>`;
+
+    const cells = [
+      firstCell,
+      `      <td>${regionCell}</td>`,
+      `      <td>${planCell}</td>`,
+      `      <td>${lspCell}</td>`,
+      `      ${statusCell}`,
+      `      <td>${remarkDisplay}</td>`,
+      `      <td>${photoCell}</td>`,
+      `      <td>${locationCell}</td>`,
+      `      <td>${updatedCell}</td>`,
+    ];
+    if (showActions) {
+      cells.push(`      <td>${actionsContent || '<span class="muted">-</span>'}</td>`);
+    }
+
+    const cellsHtml = cells.join('\n');
+    return `<tr class="${classAttr}" data-row-key="${escapeHtml(rowKey)}"${tabAttr}${ariaAttr}>
+${cellsHtml}
     </tr>`;
   }
 
-  function buildDetailRow(item, detailEntries, { rowKey, expanded, hasDetails }) {
+  function buildDetailRow(
+    item,
+    detailEntries,
+    { rowKey, expanded, hasDetails, summaryColumnCount }
+  ) {
     const detailAvailable =
       typeof hasDetails === 'boolean'
         ? hasDetails && detailEntries.length > 0
@@ -658,8 +811,9 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const classAttr = `detail-row${expanded ? ' expanded' : ''}`;
     const styleAttr = expanded ? '' : ' style="display: none"';
     const content = buildDetailContent(item, detailEntries);
+    const colSpan = summaryColumnCount || getSummaryColumnCount();
     return `<tr class="${classAttr}" data-row-key="${escapeHtml(rowKey)}"${styleAttr}>
-      <td colspan="${SUMMARY_COLUMN_COUNT}">${content}</td>
+      <td colspan="${colSpan}">${content}</td>
     </tr>`;
   }
 
@@ -721,6 +875,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
     updateModalFieldVisibility();
+    updateActionColumnVisibility();
     rerenderTableActions();
     renderStatusHighlightCards();
     refreshStatusHighlightCards();
@@ -1160,13 +1315,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const duAttr = escapeHtml(it.du_id || '');
     const remarkAttr = escapeHtml(remark);
     if (perms.canEdit) {
+      const editLabel = translateInstant('actions.edit', 'Edit') || 'Edit';
+      const safeEditLabel = escapeHtml(editLabel);
       buttons.push(
-        `<button class="btn" data-act="edit" data-id="${it.id}" data-dn="${dnAttr}" data-status="${statusAttr}" data-remark="${remarkAttr}" data-du="${duAttr}" data-i18n="actions.edit">编辑</button>`
+        `<button type="button" class="icon-btn" data-act="edit" data-id="${it.id}" data-dn="${dnAttr}" data-status="${statusAttr}" data-remark="${remarkAttr}" data-du="${duAttr}" aria-label="${safeEditLabel}" data-i18n-aria-label="actions.edit" title="${safeEditLabel}" data-i18n-title="actions.edit">${getIconMarkup('edit')}</button>`
       );
     }
     if (perms.canDelete) {
+      const deleteLabel = translateInstant('actions.delete', 'Delete') || 'Delete';
+      const safeDeleteLabel = escapeHtml(deleteLabel);
       buttons.push(
-        `<button class="btn danger" data-act="del" data-id="${it.id}" data-i18n="actions.delete">删除</button>`
+        `<button type="button" class="icon-btn danger" data-act="del" data-id="${it.id}" aria-label="${safeDeleteLabel}" data-i18n-aria-label="actions.delete" title="${safeDeleteLabel}" data-i18n-title="actions.delete">${getIconMarkup('delete')}</button>`
       );
     }
     if (!buttons.length) return '';
@@ -1175,8 +1334,11 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
 
   function renderRows(items) {
     if (!tbody) return;
+    updateActionColumnVisibility();
     cachedItems = Array.isArray(items) ? items.slice() : [];
     const currentKeys = new Set();
+    const showActions = shouldShowActionsColumn();
+    const summaryColumnCount = getSummaryColumnCount(showActions);
     tbody.innerHTML = cachedItems
       .map((item, index) => {
         const rowKey = getRowKey(item, index);
@@ -1190,11 +1352,13 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
           rowKey,
           expanded: isExpanded,
           hasDetails,
+          showActions,
         });
         const detailHtml = buildDetailRow(item, detailEntries, {
           rowKey,
           expanded: isExpanded,
           hasDetails,
+          summaryColumnCount,
         });
         if (!hasDetails) {
           expandedRowKeys.delete(rowKey);

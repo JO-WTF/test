@@ -165,14 +165,15 @@
           <thead>
             <tr>
               <th data-i18n="table.dn">DN 号</th>
+              <th data-i18n="table.region">区域</th>
+              <th data-i18n="table.planMosDate">PLAN MOS DATE</th>
               <th data-i18n="table.lsp">LSP</th>
-              <th data-i18n="table.origin">起始地</th>
-              <th data-i18n="table.destination">目的地</th>
               <th data-i18n="table.status">状态</th>
               <th data-i18n="table.remark">备注</th>
               <th data-i18n="table.photo">照片</th>
-              <th data-i18n="table.coords">经纬度</th>
-              <th data-i18n="table.actions">操作</th>
+              <th data-i18n="table.location">位置</th>
+              <th data-i18n="table.updatedAt">更新时间</th>
+              <th data-i18n="table.actions" data-column="actions">操作</th>
             </tr>
           </thead>
           <tbody></tbody>
