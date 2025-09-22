@@ -136,60 +136,64 @@
                 <label data-i18n="lsp.label">LSP</label>
                 <input
                   id="f-lsp"
+                  list="f-lsp-options"
                   data-i18n-placeholder="lsp.placeholder"
-                  placeholder="模糊匹配"
+                  placeholder="输入或选择"
                 />
+                <datalist id="f-lsp-options"></datalist>
               </div>
               <div class="field">
                 <label data-i18n="region.label">Region</label>
                 <input
                   id="f-region"
+                  list="f-region-options"
                   data-i18n-placeholder="region.placeholder"
-                  placeholder="模糊匹配"
+                  placeholder="输入或选择"
                 />
+                <datalist id="f-region-options"></datalist>
               </div>
               <div class="field">
-                <label data-i18n="area.label">Area</label>
+                <label data-i18n="planMosDate.label">Plan MOS Date</label>
                 <input
-                  id="f-area"
-                  data-i18n-placeholder="area.placeholder"
-                  placeholder="模糊匹配"
+                  id="f-plan-mos-date"
+                  list="f-plan-mos-date-options"
+                  data-i18n-placeholder="planMosDate.placeholder"
+                  placeholder="输入或选择"
                 />
+                <datalist id="f-plan-mos-date-options"></datalist>
               </div>
               <div class="field">
                 <label data-i18n="subcon.label">Subcon</label>
                 <input
                   id="f-subcon"
+                  list="f-subcon-options"
                   data-i18n-placeholder="subcon.placeholder"
-                  placeholder="模糊匹配"
+                  placeholder="输入或选择"
                 />
+                <datalist id="f-subcon-options"></datalist>
               </div>
             </div>
 
             <div class="row-line">
               <div class="field">
-                <label data-i18n="project.label">Project</label>
-                <input
-                  id="f-project"
-                  data-i18n-placeholder="project.placeholder"
-                  placeholder="模糊匹配"
-                />
-              </div>
-              <div class="field">
                 <label data-i18n="statusWh.label">Status WH</label>
                 <input
                   id="f-status-wh"
+                  list="f-status-wh-options"
                   data-i18n-placeholder="statusWh.placeholder"
-                  placeholder="模糊匹配"
+                  placeholder="输入或选择"
                 />
+                <datalist id="f-status-wh-options"></datalist>
               </div>
               <div class="field">
                 <label data-i18n="statusDelivery.label">Status Delivery</label>
                 <input
                   id="f-status-delivery"
+                  list="f-status-delivery-options"
                   data-i18n-placeholder="statusDelivery.placeholder"
-                  placeholder="模糊匹配"
+                  placeholder="输入或选择"
                 />
+                <datalist id="f-status-delivery-options"></datalist>
               </div>
               <div class="field">
                 <label data-i18n="hasCoord.label">经纬度</label>

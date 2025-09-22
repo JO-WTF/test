@@ -45,12 +45,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const toInput = el('f-to');
   const pageSizeInput = el('f-ps2');
   const lspInput = el('f-lsp');
+  const lspOptions = el('f-lsp-options');
   const regionInput = el('f-region');
-  const areaInput = el('f-area');
+  const regionOptions = el('f-region-options');
+  const planMosDateInput = el('f-plan-mos-date');
+  const planMosDateOptions = el('f-plan-mos-date-options');
   const subconInput = el('f-subcon');
-  const projectInput = el('f-project');
+  const subconOptions = el('f-subcon-options');
   const statusWhInput = el('f-status-wh');
+  const statusWhOptions = el('f-status-wh-options');
   const statusDeliveryInput = el('f-status-delivery');
+  const statusDeliveryOptions = el('f-status-delivery-options');
 
   const mask = el('modal-mask');
   const mId = el('modal-id');
@@ -104,6 +109,78 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   if (statusSelect && DEFAULT_STATUS_VALUE) {
     statusSelect.value = DEFAULT_STATUS_VALUE;
   }
+
+  const FILTER_OPTION_LIMIT = 200;
+  const filterDropdowns = new Map();
+
+  function normalizeFilterOptionList(list) {
+    if (!Array.isArray(list)) return [];
+    const seen = new Set();
+    const result = [];
+    list.forEach((item) => {
+      if (item === null || item === undefined) return;
+      const str = String(item).trim();
+      if (!str) return;
+      if (seen.has(str)) return;
+      seen.add(str);
+      result.push(str);
+    });
+    return result;
+  }
+
+  function registerFilterDropdown(key, inputEl, listEl) {
+    if (!inputEl || !listEl) return;
+    const state = {
+      input: inputEl,
+      list: listEl,
+      options: [],
+      updateList(query) {
+        const q = (query || '').trim().toLowerCase();
+        const source = state.options;
+        const filtered = q
+          ? source.filter((option) => option.toLowerCase().includes(q))
+          : source;
+        const limited = filtered.slice(0, FILTER_OPTION_LIMIT);
+        state.list.innerHTML = limited
+          .map((option) => `<option value="${escapeHtml(option)}"></option>`)
+          .join('');
+      },
+    };
+
+    inputEl.setAttribute('autocomplete', 'off');
+
+    inputEl.addEventListener(
+      'focus',
+      () => {
+        state.updateList('');
+      },
+      { signal }
+    );
+
+    inputEl.addEventListener(
+      'input',
+      () => {
+        state.updateList(inputEl.value || '');
+      },
+      { signal }
+    );
+
+    filterDropdowns.set(key, state);
+  }
+
+  function setFilterDropdownOptions(key, options) {
+    const state = filterDropdowns.get(key);
+    if (!state) return;
+    state.options = normalizeFilterOptionList(options);
+    state.updateList(state.input.value || '');
+  }
+
+  registerFilterDropdown('lsp', lspInput, lspOptions);
+  registerFilterDropdown('region', regionInput, regionOptions);
+  registerFilterDropdown('plan_mos_date', planMosDateInput, planMosDateOptions);
+  registerFilterDropdown('subcon', subconInput, subconOptions);
+  registerFilterDropdown('status_wh', statusWhInput, statusWhOptions);
+  registerFilterDropdown('status_delivery', statusDeliveryInput, statusDeliveryOptions);
 
   const expandedRowKeys = new Set();
   const SUMMARY_BASE_COLUMN_COUNT = 9;
@@ -1494,6 +1571,34 @@ ${cellsHtml}
     });
   }
 
+  async function fetchFilterCandidates() {
+    try {
+      const resp = await fetch(`${API_BASE}/api/dn/filters`, { signal });
+      const text = await resp.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (err) {
+        console.error(err);
+      }
+      if (!resp.ok) {
+        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+      }
+
+      const payload = data?.data && typeof data.data === 'object' ? data.data : data;
+      setFilterDropdownOptions('lsp', payload?.lsp);
+      setFilterDropdownOptions('region', payload?.region);
+      setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
+      setFilterDropdownOptions('subcon', payload?.subcon);
+      setFilterDropdownOptions('status_wh', payload?.status_wh);
+      const deliveryOptions = payload?.status_delivery || payload?.status_deliver;
+      setFilterDropdownOptions('status_delivery', deliveryOptions);
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      console.error('Failed to load DN filter options', err);
+    }
+  }
+
   function buildParamsAuto() {
     const params = new URLSearchParams();
     const tokens = normalizeDnInput({ enforceFormat: false });
@@ -1514,9 +1619,8 @@ ${cellsHtml}
       const du = (duFilterInput?.value || '').trim();
       const lsp = (lspInput?.value || '').trim();
       const region = (regionInput?.value || '').trim();
-      const area = (areaInput?.value || '').trim();
+      const planMosDate = (planMosDateInput?.value || '').trim();
       const subcon = (subconInput?.value || '').trim();
-      const project = (projectInput?.value || '').trim();
       const statusWh = (statusWhInput?.value || '').trim();
       const statusDelivery = (statusDeliveryInput?.value || '').trim();
 
@@ -1534,9 +1638,8 @@ ${cellsHtml}
       if (dt) params.set('date_to', new Date(`${dt}T23:59:59`).toISOString());
       if (lsp) params.set('lsp', lsp);
       if (region) params.set('region', region);
-      if (area) params.set('area', area);
+      if (planMosDate) params.set('date', planMosDate);
       if (subcon) params.set('subcon', subcon);
-      if (project) params.set('project', project);
       if (statusWh) params.set('status_wh', statusWh);
       if (statusDelivery) params.set('status_delivery', statusDelivery);
     }
@@ -2237,9 +2340,8 @@ ${cellsHtml}
         'f-du': '',
         'f-lsp': '',
         'f-region': '',
-        'f-area': '',
+        'f-plan-mos-date': '',
         'f-subcon': '',
-        'f-project': '',
         'f-status-wh': '',
         'f-status-delivery': '',
       };
@@ -2318,10 +2420,11 @@ ${cellsHtml}
     }
   }
 
-  function init() {
+  async function init() {
     normalizeDnInput({ enforceFormat: false });
     if (hint) hint.textContent = i18n?.t('hint.ready') || '输入条件后点击查询。';
-    fetchList();
+    await fetchFilterCandidates();
+    await fetchList();
   }
 
   restoreAuthFromStorage();
