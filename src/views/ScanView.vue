@@ -111,8 +111,11 @@
               @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }"
             >
               <option value="" disabled>{{ t('choose') }}</option>
-              <option value="运输中">{{ t('inTransit') }}</option>
-              <option value="已到达">{{ t('arrived') }}</option>
+              <option value="ARRIVED AT WH">{{ t('statusArrivedWh') }}</option>
+              <option value="TRANSPORTING FROM WH">{{ t('statusDepartWh') }}</option>
+              <option value="ARRIVED AT XD/PM">{{ t('statusArrivedXdPm') }}</option>
+              <option value="TRANSPORTING FROM XD/PM">{{ t('statusDepartXdPm') }}</option>
+              <option value="ARRIVED AT SITE">{{ t('statusArrivedSite') }}</option>
             </select>
           </div>
           <div class="hint" v-if="state.needsStatusHint">
@@ -409,11 +412,21 @@ const clearPhoto = () => {
   state.photoPreview = null;
 };
 
+const STATUS_TRANSLATION_MAP = {
+  'ARRIVED AT WH': 'statusArrivedWh',
+  'TRANSPORTING FROM WH': 'statusDepartWh',
+  'ARRIVED AT XD/PM': 'statusArrivedXdPm',
+  'TRANSPORTING FROM XD/PM': 'statusDepartXdPm',
+  'ARRIVED AT SITE': 'statusArrivedSite',
+  '运输中': 'inTransit',
+  '过夜': 'overnight',
+  '已到达': 'arrived',
+};
+
 const statusLabel = (v) => {
-  if (v === '运输中') return t('inTransit');
-  if (v === '过夜') return t('overnight');
-  if (v === '已到达') return t('arrived');
-  return v || '-';
+  if (!v) return '-';
+  const key = STATUS_TRANSLATION_MAP[v];
+  return key ? t(key) : v;
 };
 
 const formatResultText = (val, allowTrim = false) => {
