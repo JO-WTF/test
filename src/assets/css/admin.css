@@ -287,6 +287,45 @@ body.admin-theme {
 .admin-page .coord-cell a {
     width: fit-content
     }
+.admin-page .icon-link, .admin-page .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: #9cc6ff;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease
+    }
+.admin-page .icon-link {
+    text-decoration: none
+    }
+.admin-page .icon-link:hover, .admin-page .icon-btn:hover {
+    background: rgba(105, 168, 255, 0.16);
+    color: #69a8ff
+    }
+.admin-page .icon-btn.danger {
+    color: #ff8c8c
+    }
+.admin-page .icon-btn.danger:hover {
+    background: rgba(255, 107, 107, 0.18);
+    color: #ffb3b3
+    }
+.admin-page .icon-link:focus-visible, .admin-page .icon-btn:focus-visible {
+    outline: 2px solid rgba(105, 168, 255, 0.6);
+    outline-offset: 2px
+    }
+.admin-page .icon-btn {
+    appearance: none
+    }
+.admin-page .icon-svg {
+    width: 18px;
+    height: 18px
+    }
 .admin-page a {
     color: #69a8ff
     }
@@ -303,7 +342,7 @@ body.admin-theme {
     }
 .admin-page .actions {
     display: flex;
-    gap: 8px
+    gap: 6px
     }
 .admin-page .grid-2col {
     display: grid;
