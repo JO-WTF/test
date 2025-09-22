@@ -54,11 +54,11 @@
               <textarea
                 id="f-dn"
                 data-i18n-placeholder="dn.placeholder"
-                placeholder="示例：&#10;DN123...&#10;DN456..."
+                placeholder="示例：&#10;ABC123456789012&#10;ABCD1234567890123"
               ></textarea>
             </div>
             <div class="muted" style="margin-top: 6px" data-i18n="dn.tip">
-              提示：DN 号支持字母数字与短横线。
+              提示：DN 号总长度为 14-18 位，前 3-5 位为字母，其余为数字。
             </div>
           </div>
 

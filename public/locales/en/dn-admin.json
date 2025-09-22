@@ -1,8 +1,8 @@
 {
     "title": "DN Submission Records Management",
     "dn.label": "DN Number (supports multiple lines/commas/spaces; multiple means batch query)",
-    "dn.placeholder": "Example:\nDN123...\nDN456...",
-    "dn.tip": "Hint: DN numbers accept letters, digits, and hyphen.",
+    "dn.placeholder": "Example:\nABC123456789012\nABCD1234567890123",
+    "dn.tip": "Hint: DN numbers must be 14-18 characters with 3-5 starting letters followed by digits.",
     "status.label": "Status",
     "status.all": "(All)",
     "status.inTransit": "Start Transport",
