@@ -197,6 +197,13 @@
                   <button class="btn ghost" id="btn-export-all" data-i18n="actions.exportAll">
                     导出全部
                   </button>
+                  <button
+                    class="btn ghost"
+                    id="btn-export-records"
+                    data-i18n="actions.exportRecords"
+                  >
+                    导出DN更新记录
+                  </button>
                   <button class="btn ghost" id="btn-trust-backend-link" data-i18n="actions.trustBackend">
                     信任后台
                   </button>

@@ -58,6 +58,7 @@
     "actions.query": "查询",
     "actions.reset": "重置",
     "actions.exportAll": "导出全部",
+    "actions.exportRecords": "导出DN更新记录",
     "actions.trustBackend": "信任后台",
     "actions.syncGoogleSheet": "更新Google Sheet数据",
     "actions.syncGoogleSheetSuccess": "已触发 Google Sheet 数据更新",

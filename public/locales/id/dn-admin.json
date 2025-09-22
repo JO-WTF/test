@@ -58,6 +58,7 @@
     "actions.query": "Cari",
     "actions.reset": "Atur Ulang",
     "actions.exportAll": "Ekspor Semua",
+    "actions.exportRecords": "Ekspor Catatan Pembaruan DN",
     "actions.trustBackend": "Percaya Backend",
     "actions.syncGoogleSheet": "Perbarui data Google Sheet",
     "actions.syncGoogleSheetSuccess": "Sinkronisasi Google Sheet telah dijalankan",
