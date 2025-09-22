@@ -862,9 +862,11 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       .filter(Boolean);
   }
 
-  function renderDnPreview() {
+  function renderDnPreview(tokensOverride) {
     if (!dnPreview || !dnInput) return;
-    const tokens = splitDnTokens(dnInput.value);
+    const tokens = Array.isArray(tokensOverride)
+      ? tokensOverride
+      : splitDnTokens(dnInput.value);
     if (!tokens.length) {
       const placeholder =
         i18n?.t('dn.preview.empty') || '在此查看格式化结果';
@@ -880,13 +882,22 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     dnPreview.innerHTML = html;
   }
 
+  function renderDnTokens(tokens) {
+    if (!dnInput) return [];
+    const list = Array.isArray(tokens) ? tokens : [];
+    dnInput.value = list.join('\n');
+    renderDnPreview(list);
+    return list;
+  }
+
   function normalizeDnInput({ enforceFormat = false } = {}) {
     if (!dnInput) return [];
     const tokens = splitDnTokens(dnInput.value);
     if (enforceFormat) {
-      dnInput.value = tokens.join('\n');
+      renderDnTokens(tokens);
+    } else {
+      renderDnPreview(tokens);
     }
-    renderDnPreview();
     return tokens;
   }
 
@@ -1796,9 +1807,11 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     if (dnModal) dnModal.style.display = 'none';
   }
 
-  function renderDnEntryPreview() {
+  function renderDnEntryPreview(tokensOverride) {
     if (!dnEntryPreview || !dnEntryInput) return;
-    const tokens = splitDnTokens(dnEntryInput.value);
+    const tokens = Array.isArray(tokensOverride)
+      ? tokensOverride
+      : splitDnTokens(dnEntryInput.value);
     if (!tokens.length) {
       const placeholder = i18n ? i18n.t('dn.preview.empty') : '在此查看格式化结果';
       dnEntryPreview.innerHTML = `<div class="placeholder">${placeholder}</div>`;
@@ -1810,6 +1823,14 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
         return `<span class="dn-token ${valid ? 'ok' : 'bad'}">${token}</span>`;
       })
       .join('');
+  }
+
+  function renderDnEntryTokens(tokens) {
+    if (!dnEntryInput) return [];
+    const list = Array.isArray(tokens) ? tokens : [];
+    dnEntryInput.value = list.join('\n');
+    renderDnEntryPreview(list);
+    return list;
   }
 
   async function handleDnConfirm() {
@@ -1855,6 +1876,30 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     { signal }
   );
   dnEntryInput?.addEventListener('input', () => renderDnEntryPreview(), { signal });
+  dnEntryInput?.addEventListener(
+    'paste',
+    (e) => {
+      try {
+        const text = (e.clipboardData || window.clipboardData)?.getData('text');
+        if (typeof text === 'string') {
+          e.preventDefault();
+          const current = splitDnTokens(dnEntryInput.value);
+          const pasted = splitDnTokens(text);
+          const merged = Array.from(new Set(current.concat(pasted)));
+          renderDnEntryTokens(merged);
+          try {
+            dnEntryInput.selectionStart = dnEntryInput.selectionEnd =
+              dnEntryInput.value.length;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    { signal }
+  );
 
   statusSelect?.addEventListener(
     'change',
@@ -1868,6 +1913,29 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'input',
     () => {
       normalizeDnInput({ enforceFormat: false });
+    },
+    { signal }
+  );
+  dnInput?.addEventListener(
+    'paste',
+    (e) => {
+      try {
+        const text = (e.clipboardData || window.clipboardData)?.getData('text');
+        if (typeof text === 'string') {
+          e.preventDefault();
+          const current = splitDnTokens(dnInput.value);
+          const pasted = splitDnTokens(text);
+          const merged = Array.from(new Set(current.concat(pasted)));
+          renderDnTokens(merged);
+          try {
+            dnInput.selectionStart = dnInput.selectionEnd = dnInput.value.length;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
     },
     { signal }
   );
