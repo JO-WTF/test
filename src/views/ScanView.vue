@@ -111,11 +111,21 @@
               @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }"
             >
               <option value="" disabled>{{ t('choose') }}</option>
-              <option value="ARRIVED AT WH">{{ t('statusArrivedWh') }}</option>
-              <option value="TRANSPORTING FROM WH">{{ t('statusDepartWh') }}</option>
-              <option value="ARRIVED AT XD/PM">{{ t('statusArrivedXdPm') }}</option>
-              <option value="TRANSPORTING FROM XD/PM">{{ t('statusDepartXdPm') }}</option>
-              <option value="ARRIVED AT SITE">{{ t('statusArrivedSite') }}</option>
+              <option :value="STATUS_VALUES.ARRIVED_AT_WH">
+                {{ t('statusArrivedWh') }}
+              </option>
+              <option :value="STATUS_VALUES.TRANSPORTING_FROM_WH">
+                {{ t('statusDepartWh') }}
+              </option>
+              <option :value="STATUS_VALUES.ARRIVED_AT_XD_PM">
+                {{ t('statusArrivedXdPm') }}
+              </option>
+              <option :value="STATUS_VALUES.TRANSPORTING_FROM_XD_PM">
+                {{ t('statusDepartXdPm') }}
+              </option>
+              <option :value="STATUS_VALUES.ARRIVED_AT_SITE">
+                {{ t('statusArrivedSite') }}
+              </option>
             </select>
           </div>
           <div class="hint" v-if="state.needsStatusHint">
@@ -206,6 +216,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Toastify from 'toastify-js';
 import { createI18n } from '../i18n/core';
 import { useBodyTheme } from '../composables/useBodyTheme';
+import { STATUS_VALUES } from '../config';
 
 const LICENSE_KEY =
   'DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0NTQzNDEwLU1UQTBOVFF6TkRFd0xYZGxZaTFVY21saGJGQnliMm8iLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tZGxzLmR5bmFtc29mdG9ubGluZS5jb20iLCJvcmdhbml6YXRpb25JRCI6IjEwNDU0MzQxMCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NkbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsImNoZWNrQ29kZSI6MTg2NjI4MDUzMX0=';
@@ -413,11 +424,11 @@ const clearPhoto = () => {
 };
 
 const STATUS_TRANSLATION_MAP = {
-  'ARRIVED AT WH': 'statusArrivedWh',
-  'TRANSPORTING FROM WH': 'statusDepartWh',
-  'ARRIVED AT XD/PM': 'statusArrivedXdPm',
-  'TRANSPORTING FROM XD/PM': 'statusDepartXdPm',
-  'ARRIVED AT SITE': 'statusArrivedSite',
+  [STATUS_VALUES.ARRIVED_AT_WH]: 'statusArrivedWh',
+  [STATUS_VALUES.TRANSPORTING_FROM_WH]: 'statusDepartWh',
+  [STATUS_VALUES.ARRIVED_AT_XD_PM]: 'statusArrivedXdPm',
+  [STATUS_VALUES.TRANSPORTING_FROM_XD_PM]: 'statusDepartXdPm',
+  [STATUS_VALUES.ARRIVED_AT_SITE]: 'statusArrivedSite',
   '运输中': 'inTransit',
   '过夜': 'overnight',
   '已到达': 'arrived',
