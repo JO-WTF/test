@@ -65,82 +65,14 @@
           <div class="rhs">
             <div class="row-line">
               <div class="field">
-                <label data-i18n="status.label">状态</label>
-                <select id="f-status">
-                  <option
-                    v-for="option in statusFilterOptions"
-                    :key="option.value"
-                    :value="option.value"
-                    :data-i18n="option.i18nKey || null"
-                  >
-                    {{ option.fallback }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="field grow">
-                <label data-i18n="remark.kw.label">备注关键词</label>
+                <label data-i18n="planMosDate.label">Plan MOS Date</label>
                 <input
-                  id="f-remark"
-                  data-i18n-placeholder="remark.kw.placeholder"
-                  placeholder="模糊匹配"
-                />
-              </div>
-
-              <div class="field">
-                <label data-i18n="du.filter.label">关联 DU ID</label>
-                <input
-                  id="f-du"
-                  data-i18n-placeholder="du.filter.placeholder"
-                  placeholder="精确匹配"
-                />
-              </div>
-
-              <div class="field">
-                <label data-i18n="has.label">是否带附件</label>
-                <select id="f-has">
-                  <option value="" data-i18n="has.any">（不限）</option>
-                  <option value="true" data-i18n="has.true">有附件</option>
-                  <option value="false" data-i18n="has.false">无附件</option>
-                </select>
-              </div>
-
-              <div class="field">
-                <label data-i18n="perPage.label">每页数量</label>
-                <input
-                  id="f-ps2"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value="20"
-                  class="w120"
-                  data-i18n-placeholder="perPage.placeholder"
-                  placeholder="请输入数量"
-                />
-              </div>
-            </div>
-
-            <div class="row-line">
-              <div class="field">
-                <label data-i18n="date.from">开始日期</label>
-                <input id="f-from" type="date" />
-              </div>
-              <div class="field">
-                <label data-i18n="date.to">结束日期</label>
-                <input id="f-to" type="date" />
-              </div>
-            </div>
-
-            <div class="row-line">
-              <div class="field">
-                <label data-i18n="lsp.label">LSP</label>
-                <input
-                  id="f-lsp"
-                  list="f-lsp-options"
-                  data-i18n-placeholder="lsp.placeholder"
+                  id="f-plan-mos-date"
+                  list="f-plan-mos-date-options"
+                  data-i18n-placeholder="planMosDate.placeholder"
                   placeholder="输入或选择"
                 />
-                <datalist id="f-lsp-options"></datalist>
+                <datalist id="f-plan-mos-date-options"></datalist>
               </div>
               <div class="field">
                 <label data-i18n="region.label">Region</label>
@@ -153,14 +85,14 @@
                 <datalist id="f-region-options"></datalist>
               </div>
               <div class="field">
-                <label data-i18n="planMosDate.label">Plan MOS Date</label>
+                <label data-i18n="lsp.label">LSP</label>
                 <input
-                  id="f-plan-mos-date"
-                  list="f-plan-mos-date-options"
-                  data-i18n-placeholder="planMosDate.placeholder"
+                  id="f-lsp"
+                  list="f-lsp-options"
+                  data-i18n-placeholder="lsp.placeholder"
                   placeholder="输入或选择"
                 />
-                <datalist id="f-plan-mos-date-options"></datalist>
+                <datalist id="f-lsp-options"></datalist>
               </div>
               <div class="field">
                 <label data-i18n="subcon.label">分包商</label>
@@ -175,6 +107,19 @@
             </div>
 
             <div class="row-line">
+              <div class="field">
+                <label data-i18n="status.label">状态</label>
+                <select id="f-status">
+                  <option
+                    v-for="option in statusFilterOptions"
+                    :key="option.value"
+                    :value="option.value"
+                    :data-i18n="option.i18nKey || null"
+                  >
+                    {{ option.fallback }}
+                  </option>
+                </select>
+              </div>
               <div class="field">
                 <label data-i18n="statusWh.label">仓库状态</label>
                 <input
@@ -195,6 +140,17 @@
                 />
                 <datalist id="f-status-delivery-options"></datalist>
               </div>
+            </div>
+
+            <div class="row-line">
+              <div class="field">
+                <label data-i18n="has.label">是否带附件</label>
+                <select id="f-has">
+                  <option value="" data-i18n="has.any">（不限）</option>
+                  <option value="true" data-i18n="has.true">有附件</option>
+                  <option value="false" data-i18n="has.false">无附件</option>
+                </select>
+              </div>
               <div class="field">
                 <label data-i18n="hasCoord.label">经纬度</label>
                 <select id="f-has-coordinate">
@@ -202,6 +158,33 @@
                   <option value="true" data-i18n="hasCoord.true">有经纬度</option>
                   <option value="false" data-i18n="hasCoord.false">无经纬度</option>
                 </select>
+              </div>
+              <div class="field grow">
+                <label data-i18n="remark.kw.label">备注关键词</label>
+                <input
+                  id="f-remark"
+                  data-i18n-placeholder="remark.kw.placeholder"
+                  placeholder="模糊匹配"
+                />
+              </div>
+              <div class="field">
+                <label data-i18n="du.filter.label">关联 DU ID</label>
+                <input
+                  id="f-du"
+                  data-i18n-placeholder="du.filter.placeholder"
+                  placeholder="精确匹配"
+                />
+              </div>
+            </div>
+
+            <div class="row-line">
+              <div class="field">
+                <label data-i18n="date.from">开始日期</label>
+                <input id="f-from" type="date" />
+              </div>
+              <div class="field">
+                <label data-i18n="date.to">结束日期</label>
+                <input id="f-to" type="date" />
               </div>
             </div>
 
@@ -252,6 +235,19 @@
           <tbody></tbody>
         </table>
         <div class="pager" id="pager" style="display: none">
+          <label class="pager__page-size">
+            <span data-i18n="perPage.label">每页数量</span>
+            <input
+              id="f-ps2"
+              type="number"
+              min="1"
+              max="100"
+              value="20"
+              class="w120"
+              data-i18n-placeholder="perPage.placeholder"
+              placeholder="请输入数量"
+            />
+          </label>
           <button class="ghost" id="prev" data-i18n="pager.prev">上一页</button>
           <span id="pginfo" class="muted"></span>
           <button class="ghost" id="next" data-i18n="pager.next">下一页</button>
