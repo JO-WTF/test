@@ -28,7 +28,7 @@
     "status.noStatus": "No Status",
     "remark.kw.label": "Remark Keyword",
     "remark.kw.placeholder": "Fuzzy match",
-    "du.filter.label": "Related DN Number",
+    "du.filter.label": "Related DU ID",
     "du.filter.placeholder": "Exact match",
     "has.label": "Has Attachment",
     "has.any": "(Any)",

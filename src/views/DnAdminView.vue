@@ -88,7 +88,7 @@
               </div>
 
               <div class="field">
-                <label data-i18n="du.filter.label">关联 DN Number</label>
+                <label data-i18n="du.filter.label">关联 DU ID</label>
                 <input
                   id="f-du"
                   data-i18n-placeholder="du.filter.placeholder"
@@ -273,7 +273,7 @@
             </select>
           </div>
           <div class="field grow" id="m-du-field">
-            <label data-i18n="modal.du.label">关联 DN Number（可选）</label>
+            <label data-i18n="modal.du.label">关联 DU ID（可选）</label>
             <input
               id="m-du-id"
               data-i18n-placeholder="modal.du.placeholder"

@@ -28,7 +28,7 @@
     "status.noStatus": "Tanpa Status",
     "remark.kw.label": "Kata Kunci Catatan",
     "remark.kw.placeholder": "Pencocokan samar",
-    "du.filter.label": "DN Number terkait",
+    "du.filter.label": "DU ID terkait",
     "du.filter.placeholder": "Pencocokan tepat",
     "has.label": "Ada Lampiran",
     "has.any": "(Tidak dibatasi)",
