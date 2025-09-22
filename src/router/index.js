@@ -9,7 +9,7 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: () => import('../views/AdminView.vue'),
+    component: () => import('../views/DnAdminView.vue'),
   },
   {
     path: '/du-admin',
