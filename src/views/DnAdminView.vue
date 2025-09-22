@@ -163,7 +163,7 @@
                 <datalist id="f-plan-mos-date-options"></datalist>
               </div>
               <div class="field">
-                <label data-i18n="subcon.label">Subcon</label>
+                <label data-i18n="subcon.label">分包商</label>
                 <input
                   id="f-subcon"
                   list="f-subcon-options"
@@ -176,7 +176,7 @@
 
             <div class="row-line">
               <div class="field">
-                <label data-i18n="statusWh.label">Status WH</label>
+                <label data-i18n="statusWh.label">仓库状态</label>
                 <input
                   id="f-status-wh"
                   list="f-status-wh-options"
@@ -186,7 +186,7 @@
                 <datalist id="f-status-wh-options"></datalist>
               </div>
               <div class="field">
-                <label data-i18n="statusDelivery.label">Status Delivery</label>
+                <label data-i18n="statusDelivery.label">配送状态</label>
                 <input
                   id="f-status-delivery"
                   list="f-status-delivery-options"
@@ -365,9 +365,14 @@ const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
 
 const statusFilterOptions = [
   {
+    value: '',
+    i18nKey: 'status.filter.any',
+    fallback: '任意',
+  },
+  {
     value: STATUS_NOT_EMPTY_VALUE,
     i18nKey: 'status.filter.notEmpty',
-    fallback: '所有状态',
+    fallback: '任意非空',
   },
   {
     value: 'ARRIVED AT WH',
