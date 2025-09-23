@@ -524,7 +524,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
         ? paramInput.toString()
         : '';
     const basePath =
-      mode === 'batch' ? '/api/dn/batch/list/search?' : '/api/dn/list/search?';
+      mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?';
     return `${API_BASE}${basePath}${params}`;
   }
 
