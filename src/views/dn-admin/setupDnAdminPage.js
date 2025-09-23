@@ -908,7 +908,12 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       .map(([key, value]) => {
         const safeKey = escapeHtml(String(key));
         const valueHtml = formatDetailValue(String(key), value);
-        return `<div class="detail-key">${safeKey}</div><div class="detail-value">${valueHtml}</div>`;
+        return [
+          '<div class="detail-item">',
+          `<div class="detail-key">${safeKey}</div>`,
+          `<div class="detail-value">${valueHtml}</div>`,
+          '</div>',
+        ].join('');
       })
       .join('');
     return `<div class="detail-content">${title}${meta}<div class="detail-grid">${rows}</div></div>`;

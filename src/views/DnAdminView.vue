@@ -1,6 +1,6 @@
 <template>
   <div class="admin-page" ref="adminRoot">
-    <div class="container">
+    <div class="container dn-admin-container">
       <div class="page-header">
         <div class="lang-switch" aria-label="Language switch">
           <button
