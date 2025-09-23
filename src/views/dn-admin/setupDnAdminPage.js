@@ -200,8 +200,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   registerFilterDropdown('status_delivery', statusDeliveryInput, statusDeliveryOptions);
 
   const expandedRowKeys = new Set();
-  const SUMMARY_BASE_COLUMN_COUNT = 9;
-  const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 10;
+  const SUMMARY_BASE_COLUMN_COUNT = 11;
+  const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 12;
   const DETAIL_KEY_PRIORITY = [
     'id',
     'dn_id',
@@ -247,6 +247,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'to_address',
     'status',
     'remark',
+    'issue_remark',
+    'issueRemark',
+    'issue_remarks',
+    'issueRemarks',
+    'issue_note',
+    'issue_notes',
+    'status_delivery',
+    'delivery_status',
+    'statusDelivery',
+    'deliveryStatus',
+    'status_deliver',
     'photo_url',
     'photo',
     'photo_urls',
@@ -289,6 +300,21 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'plan_mos_time',
     'plan_mos_dt',
     'plan_delivery_date',
+  ];
+  const ISSUE_REMARK_FIELD_CANDIDATES = [
+    'issue_remark',
+    'issueRemark',
+    'issue_remarks',
+    'issueRemarks',
+    'issue_note',
+    'issue_notes',
+  ];
+  const STATUS_DELIVERY_FIELD_CANDIDATES = [
+    'status_delivery',
+    'delivery_status',
+    'statusDelivery',
+    'deliveryStatus',
+    'status_deliver',
   ];
   const UPDATED_AT_FIELD_CANDIDATES = [
     'updated_at',
@@ -367,6 +393,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'dn_number',
     'status',
     'remark',
+    'issue_remark',
+    'issueRemark',
+    'issue_remarks',
+    'issueRemarks',
+    'issue_note',
+    'issue_notes',
+    'status_delivery',
+    'delivery_status',
+    'statusDelivery',
+    'deliveryStatus',
+    'status_deliver',
     'photo_url',
     'photo',
     'photo_urls',
@@ -749,6 +786,14 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return getFirstNonEmpty(item, PLAN_MOS_DATE_FIELD_CANDIDATES);
   }
 
+  function getIssueRemarkDisplay(item) {
+    return getFirstNonEmpty(item, ISSUE_REMARK_FIELD_CANDIDATES);
+  }
+
+  function getStatusDeliveryDisplay(item) {
+    return getFirstNonEmpty(item, STATUS_DELIVERY_FIELD_CANDIDATES);
+  }
+
   function getUpdatedAtDisplay(item) {
     return getFirstNonEmpty(item, UPDATED_AT_FIELD_CANDIDATES);
   }
@@ -888,6 +933,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const lsp = getLspDisplay(item);
     const region = getRegionDisplay(item);
     const planMos = getPlanMosDateDisplay(item);
+    const issueRemark = getIssueRemarkDisplay(item);
+    const statusDelivery = getStatusDeliveryDisplay(item);
     const updatedAt = getUpdatedAtDisplay(item);
     const remarkText = normalizeTextValue(item?.remark);
     const remarkDisplay = remarkText
@@ -903,6 +950,12 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
     const regionCell = region ? escapeHtml(region) : '<span class="muted">-</span>';
     const planCell = planMos ? escapeHtml(planMos) : '<span class="muted">-</span>';
+    const issueRemarkCell = issueRemark
+      ? escapeHtml(issueRemark).replace(/\n/g, '<br>')
+      : '<span class="muted">-</span>';
+    const statusDeliveryCell = statusDelivery
+      ? escapeHtml(statusDelivery).replace(/\n/g, '<br>')
+      : '<span class="muted">-</span>';
     const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
     const hint = detailAvailable
       ? '<div class="summary-hint" data-i18n="table.expandHint">点击查看全部字段</div>'
@@ -922,6 +975,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       `      <td>${regionCell}</td>`,
       `      <td>${planCell}</td>`,
       `      <td>${lspCell}</td>`,
+      `      <td>${issueRemarkCell}</td>`,
+      `      <td>${statusDeliveryCell}</td>`,
       `      ${statusCell}`,
       `      <td>${remarkDisplay}</td>`,
       `      <td>${photoCell}</td>`,

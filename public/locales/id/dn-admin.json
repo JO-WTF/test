@@ -96,6 +96,8 @@
     "table.region": "Wilayah",
     "table.planMosDate": "Tanggal PLAN MOS",
     "table.lsp": "LSP",
+    "table.issueRemark": "Catatan Masalah",
+    "table.statusDelivery": "Status Pengiriman",
     "table.origin": "Asal",
     "table.destination": "Tujuan",
     "table.status": "Status",

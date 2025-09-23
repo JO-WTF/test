@@ -96,6 +96,8 @@
     "table.region": "区域",
     "table.planMosDate": "计划 MOS 日期",
     "table.lsp": "LSP",
+    "table.issueRemark": "问题备注",
+    "table.statusDelivery": "配送状态",
     "table.origin": "起始地",
     "table.destination": "目的地",
     "table.status": "状态",
