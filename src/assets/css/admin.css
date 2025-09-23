@@ -58,13 +58,23 @@ body.admin-theme {
     }
 .admin-page .status-card-grid {
     --status-card-columns: 1;
+    --status-card-min-width: 80px;
     display: grid;
     gap: 12px;
-    grid-template-columns: repeat(var(--status-card-columns), minmax(160px, 1fr))
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(
+            max(var(--status-card-min-width), calc(100% / var(--status-card-columns))),
+            1fr
+        )
+    )
     }
 @media (max-width: 720px) {
     .admin-page .status-card-grid {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr))
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(var(--status-card-min-width), 1fr)
+        )
         }
     }
 .admin-page .status-card {
