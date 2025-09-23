@@ -137,7 +137,12 @@
                   class="thumb"
                 />
                 <div style="display: flex; flex-direction: column; gap: 8px">
-                  <input type="file" accept="image/*" @change="onPickPhoto" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    @change="onPickPhoto"
+                  />
                   <small class="muted">{{ t('photoTip') }}</small>
                   <button v-if="state.photoFile" class="ghost" @click="clearPhoto">
                     {{ t('removePhoto') }}
