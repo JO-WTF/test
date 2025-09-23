@@ -1458,12 +1458,8 @@ ${cellsHtml}
     });
   }
 
-  async function fetchStatusCount(status, signal) {
-    const params = new URLSearchParams();
-    params.set('status', status);
-    params.set('page', '1');
-    params.set('page_size', '1');
-    const url = `${API_BASE}/api/dn/list/search?${params.toString()}`;
+  async function fetchStatusCardStats(signal) {
+    const url = `${API_BASE}/api/dn/status-delivery/stats`;
     const resp = await fetch(url, { signal });
     const text = await resp.text();
     let data = null;
@@ -1475,9 +1471,24 @@ ${cellsHtml}
     if (!resp.ok) {
       throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
     }
-    const totalRaw = data?.total ?? data?.count ?? 0;
-    const total = Number(totalRaw);
-    return Number.isFinite(total) ? total : 0;
+    const list = Array.isArray(data?.data) ? data.data : [];
+    const counts = Object.create(null);
+    list.forEach((item) => {
+      if (!item || typeof item !== 'object') return;
+      const statusRaw =
+        item.status_delivery ?? item.status ?? item.value ?? item.key ?? '';
+      const status = normalizeStatusValue(statusRaw);
+      if (!status) return;
+      const countRaw = Number(
+        item.count ?? item.total ?? item.value ?? item.qty ?? item.quantity ?? 0
+      );
+      const countValue = Number.isFinite(countRaw) ? countRaw : 0;
+      const existing = Number.isFinite(counts[status]) ? counts[status] : 0;
+      counts[status] = existing + countValue;
+    });
+    const totalRaw = Number(data?.total ?? data?.count);
+    const total = Number.isFinite(totalRaw) ? totalRaw : null;
+    return { counts, total };
   }
 
   async function refreshStatusHighlightCards() {
@@ -1501,34 +1512,30 @@ ${cellsHtml}
       ref.button.setAttribute('aria-busy', 'true');
       ref.countEl.textContent = '…';
     });
-
-    const tasks = statusCardDefs.map(async (def) => {
-      try {
-        const count = await fetchStatusCount(def.status, cardSignal);
-        if (cardSignal.aborted || requestId !== statusCardRequestId) return;
-        const ref = statusCardRefs.get(def.status);
-        if (!ref) return;
-        const displayCount = Number.isFinite(count) ? count : 0;
-        ref.countEl.textContent = String(displayCount);
-        ref.button.classList.remove('loading');
-        ref.button.setAttribute('aria-busy', 'false');
-        const label = getStatusCardLabel(def);
-        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
-      } catch (err) {
-        if (cardSignal.aborted || requestId !== statusCardRequestId) return;
-        if (err?.name !== 'AbortError') {
-          console.error(err);
-        }
-      }
-    });
-
+    let stats = null;
     try {
-      await Promise.all(tasks);
+      stats = await fetchStatusCardStats(cardSignal);
     } catch (err) {
+      if (cardSignal.aborted || requestId !== statusCardRequestId) return;
       if (err?.name !== 'AbortError') {
         console.error(err);
       }
     }
+
+    if (cardSignal.aborted || requestId !== statusCardRequestId) return;
+
+    const counts = stats?.counts || Object.create(null);
+    const defLookup = new Map(statusCardDefs.map((def) => [def.status, def]));
+    statusCardRefs.forEach((ref, status) => {
+      const rawCount = counts?.[status];
+      const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
+      ref.countEl.textContent = String(displayCount);
+      ref.button.classList.remove('loading');
+      ref.button.setAttribute('aria-busy', 'false');
+      const def = defLookup.get(status) || { status };
+      const label = getStatusCardLabel(def);
+      ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
+    });
   }
 
   function handleStatusCardClick(status) {
