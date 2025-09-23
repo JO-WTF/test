@@ -1399,7 +1399,7 @@ ${cellsHtml}
     statusCardWrapper.style.display = '';
     statusCardWrapper.setAttribute('aria-hidden', 'false');
     statusCardContainer.innerHTML = '';
-    const columns = Math.max(1, Math.min(defs.length, 4));
+    const columns = Math.max(1, Math.min(defs.length, 9));
     statusCardContainer.style.setProperty('--status-card-columns', String(columns));
 
     defs.forEach((def) => {
@@ -1449,8 +1449,11 @@ ${cellsHtml}
 
   function updateStatusCardActiveState() {
     if (!statusCardRefs.size) return;
-    const value = statusSelect ? statusSelect.value : '';
-    const canonical = normalizeStatusValue(value);
+    const deliveryValue = statusDeliveryInput ? statusDeliveryInput.value : '';
+    const canonicalDelivery = normalizeStatusValue(deliveryValue);
+    const statusValue = statusSelect ? statusSelect.value : '';
+    const canonicalStatus = normalizeStatusValue(statusValue);
+    const canonical = canonicalDelivery || canonicalStatus;
     statusCardRefs.forEach((ref, status) => {
       const isActive = Boolean(canonical) && status === canonical;
       ref.button.classList.toggle('active', isActive);
@@ -1539,12 +1542,25 @@ ${cellsHtml}
   }
 
   function handleStatusCardClick(status) {
-    if (!statusSelect) return;
     const canonical = normalizeStatusValue(status);
-    const option = Array.from(statusSelect.options).find(
-      (opt) => normalizeStatusValue(opt.value) === canonical
-    );
-    statusSelect.value = option ? option.value : canonical;
+    if (!canonical) return;
+    let handled = false;
+    if (statusDeliveryInput) {
+      statusDeliveryInput.value = canonical;
+      handled = true;
+      try {
+        statusDeliveryInput.dispatchEvent(new Event('input', { bubbles: true }));
+      } catch (err) {
+        console.error(err);
+      }
+    } else if (statusSelect) {
+      const option = Array.from(statusSelect.options).find(
+        (opt) => normalizeStatusValue(opt.value) === canonical
+      );
+      statusSelect.value = option ? option.value : canonical;
+      handled = true;
+    }
+    if (!handled) return;
     updateStatusCardActiveState();
     q.page = 1;
     fetchList();
@@ -2489,6 +2505,14 @@ ${cellsHtml}
 
   statusSelect?.addEventListener(
     'change',
+    () => {
+      updateStatusCardActiveState();
+    },
+    { signal }
+  );
+
+  statusDeliveryInput?.addEventListener(
+    'input',
     () => {
       updateStatusCardActiveState();
     },
