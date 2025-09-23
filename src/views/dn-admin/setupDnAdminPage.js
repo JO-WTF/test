@@ -34,6 +34,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const tbl = el('tbl');
   const tbody = tbl?.querySelector('tbody');
   const actionsHeader = tbl?.querySelector('thead th[data-column="actions"]');
+  const updatedAtHeader = tbl?.querySelector('thead th[data-column="updatedAt"]');
   const hint = el('hint');
   const pager = el('pager');
   const pginfo = el('pginfo');
@@ -41,6 +42,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const statusSelect = el('f-status');
   const remarkInput = el('f-remark');
   const hasSelect = el('f-has');
+  const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
   const hasCoordinateSelect = el('f-has-coordinate');
   const fromInput = el('f-from');
   const toInput = el('f-to');
@@ -447,7 +449,36 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     }
   }
 
+  function hideHasAttachmentFilter() {
+    if (hasSelect) {
+      hasSelect.value = '';
+      hasSelect.setAttribute('aria-hidden', 'true');
+    }
+    if (hasSelectField) {
+      hasSelectField.style.display = 'none';
+      hasSelectField.setAttribute('aria-hidden', 'true');
+      const label = hasSelectField.querySelector('label');
+      if (label) {
+        label.setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+
+  function hideUpdatedAtColumn() {
+    if (updatedAtHeader) {
+      updatedAtHeader.style.display = 'none';
+      updatedAtHeader.setAttribute('aria-hidden', 'true');
+    }
+    if (!tbody) return;
+    tbody.querySelectorAll('td[data-column="updatedAt"]').forEach((cell) => {
+      cell.style.display = 'none';
+      cell.setAttribute('aria-hidden', 'true');
+    });
+  }
+
   updateActionColumnVisibility();
+  hideHasAttachmentFilter();
+  hideUpdatedAtColumn();
 
   const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
 
@@ -895,7 +926,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       `      <td>${remarkDisplay}</td>`,
       `      <td>${photoCell}</td>`,
       `      <td>${locationCell}</td>`,
-      `      <td>${updatedCell}</td>`,
+      `      <td data-column="updatedAt" aria-hidden="true" style="display: none">${updatedCell}</td>`,
     ];
     if (showActions) {
       cells.push(`      <td>${actionsContent || '<span class="muted">-</span>'}</td>`);
@@ -1552,6 +1583,7 @@ ${cellsHtml}
         return summaryHtml + (detailHtml || '');
       })
       .join('');
+    hideUpdatedAtColumn();
     Array.from(expandedRowKeys).forEach((key) => {
       if (!currentKeys.has(key)) {
         expandedRowKeys.delete(key);
