@@ -1,6 +1,6 @@
 <template>
   <div class="admin-page" ref="adminRoot">
-    <div class="container">
+    <div class="container dn-admin-container">
       <div class="page-header">
         <div class="lang-switch" aria-label="Language switch">
           <button
@@ -63,8 +63,8 @@
           </div>
 
           <div class="rhs">
-            <div class="row-line">
-              <div class="field">
+            <div class="filters-grid">
+              <div class="field filter-field">
                 <label data-i18n="planMosDate.label">Plan MOS Date</label>
                 <input
                   id="f-plan-mos-date"
@@ -74,7 +74,7 @@
                 />
                 <datalist id="f-plan-mos-date-options"></datalist>
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="region.label">Region</label>
                 <input
                   id="f-region"
@@ -84,7 +84,7 @@
                 />
                 <datalist id="f-region-options"></datalist>
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="lsp.label">LSP</label>
                 <input
                   id="f-lsp"
@@ -94,7 +94,7 @@
                 />
                 <datalist id="f-lsp-options"></datalist>
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="subcon.label">分包商</label>
                 <input
                   id="f-subcon"
@@ -104,10 +104,7 @@
                 />
                 <datalist id="f-subcon-options"></datalist>
               </div>
-            </div>
-
-            <div class="row-line">
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="status.label">状态</label>
                 <select id="f-status">
                   <option
@@ -120,7 +117,7 @@
                   </option>
                 </select>
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="statusWh.label">仓库状态</label>
                 <input
                   id="f-status-wh"
@@ -130,7 +127,7 @@
                 />
                 <datalist id="f-status-wh-options"></datalist>
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="statusDelivery.label">配送状态</label>
                 <input
                   id="f-status-delivery"
@@ -140,10 +137,7 @@
                 />
                 <datalist id="f-status-delivery-options"></datalist>
               </div>
-            </div>
-
-            <div class="row-line">
-              <div class="field" style="display: none" aria-hidden="true">
+              <div class="field filter-field" style="display: none" aria-hidden="true">
                 <label data-i18n="has.label">是否带附件</label>
                 <select id="f-has">
                   <option value="" data-i18n="has.any">（不限）</option>
@@ -151,7 +145,7 @@
                   <option value="false" data-i18n="has.false">无附件</option>
                 </select>
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="hasCoord.label">经纬度</label>
                 <select id="f-has-coordinate">
                   <option value="" data-i18n="hasCoord.any">（不限）</option>
@@ -159,7 +153,7 @@
                   <option value="false" data-i18n="hasCoord.false">无经纬度</option>
                 </select>
               </div>
-              <div class="field grow">
+              <div class="field filter-field">
                 <label data-i18n="remark.kw.label">备注关键词</label>
                 <input
                   id="f-remark"
@@ -167,7 +161,7 @@
                   placeholder="模糊匹配"
                 />
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="du.filter.label">关联 DU ID</label>
                 <input
                   id="f-du"
@@ -175,21 +169,18 @@
                   placeholder="精确匹配"
                 />
               </div>
-            </div>
-
-            <div class="row-line">
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="date.from">开始日期</label>
                 <input id="f-from" type="date" />
               </div>
-              <div class="field">
+              <div class="field filter-field">
                 <label data-i18n="date.to">结束日期</label>
                 <input id="f-to" type="date" />
               </div>
             </div>
 
-            <div class="row-line">
-              <div class="field" style="gap: 8px; flex: 1">
+            <div class="filter-actions">
+              <div class="field" style="gap: 8px">
                 <label style="visibility: hidden" data-i18n="actions.label">操作</label>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap">
                   <button class="btn" id="btn-search" data-i18n="actions.query">查询</button>
@@ -238,6 +229,8 @@
               <th data-i18n="table.region">区域</th>
               <th data-i18n="table.planMosDate">PLAN MOS DATE</th>
               <th data-i18n="table.lsp">LSP</th>
+              <th data-i18n="table.issueRemark">ISSUE REMARK</th>
+              <th data-i18n="table.statusDelivery">STATUS DELIVERY</th>
               <th data-i18n="table.status">状态</th>
               <th data-i18n="table.remark">备注</th>
               <th data-i18n="table.photo">照片</th>
@@ -288,14 +281,6 @@
             <select id="m-status">
               <option value="" data-i18n="modal.status.keep">（不修改）</option>
             </select>
-          </div>
-          <div class="field grow" id="m-du-field">
-            <label data-i18n="modal.du.label">关联 DU ID（可选）</label>
-            <input
-              id="m-du-id"
-              data-i18n-placeholder="modal.du.placeholder"
-              placeholder="不修改请留空"
-            />
           </div>
           <div class="field grow" id="m-remark-field">
             <label data-i18n="modal.remark.label">备注</label>

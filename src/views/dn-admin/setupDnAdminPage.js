@@ -16,8 +16,7 @@ const DN_SEPARATOR_SOURCE = '[\\s,，；;、\\u3001]+';
 const DN_SEP_RE = new RegExp(DN_SEPARATOR_SOURCE, 'gu');
 const DN_SEP_CAPTURE_RE = new RegExp(`(${DN_SEPARATOR_SOURCE})`, 'gu');
 const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
-const DN_VALID_RE = /^[A-Z0-9-]{1,64}$/;
-const DU_RE_FULL = /^DID\d{13}$/;
+const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
 const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
 export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
@@ -67,8 +66,6 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const mRemarkField = el('m-remark-field');
   const mPhoto = el('m-photo');
   const mPhotoField = el('m-photo-field');
-  const mDuField = el('m-du-field');
-  const mDuInput = el('m-du-id');
   const mMsg = el('m-msg');
 
   const authModal = el('auth-modal');
@@ -200,8 +197,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   registerFilterDropdown('status_delivery', statusDeliveryInput, statusDeliveryOptions);
 
   const expandedRowKeys = new Set();
-  const SUMMARY_BASE_COLUMN_COUNT = 9;
-  const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 10;
+  const SUMMARY_BASE_COLUMN_COUNT = 11;
+  const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 12;
   const DETAIL_KEY_PRIORITY = [
     'id',
     'dn_id',
@@ -247,6 +244,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'to_address',
     'status',
     'remark',
+    'issue_remark',
+    'issueRemark',
+    'issue_remarks',
+    'issueRemarks',
+    'issue_note',
+    'issue_notes',
+    'status_delivery',
+    'delivery_status',
+    'statusDelivery',
+    'deliveryStatus',
+    'status_deliver',
     'photo_url',
     'photo',
     'photo_urls',
@@ -289,6 +297,21 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'plan_mos_time',
     'plan_mos_dt',
     'plan_delivery_date',
+  ];
+  const ISSUE_REMARK_FIELD_CANDIDATES = [
+    'issue_remark',
+    'issueRemark',
+    'issue_remarks',
+    'issueRemarks',
+    'issue_note',
+    'issue_notes',
+  ];
+  const STATUS_DELIVERY_FIELD_CANDIDATES = [
+    'status_delivery',
+    'delivery_status',
+    'statusDelivery',
+    'deliveryStatus',
+    'status_deliver',
   ];
   const UPDATED_AT_FIELD_CANDIDATES = [
     'updated_at',
@@ -367,6 +390,17 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     'dn_number',
     'status',
     'remark',
+    'issue_remark',
+    'issueRemark',
+    'issue_remarks',
+    'issueRemarks',
+    'issue_note',
+    'issue_notes',
+    'status_delivery',
+    'delivery_status',
+    'statusDelivery',
+    'deliveryStatus',
+    'status_deliver',
     'photo_url',
     'photo',
     'photo_urls',
@@ -749,6 +783,14 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return getFirstNonEmpty(item, PLAN_MOS_DATE_FIELD_CANDIDATES);
   }
 
+  function getIssueRemarkDisplay(item) {
+    return getFirstNonEmpty(item, ISSUE_REMARK_FIELD_CANDIDATES);
+  }
+
+  function getStatusDeliveryDisplay(item) {
+    return getFirstNonEmpty(item, STATUS_DELIVERY_FIELD_CANDIDATES);
+  }
+
   function getUpdatedAtDisplay(item) {
     return getFirstNonEmpty(item, UPDATED_AT_FIELD_CANDIDATES);
   }
@@ -774,7 +816,6 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   function buildLocationCell(item) {
     const [lat, lng] = getCoordinateParts(item);
     if (lat && lng) {
-      const coordsText = `${lat}, ${lng}`;
       const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(
         lng
       )}`;
@@ -782,10 +823,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       const label = translateInstant('table.mapIconLabel', 'Open in Google Maps') || 'Open in Google Maps';
       const safeLabel = escapeHtml(label);
       const icon = getIconMarkup('map');
-      return `<div class="coord-cell"><div>${escapeHtml(coordsText)}</div><a href="${safeMapUrl}" target="_blank" rel="noopener" class="icon-link map-link" aria-label="${safeLabel}" data-i18n-aria-label="table.mapIconLabel" title="${safeLabel}" data-i18n-title="table.mapIconLabel">${icon}</a></div>`;
-    }
-    if (lat || lng) {
-      return escapeHtml([lat, lng].filter(Boolean).join(', '));
+      return `<div class="coord-cell"><a href="${safeMapUrl}" target="_blank" rel="noopener" class="icon-link map-link" aria-label="${safeLabel}" data-i18n-aria-label="table.mapIconLabel" title="${safeLabel}" data-i18n-title="table.mapIconLabel">${icon}</a></div>`;
     }
     return '<span class="muted">-</span>';
   }
@@ -838,7 +876,9 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     if (/photo|image|picture|attachment/.test(lowerKey)) {
       const absUrl = toAbsUrl(text);
       const safeUrl = escapeHtml(absUrl);
-      return `<div class="detail-links"><a href="#" class="view-link" data-url="${safeUrl}" data-i18n="table.view">查看</a><a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a></div>`;
+      const viewLabel = translateInstant('table.view', '查看') || '查看';
+      const safeLabel = escapeHtml(viewLabel);
+      return `<div class="detail-links"><a href="#" class="view-link" data-url="${safeUrl}" data-i18n="table.view">${safeLabel}</a></div>`;
     }
     if (/url/.test(lowerKey)) {
       const absUrl = toAbsUrl(text);
@@ -866,7 +906,12 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       .map(([key, value]) => {
         const safeKey = escapeHtml(String(key));
         const valueHtml = formatDetailValue(String(key), value);
-        return `<div class="detail-key">${safeKey}</div><div class="detail-value">${valueHtml}</div>`;
+        return [
+          '<div class="detail-item">',
+          `<div class="detail-key">${safeKey}</div>`,
+          `<div class="detail-value">${valueHtml}</div>`,
+          '</div>',
+        ].join('');
       })
       .join('');
     return `<div class="detail-content">${title}${meta}<div class="detail-grid">${rows}</div></div>`;
@@ -888,6 +933,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const lsp = getLspDisplay(item);
     const region = getRegionDisplay(item);
     const planMos = getPlanMosDateDisplay(item);
+    const issueRemark = getIssueRemarkDisplay(item);
+    const statusDelivery = getStatusDeliveryDisplay(item);
     const updatedAt = getUpdatedAtDisplay(item);
     const remarkText = normalizeTextValue(item?.remark);
     const remarkDisplay = remarkText
@@ -903,6 +950,12 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
     const regionCell = region ? escapeHtml(region) : '<span class="muted">-</span>';
     const planCell = planMos ? escapeHtml(planMos) : '<span class="muted">-</span>';
+    const issueRemarkCell = issueRemark
+      ? escapeHtml(issueRemark).replace(/\n/g, '<br>')
+      : '<span class="muted">-</span>';
+    const statusDeliveryCell = statusDelivery
+      ? escapeHtml(statusDelivery).replace(/\n/g, '<br>')
+      : '<span class="muted">-</span>';
     const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
     const hint = detailAvailable
       ? '<div class="summary-hint" data-i18n="table.expandHint">点击查看全部字段</div>'
@@ -922,6 +975,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       `      <td>${regionCell}</td>`,
       `      <td>${planCell}</td>`,
       `      <td>${lspCell}</td>`,
+      `      <td>${issueRemarkCell}</td>`,
+      `      <td>${statusDeliveryCell}</td>`,
       `      ${statusCell}`,
       `      <td>${remarkDisplay}</td>`,
       `      <td>${photoCell}</td>`,
@@ -1093,12 +1148,6 @@ ${cellsHtml}
           console.error(err);
         }
       }
-    }
-    if (mDuField) {
-      mDuField.style.display = perms?.canEdit ? '' : 'none';
-    }
-    if (mDuInput) {
-      mDuInput.disabled = !perms?.canEdit;
     }
   }
 
@@ -1836,11 +1885,6 @@ ${cellsHtml}
         console.error(err);
       }
     }
-    if (mDuInput) {
-      const currentDu = item.du_id || '';
-      mDuInput.value = currentDu;
-      mDuInput.dataset.originalValue = currentDu.trim().toUpperCase();
-    }
     const canonicalStatus = normalizeStatusValue(item.status);
     populateModalStatusOptions(canonicalStatus);
     updateModalFieldVisibility();
@@ -1852,9 +1896,6 @@ ${cellsHtml}
     if (mask) mask.style.display = 'none';
     editingId = 0;
     editingItem = null;
-    if (mDuInput) {
-      delete mDuInput.dataset.originalValue;
-    }
   }
 
   function buildFormDataForSave() {
@@ -1864,11 +1905,6 @@ ${cellsHtml}
     const statusVal = normalizeStatusValue(statusValRaw) || statusValRaw;
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
-    const rawDu = mDuInput ? (mDuInput.value || '') : '';
-    const duVal = rawDu.trim().toUpperCase();
-    const originalDu = (mDuInput?.dataset?.originalValue ?? '').trim().toUpperCase();
-    const duChanged = mDuInput ? duVal !== originalDu : false;
-
     const currentItem = editingItem || null;
     const dnNumber = (currentItem?.dn_number || currentItem?.dnNumber || '').trim();
     if (dnNumber) {
@@ -1886,16 +1922,11 @@ ${cellsHtml}
     if (allowPhoto) {
       form.set('photo', mPhoto.files[0]);
     }
-    if (duChanged) {
-      form.set('duId', duVal || '');
-    }
     return {
       form,
       statusVal,
       remarkVal,
       allowPhoto,
-      duChanged,
-      duVal,
       dnNumber,
       statusToSubmit,
     };
@@ -1948,14 +1979,7 @@ ${cellsHtml}
       return false;
     }
 
-    if (payload.duChanged && payload.duVal && !DU_RE_FULL.test(payload.duVal)) {
-      if (mMsg)
-        mMsg.textContent =
-          i18n?.t('modal.du.invalid') || '关联 DN Number 需为 DID 开头加 13 位数字。';
-      return false;
-    }
-
-    if (!payload.statusVal && !payload.remarkVal && !payload.allowPhoto && !payload.duChanged) {
+    if (!payload.statusVal && !payload.remarkVal && !payload.allowPhoto) {
       if (mMsg)
         mMsg.textContent = i18n
           ? i18n.t('modal.nothingToSave')
@@ -2501,30 +2525,6 @@ ${cellsHtml}
       if (!dnPreview) return;
       dnPreview.scrollTop = dnInput.scrollTop;
       dnPreview.scrollLeft = dnInput.scrollLeft;
-    },
-    { signal }
-  );
-
-  mDuInput?.addEventListener(
-    'input',
-    () => {
-      const before = mDuInput.value || '';
-      const after = before.replace(ZERO_WIDTH_RE, '').toUpperCase();
-      if (after === before) return;
-      const start = mDuInput.selectionStart;
-      const end = mDuInput.selectionEnd;
-      mDuInput.value = after;
-      if (typeof start === 'number' && typeof end === 'number') {
-        const offset = after.length - before.length;
-        try {
-          const nextStart = Math.max(0, start + offset);
-          const nextEnd = Math.max(0, end + offset);
-          mDuInput.selectionStart = nextStart;
-          mDuInput.selectionEnd = nextEnd;
-        } catch (err) {
-          console.error(err);
-        }
-      }
     },
     { signal }
   );
