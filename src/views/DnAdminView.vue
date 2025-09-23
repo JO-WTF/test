@@ -143,7 +143,7 @@
             </div>
 
             <div class="row-line">
-              <div class="field">
+              <div class="field" style="display: none" aria-hidden="true">
                 <label data-i18n="has.label">是否带附件</label>
                 <select id="f-has">
                   <option value="" data-i18n="has.any">（不限）</option>
@@ -242,7 +242,14 @@
               <th data-i18n="table.remark">备注</th>
               <th data-i18n="table.photo">照片</th>
               <th data-i18n="table.location">位置</th>
-              <th data-i18n="table.updatedAt">更新时间</th>
+              <th
+                data-i18n="table.updatedAt"
+                data-column="updatedAt"
+                style="display: none"
+                aria-hidden="true"
+              >
+                更新时间
+              </th>
               <th data-i18n="table.actions" data-column="actions">操作</th>
             </tr>
           </thead>

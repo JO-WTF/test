@@ -4,6 +4,7 @@ import {
   ROLE_LIST,
   STATUS_TRANSLATION_KEYS,
   STATUS_ALIAS_MAP,
+  DN_SCAN_STATUS_ORDERED_LIST,
 } from '../../config.js';
 
 const API_BASE =
@@ -33,6 +34,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const tbl = el('tbl');
   const tbody = tbl?.querySelector('tbody');
   const actionsHeader = tbl?.querySelector('thead th[data-column="actions"]');
+  const updatedAtHeader = tbl?.querySelector('thead th[data-column="updatedAt"]');
   const hint = el('hint');
   const pager = el('pager');
   const pginfo = el('pginfo');
@@ -40,6 +42,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const statusSelect = el('f-status');
   const remarkInput = el('f-remark');
   const hasSelect = el('f-has');
+  const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
   const hasCoordinateSelect = el('f-has-coordinate');
   const fromInput = el('f-from');
   const toInput = el('f-to');
@@ -106,6 +109,19 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const STATUS_ALIAS_LOOKUP = STATUS_ALIAS_MAP || {};
   const STATUS_KNOWN_VALUES = new Set(Object.keys(STATUS_VALUE_TO_KEY));
   const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+  const DEFAULT_MODAL_STATUS_ORDER =
+    Array.isArray(DN_SCAN_STATUS_ORDERED_LIST) &&
+    DN_SCAN_STATUS_ORDERED_LIST.length
+      ? DN_SCAN_STATUS_ORDERED_LIST.map((value) =>
+          typeof value === 'string' ? value.trim() : String(value || '')
+        ).filter(Boolean)
+      : [
+          'ARRIVED AT WH',
+          'TRANSPORTING FROM WH',
+          'ARRIVED AT XD/PM',
+          'TRANSPORTING FROM XD/PM',
+          'ARRIVED AT SITE',
+        ];
   const DEFAULT_STATUS_VALUE = statusSelect?.options?.[0]?.value || '';
   if (statusSelect && DEFAULT_STATUS_VALUE) {
     statusSelect.value = DEFAULT_STATUS_VALUE;
@@ -433,7 +449,36 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     }
   }
 
+  function hideHasAttachmentFilter() {
+    if (hasSelect) {
+      hasSelect.value = '';
+      hasSelect.setAttribute('aria-hidden', 'true');
+    }
+    if (hasSelectField) {
+      hasSelectField.style.display = 'none';
+      hasSelectField.setAttribute('aria-hidden', 'true');
+      const label = hasSelectField.querySelector('label');
+      if (label) {
+        label.setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+
+  function hideUpdatedAtColumn() {
+    if (updatedAtHeader) {
+      updatedAtHeader.style.display = 'none';
+      updatedAtHeader.setAttribute('aria-hidden', 'true');
+    }
+    if (!tbody) return;
+    tbody.querySelectorAll('td[data-column="updatedAt"]').forEach((cell) => {
+      cell.style.display = 'none';
+      cell.setAttribute('aria-hidden', 'true');
+    });
+  }
+
   updateActionColumnVisibility();
+  hideHasAttachmentFilter();
+  hideUpdatedAtColumn();
 
   const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
 
@@ -881,7 +926,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       `      <td>${remarkDisplay}</td>`,
       `      <td>${photoCell}</td>`,
       `      <td>${locationCell}</td>`,
-      `      <td>${updatedCell}</td>`,
+      `      <td data-column="updatedAt" aria-hidden="true" style="display: none">${updatedCell}</td>`,
     ];
     if (showActions) {
       cells.push(`      <td>${actionsContent || '<span class="muted">-</span>'}</td>`);
@@ -1057,52 +1102,97 @@ ${cellsHtml}
     }
   }
 
+  function getModalStatusLabel(value) {
+    const canonical = normalizeStatusValue(value);
+    if (!canonical) return '';
+    const label = i18nStatusDisplay(canonical);
+    if (label) return label;
+    return canonical;
+  }
+
   function populateModalStatusOptions(selected) {
     if (!mStatus) return;
     const perms = getCurrentPermissions();
-    const allowedOptions = Array.isArray(perms?.statusOptions)
-      ? perms.statusOptions.map((status) => normalizeStatusValue(status) || status)
+    const rawAllowed = Array.isArray(perms?.statusOptions)
+      ? perms.statusOptions
       : [];
+    const baseList = rawAllowed.length ? rawAllowed : DEFAULT_MODAL_STATUS_ORDER;
+    const seen = new Set();
+    const normalized = [];
 
-    const existing = new Set();
-    const keepOption = mStatus.querySelector('option[value=""]');
-    const selectedValue = selected || '';
+    baseList.forEach((value) => {
+      const canonical = normalizeStatusValue(value);
+      if (!canonical || seen.has(canonical)) return;
+      seen.add(canonical);
+      normalized.push(canonical);
+    });
 
-    mStatus.innerHTML = '';
-    if (keepOption) {
-      mStatus.appendChild(keepOption);
-    } else {
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.setAttribute('data-i18n', 'modal.status.keep');
-      opt.textContent = i18n?.t('modal.status.keep') || '（不修改）';
-      mStatus.appendChild(opt);
+    const ordered = [];
+    DEFAULT_MODAL_STATUS_ORDER.forEach((value) => {
+      if (seen.has(value)) {
+        ordered.push(value);
+        seen.delete(value);
+      }
+    });
+    normalized.forEach((value) => {
+      if (seen.has(value)) {
+        ordered.push(value);
+        seen.delete(value);
+      }
+    });
+
+    if (!ordered.length) {
+      ordered.push(...DEFAULT_MODAL_STATUS_ORDER);
     }
 
-    const values = allowedOptions.length
-      ? allowedOptions
-      : Array.from(STATUS_KNOWN_VALUES);
+    const selectedRaw = selected || '';
+    const selectedCanonical = normalizeStatusValue(selectedRaw);
+    if (selectedCanonical && !ordered.includes(selectedCanonical)) {
+      ordered.push(selectedCanonical);
+    }
 
-    values.forEach((value) => {
+    const keepLabel = i18n?.t('modal.status.keep') || '（不修改）';
+    mStatus.innerHTML = '';
+    const keepOption = document.createElement('option');
+    keepOption.value = '';
+    keepOption.setAttribute('data-i18n', 'modal.status.keep');
+    keepOption.textContent = keepLabel;
+    mStatus.appendChild(keepOption);
+
+    const appended = new Set();
+    ordered.forEach((value) => {
       const canonical = normalizeStatusValue(value);
-      if (!canonical || existing.has(canonical)) return;
-      existing.add(canonical);
+      if (!canonical || appended.has(canonical)) return;
+      appended.add(canonical);
       const opt = document.createElement('option');
       opt.value = canonical;
-      opt.textContent = i18nStatusDisplay(canonical);
-      if (canonical === selectedValue) {
+      opt.textContent = getModalStatusLabel(canonical);
+      if (canonical === selectedCanonical) {
         opt.selected = true;
       }
       mStatus.appendChild(opt);
     });
+
+    if (selectedCanonical && !appended.has(selectedCanonical)) {
+      const opt = document.createElement('option');
+      opt.value = selectedCanonical;
+      opt.textContent = getModalStatusLabel(selectedCanonical);
+      opt.selected = true;
+      mStatus.appendChild(opt);
+      appended.add(selectedCanonical);
+    }
+
+    if (selectedCanonical) {
+      mStatus.value = selectedCanonical;
+    } else {
+      mStatus.value = '';
+    }
   }
 
   function refreshDnEntryVisibility() {
-    const perms = getCurrentPermissions();
-    const allowed = Boolean(perms?.canEdit);
-    if (dnBtn) {
-      dnBtn.style.display = allowed ? '' : 'none';
-    }
+    if (!dnBtn) return;
+    dnBtn.style.display = 'none';
+    dnBtn.setAttribute('aria-hidden', 'true');
   }
 
   function normalizeDnRawSoft(raw) {
@@ -1493,6 +1583,7 @@ ${cellsHtml}
         return summaryHtml + (detailHtml || '');
       })
       .join('');
+    hideUpdatedAtColumn();
     Array.from(expandedRowKeys).forEach((key) => {
       if (!currentKeys.has(key)) {
         expandedRowKeys.delete(key);
