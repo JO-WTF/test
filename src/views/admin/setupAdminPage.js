@@ -64,6 +64,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   const statusCardRefs = new Map();
   let statusCardAbortController = null;
   let statusCardRequestId = 0;
+  const STATUS_CARD_MAX_COLUMNS = 13;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
@@ -297,7 +298,10 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     statusCardWrapper.style.display = '';
     statusCardWrapper.setAttribute('aria-hidden', 'false');
     statusCardContainer.innerHTML = '';
-    const columns = Math.max(1, Math.min(defs.length, 9));
+    const columns = Math.max(
+      1,
+      Math.min(defs.length, STATUS_CARD_MAX_COLUMNS)
+    );
     statusCardContainer.style.setProperty('--status-card-columns', String(columns));
 
     defs.forEach((def) => {

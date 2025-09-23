@@ -99,6 +99,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   let statusCardAbortController = null;
   let statusCardRequestId = 0;
   let viewer = null;
+  const STATUS_CARD_MAX_COLUMNS = 13;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const AUTH_STORAGE_KEY = 'jakarta-dn-admin-auth-state';
@@ -1599,7 +1600,10 @@ ${cellsHtml}
     statusCardWrapper.style.display = '';
     statusCardWrapper.setAttribute('aria-hidden', 'false');
     statusCardContainer.innerHTML = '';
-    const columns = Math.max(1, Math.min(defs.length, 10));
+    const columns = Math.max(
+      1,
+      Math.min(defs.length, STATUS_CARD_MAX_COLUMNS)
+    );
     statusCardContainer.style.setProperty('--status-card-columns', String(columns));
 
     defs.forEach((def) => {
