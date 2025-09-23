@@ -1599,7 +1599,7 @@ ${cellsHtml}
     statusCardWrapper.style.display = '';
     statusCardWrapper.setAttribute('aria-hidden', 'false');
     statusCardContainer.innerHTML = '';
-    const columns = Math.max(1, Math.min(defs.length, 12));
+    const columns = Math.max(1, Math.min(defs.length, 10));
     statusCardContainer.style.setProperty('--status-card-columns', String(columns));
 
     defs.forEach((def) => {
