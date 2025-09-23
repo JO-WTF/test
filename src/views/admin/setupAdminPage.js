@@ -515,8 +515,8 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
 
   function refreshDnEntryVisibility() {
     if (!dnBtn) return;
-    const allowed = currentRoleKey === 'customer' || currentRoleKey === 'transportManager';
-    dnBtn.style.display = allowed ? '' : 'none';
+    dnBtn.style.display = 'none';
+    dnBtn.setAttribute('aria-hidden', 'true');
   }
 
   function refreshStatusOptionsForRole(currentStatus = '') {

@@ -1159,11 +1159,9 @@ ${cellsHtml}
   }
 
   function refreshDnEntryVisibility() {
-    const perms = getCurrentPermissions();
-    const allowed = Boolean(perms?.canEdit);
-    if (dnBtn) {
-      dnBtn.style.display = allowed ? '' : 'none';
-    }
+    if (!dnBtn) return;
+    dnBtn.style.display = 'none';
+    dnBtn.setAttribute('aria-hidden', 'true');
   }
 
   function normalizeDnRawSoft(raw) {
