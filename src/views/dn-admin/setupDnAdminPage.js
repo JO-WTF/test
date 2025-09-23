@@ -2,6 +2,7 @@ import Viewer from 'viewerjs';
 import Toastify from 'toastify-js';
 import {
   ROLE_LIST,
+  STATUS_VALUES,
   STATUS_TRANSLATION_KEYS,
   STATUS_ALIAS_MAP,
   DN_SCAN_STATUS_ORDERED_LIST,
@@ -109,6 +110,35 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const STATUS_CARD_TOTAL_KEY = '__TOTAL__';
   const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';
   const PLAN_MOS_TIMEZONE_OFFSET_MINUTES = 7 * 60;
+  const SHORT_MONTH_NAMES = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  const TRANSPORT_MANAGER_STATUS_CARDS = [
+    { status: STATUS_VALUES.PREPARE_VEHICLE, label: 'Prepare Vehicle' },
+    { status: STATUS_VALUES.ON_THE_WAY, label: 'On the way' },
+    { status: STATUS_VALUES.ON_SITE, label: 'On Site' },
+    { status: STATUS_VALUES.POD, label: 'POD' },
+    { status: STATUS_VALUES.WAITING_PIC_FEEDBACK, label: 'Waiting PIC Feedback' },
+    {
+      status: STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
+      label: 'RePlan MOS due to LSP Delay',
+    },
+    { status: STATUS_VALUES.REPLAN_MOS_PROJECT, label: 'RePlan MOS Project' },
+    { status: STATUS_VALUES.CANCEL_MOS, label: 'Cancel MOS' },
+    { status: STATUS_VALUES.CLOSE_BY_RN, label: 'Close by RN' },
+    { status: STATUS_VALUES.NO_STATUS, label: 'No Status' },
+  ];
   const DEFAULT_MODAL_STATUS_ORDER =
     Array.isArray(DN_SCAN_STATUS_ORDERED_LIST) &&
     DN_SCAN_STATUS_ORDERED_LIST.length
@@ -649,8 +679,45 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return text;
   }
 
-  function getTodayDateStringInTimezone(timeZone, fallbackOffsetMinutes = 0) {
+  function getTodayDateStringInTimezone(
+    timeZone,
+    fallbackOffsetMinutes = 0,
+    format = 'iso'
+  ) {
+    const formatKey =
+      typeof format === 'string'
+        ? format
+        : format && typeof format === 'object'
+        ? format.format || format.style
+        : '';
+    const useDayMonthShort =
+      formatKey === 'dd MMM yy' ||
+      formatKey === 'short' ||
+      formatKey === 'day-month-short';
     const now = new Date();
+
+    const formatParts = (day, monthIndex, year) => {
+      const safeDay = String(day).padStart(2, '0');
+      const safeYear = useDayMonthShort
+        ? String(year).slice(-2)
+        : String(year).padStart(4, '0');
+      const numericMonthIndex = Number(monthIndex);
+      if (useDayMonthShort) {
+        const boundedIndex = Number.isFinite(numericMonthIndex)
+          ? Math.min(
+              Math.max(Math.floor(numericMonthIndex), 0),
+              SHORT_MONTH_NAMES.length - 1
+            )
+          : 0;
+        const monthName = SHORT_MONTH_NAMES[boundedIndex] || '';
+        const safeMonth = monthName || String(boundedIndex + 1).padStart(2, '0');
+        return `${safeDay} ${safeMonth} ${safeYear}`;
+      }
+      const normalizedMonth = Number.isFinite(numericMonthIndex) ? numericMonthIndex : 0;
+      const monthNumber = String(normalizedMonth + 1).padStart(2, '0');
+      return `${safeYear}-${monthNumber}-${safeDay}`;
+    };
+
     if (typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function' && timeZone) {
       try {
         const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -659,25 +726,49 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
           month: '2-digit',
           day: '2-digit',
         });
-        const formatted = formatter.format(now);
-        if (formatted && /^\d{4}-\d{2}-\d{2}$/.test(formatted)) {
-          return formatted;
+
+        if (typeof formatter.formatToParts === 'function') {
+          const parts = formatter.formatToParts(now);
+          if (Array.isArray(parts) && parts.length) {
+            const dayPart = parts.find((part) => part.type === 'day')?.value;
+            const monthPart = parts.find((part) => part.type === 'month')?.value;
+            const yearPart = parts.find((part) => part.type === 'year')?.value;
+            if (dayPart && monthPart && yearPart) {
+              const dayNum = Number(dayPart);
+              const monthIdx = Number(monthPart) - 1;
+              const yearNum = Number(yearPart.length === 2 ? `20${yearPart}` : yearPart);
+              if (!Number.isNaN(dayNum) && !Number.isNaN(monthIdx) && !Number.isNaN(yearNum)) {
+                return formatParts(dayNum, monthIdx, yearNum);
+              }
+            }
+          }
         }
+
+        const formatted = formatter.format(now);
         if (formatted) {
-          const parts = formatted.match(/\d+/g);
-          if (parts && parts.length >= 3) {
-            const [year, month, day] = parts;
-            return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const matches = formatted.match(/\d+/g);
+          if (matches && matches.length >= 3) {
+            const [yearStr, monthStr, dayStr] = matches;
+            const yearNum = Number(yearStr);
+            const monthIdx = Number(monthStr) - 1;
+            const dayNum = Number(dayStr);
+            if (!Number.isNaN(yearNum) && !Number.isNaN(monthIdx) && !Number.isNaN(dayNum)) {
+              return formatParts(dayNum, monthIdx, yearNum);
+            }
           }
         }
       } catch (err) {
         console.error(err);
       }
     }
+
     const offsetMinutes = Number(fallbackOffsetMinutes) || 0;
     const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
     const target = new Date(utcMs + offsetMinutes * 60000);
-    return target.toISOString().slice(0, 10);
+    const yearNum = target.getUTCFullYear();
+    const monthIdx = target.getUTCMonth();
+    const dayNum = target.getUTCDate();
+    return formatParts(dayNum, monthIdx, yearNum);
   }
 
   function setFormControlValue(control, value) {
@@ -1441,11 +1532,20 @@ ${cellsHtml}
   function renderStatusHighlightCards() {
     if (!statusCardContainer || !statusCardWrapper) return;
     const role = getCurrentRole();
-    let defs = getRoleStatusHighlights(role);
+    let defs = [];
 
     if (role?.key === 'lsp') {
       defs = [];
     } else {
+      if (role?.key === 'transportManager') {
+        defs = TRANSPORT_MANAGER_STATUS_CARDS.map((card) => ({
+          status: card.status,
+          label: card.label,
+        }));
+      } else {
+        defs = getRoleStatusHighlights(role);
+      }
+
       defs = defs.map((def, index) => {
         const canonical = normalizeStatusValue(def.status);
         const status = canonical || def.status || '';
@@ -1462,11 +1562,12 @@ ${cellsHtml}
         };
       });
 
+      defs = defs.filter((def) => def.type !== 'status' || def.status);
+
       if (role?.key === 'transportManager' && defs.length) {
         defs = [
           {
             status: '',
-            labelKey: 'status.total',
             label: 'Total',
             key: STATUS_CARD_TOTAL_KEY,
             type: 'total',
@@ -1672,7 +1773,8 @@ ${cellsHtml}
     const targetStatus = def?.type === 'status' ? canonicalStatus : '';
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
-      PLAN_MOS_TIMEZONE_OFFSET_MINUTES
+      PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
+      'dd MMM yy'
     );
 
     const controlsToReset = [
