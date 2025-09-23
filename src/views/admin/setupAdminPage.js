@@ -302,7 +302,10 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       1,
       Math.min(defs.length, STATUS_CARD_MAX_COLUMNS)
     );
-    statusCardContainer.style.setProperty('--status-card-columns', String(columns));
+    statusCardContainer.style.setProperty(
+      '--status-card-columns',
+      String(columns + 1)
+    );
 
     defs.forEach((def) => {
       const btn = document.createElement('button');
