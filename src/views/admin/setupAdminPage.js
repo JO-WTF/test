@@ -297,7 +297,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     statusCardWrapper.style.display = '';
     statusCardWrapper.setAttribute('aria-hidden', 'false');
     statusCardContainer.innerHTML = '';
-    const columns = Math.max(1, Math.min(defs.length, 4));
+    const columns = Math.max(1, Math.min(defs.length, 9));
     statusCardContainer.style.setProperty('--status-card-columns', String(columns));
 
     defs.forEach((def) => {
