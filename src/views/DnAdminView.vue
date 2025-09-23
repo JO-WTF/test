@@ -291,14 +291,6 @@
               <option value="" data-i18n="modal.status.keep">（不修改）</option>
             </select>
           </div>
-          <div class="field grow" id="m-du-field">
-            <label data-i18n="modal.du.label">关联 DU ID（可选）</label>
-            <input
-              id="m-du-id"
-              data-i18n-placeholder="modal.du.placeholder"
-              placeholder="不修改请留空"
-            />
-          </div>
           <div class="field grow" id="m-remark-field">
             <label data-i18n="modal.remark.label">备注</label>
             <input

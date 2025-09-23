@@ -17,7 +17,6 @@ const DN_SEP_RE = new RegExp(DN_SEPARATOR_SOURCE, 'gu');
 const DN_SEP_CAPTURE_RE = new RegExp(`(${DN_SEPARATOR_SOURCE})`, 'gu');
 const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
 const DN_VALID_RE = /^[A-Z0-9-]{1,64}$/;
-const DU_RE_FULL = /^DID\d{13}$/;
 const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
 export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
@@ -67,8 +66,6 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const mRemarkField = el('m-remark-field');
   const mPhoto = el('m-photo');
   const mPhotoField = el('m-photo-field');
-  const mDuField = el('m-du-field');
-  const mDuInput = el('m-du-id');
   const mMsg = el('m-msg');
 
   const authModal = el('auth-modal');
@@ -1149,12 +1146,6 @@ ${cellsHtml}
         }
       }
     }
-    if (mDuField) {
-      mDuField.style.display = perms?.canEdit ? '' : 'none';
-    }
-    if (mDuInput) {
-      mDuInput.disabled = !perms?.canEdit;
-    }
   }
 
   function getModalStatusLabel(value) {
@@ -1891,11 +1882,6 @@ ${cellsHtml}
         console.error(err);
       }
     }
-    if (mDuInput) {
-      const currentDu = item.du_id || '';
-      mDuInput.value = currentDu;
-      mDuInput.dataset.originalValue = currentDu.trim().toUpperCase();
-    }
     const canonicalStatus = normalizeStatusValue(item.status);
     populateModalStatusOptions(canonicalStatus);
     updateModalFieldVisibility();
@@ -1907,9 +1893,6 @@ ${cellsHtml}
     if (mask) mask.style.display = 'none';
     editingId = 0;
     editingItem = null;
-    if (mDuInput) {
-      delete mDuInput.dataset.originalValue;
-    }
   }
 
   function buildFormDataForSave() {
@@ -1919,11 +1902,6 @@ ${cellsHtml}
     const statusVal = normalizeStatusValue(statusValRaw) || statusValRaw;
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
-    const rawDu = mDuInput ? (mDuInput.value || '') : '';
-    const duVal = rawDu.trim().toUpperCase();
-    const originalDu = (mDuInput?.dataset?.originalValue ?? '').trim().toUpperCase();
-    const duChanged = mDuInput ? duVal !== originalDu : false;
-
     const currentItem = editingItem || null;
     const dnNumber = (currentItem?.dn_number || currentItem?.dnNumber || '').trim();
     if (dnNumber) {
@@ -1941,16 +1919,11 @@ ${cellsHtml}
     if (allowPhoto) {
       form.set('photo', mPhoto.files[0]);
     }
-    if (duChanged) {
-      form.set('duId', duVal || '');
-    }
     return {
       form,
       statusVal,
       remarkVal,
       allowPhoto,
-      duChanged,
-      duVal,
       dnNumber,
       statusToSubmit,
     };
@@ -2003,14 +1976,7 @@ ${cellsHtml}
       return false;
     }
 
-    if (payload.duChanged && payload.duVal && !DU_RE_FULL.test(payload.duVal)) {
-      if (mMsg)
-        mMsg.textContent =
-          i18n?.t('modal.du.invalid') || '关联 DN Number 需为 DID 开头加 13 位数字。';
-      return false;
-    }
-
-    if (!payload.statusVal && !payload.remarkVal && !payload.allowPhoto && !payload.duChanged) {
+    if (!payload.statusVal && !payload.remarkVal && !payload.allowPhoto) {
       if (mMsg)
         mMsg.textContent = i18n
           ? i18n.t('modal.nothingToSave')
@@ -2556,30 +2522,6 @@ ${cellsHtml}
       if (!dnPreview) return;
       dnPreview.scrollTop = dnInput.scrollTop;
       dnPreview.scrollLeft = dnInput.scrollLeft;
-    },
-    { signal }
-  );
-
-  mDuInput?.addEventListener(
-    'input',
-    () => {
-      const before = mDuInput.value || '';
-      const after = before.replace(ZERO_WIDTH_RE, '').toUpperCase();
-      if (after === before) return;
-      const start = mDuInput.selectionStart;
-      const end = mDuInput.selectionEnd;
-      mDuInput.value = after;
-      if (typeof start === 'number' && typeof end === 'number') {
-        const offset = after.length - before.length;
-        try {
-          const nextStart = Math.max(0, start + offset);
-          const nextEnd = Math.max(0, end + offset);
-          mDuInput.selectionStart = nextStart;
-          mDuInput.selectionEnd = nextEnd;
-        } catch (err) {
-          console.error(err);
-        }
-      }
     },
     { signal }
   );
