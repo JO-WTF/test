@@ -88,6 +88,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const dnConfirm = el('dn-confirm');
 
   let editingId = 0;
+  let editingItem = null;
   let currentRoleKey = null;
   let currentUserInfo = null;
   let cachedItems = [];
@@ -1451,7 +1452,7 @@ ${cellsHtml}
       const deleteLabel = translateInstant('actions.delete', 'Delete') || 'Delete';
       const safeDeleteLabel = escapeHtml(deleteLabel);
       buttons.push(
-        `<button type="button" class="icon-btn danger" data-act="del" data-id="${it.id}" aria-label="${safeDeleteLabel}" data-i18n-aria-label="actions.delete" title="${safeDeleteLabel}" data-i18n-title="actions.delete">${getIconMarkup('delete')}</button>`
+        `<button type="button" class="icon-btn danger" data-act="del" data-id="${it.id}" data-dn="${dnAttr}" aria-label="${safeDeleteLabel}" data-i18n-aria-label="actions.delete" title="${safeDeleteLabel}" data-i18n-title="actions.delete">${getIconMarkup('delete')}</button>`
       );
     }
     if (!buttons.length) return '';
@@ -1523,7 +1524,15 @@ ${cellsHtml}
       } else if (act === 'del') {
         btn.addEventListener(
           'click',
-          () => onDelete(id),
+          () => {
+            const item = cachedItems.find((it) => it.id === id);
+            if (item) {
+              onDelete(item);
+              return;
+            }
+            const dnAttr = btn.getAttribute('data-dn') || '';
+            onDelete({ id, dn_number: dnAttr });
+          },
           { signal }
         );
       }
@@ -1720,6 +1729,7 @@ ${cellsHtml}
       return;
     }
     editingId = Number(item.id);
+    editingItem = item || null;
     if (mId) {
       const label = item.dn_number ? `${item.dn_number}` : '';
       mId.textContent = `#${editingId} / ${label}`;
@@ -1750,6 +1760,7 @@ ${cellsHtml}
   function closeModal() {
     if (mask) mask.style.display = 'none';
     editingId = 0;
+    editingItem = null;
     if (mDuInput) {
       delete mDuInput.dataset.originalValue;
     }
@@ -1758,7 +1769,8 @@ ${cellsHtml}
   function buildFormDataForSave() {
     const perms = getCurrentPermissions();
     const form = new FormData();
-    const statusVal = mStatus?.value || '';
+    const statusValRaw = mStatus?.value || '';
+    const statusVal = normalizeStatusValue(statusValRaw) || statusValRaw;
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
     const rawDu = mDuInput ? (mDuInput.value || '') : '';
@@ -1766,7 +1778,19 @@ ${cellsHtml}
     const originalDu = (mDuInput?.dataset?.originalValue ?? '').trim().toUpperCase();
     const duChanged = mDuInput ? duVal !== originalDu : false;
 
-    if (statusVal) form.set('status', statusVal);
+    const currentItem = editingItem || null;
+    const dnNumber = (currentItem?.dn_number || currentItem?.dnNumber || '').trim();
+    if (dnNumber) {
+      form.set('dnNumber', dnNumber);
+    }
+
+    const originalStatusRaw = currentItem?.status || '';
+    const originalStatus =
+      normalizeStatusValue(originalStatusRaw) || originalStatusRaw || '';
+    const statusToSubmit = statusVal || originalStatus;
+    if (statusToSubmit) {
+      form.set('status', statusToSubmit);
+    }
     if (remarkVal) form.set('remark', remarkVal);
     if (allowPhoto) {
       form.set('photo', mPhoto.files[0]);
@@ -1774,7 +1798,16 @@ ${cellsHtml}
     if (duChanged) {
       form.set('duId', duVal || '');
     }
-    return { form, statusVal, remarkVal, allowPhoto, duChanged, duVal };
+    return {
+      form,
+      statusVal,
+      remarkVal,
+      allowPhoto,
+      duChanged,
+      duVal,
+      dnNumber,
+      statusToSubmit,
+    };
   }
 
   function validateBeforeSave(payload) {
@@ -1784,6 +1817,11 @@ ${cellsHtml}
         mMsg.textContent = i18n
           ? i18n.t('auth.toast.denied')
           : '当前角色无权编辑该记录';
+      return false;
+    }
+
+    if (!payload?.dnNumber) {
+      if (mMsg) mMsg.textContent = '当前记录缺少 DN 号，无法保存。';
       return false;
     }
 
@@ -1811,6 +1849,14 @@ ${cellsHtml}
       return false;
     }
 
+    if (!payload.statusToSubmit) {
+      if (mMsg)
+        mMsg.textContent = i18n
+          ? i18n.t('modal.status.requiredHint')
+          : '请选择允许的状态后再保存。';
+      return false;
+    }
+
     if (payload.duChanged && payload.duVal && !DU_RE_FULL.test(payload.duVal)) {
       if (mMsg)
         mMsg.textContent =
@@ -1834,14 +1880,14 @@ ${cellsHtml}
   el('m-save')?.addEventListener(
     'click',
     async () => {
-      if (!editingId) return;
+      if (!editingId || !editingItem) return;
       const payload = buildFormDataForSave();
       if (!validateBeforeSave(payload)) return;
 
       if (mMsg) mMsg.textContent = i18n?.t('modal.saving') || '保存中…';
       try {
-        const resp = await fetch(`${API_BASE}/api/dn/update/${editingId}`, {
-          method: 'PUT',
+        const resp = await fetch(`${API_BASE}/api/dn/update`, {
+          method: 'POST',
           body: payload.form,
         });
         const text = await resp.text();
@@ -1867,17 +1913,26 @@ ${cellsHtml}
     { signal }
   );
 
-  async function onDelete(id) {
-    if (!id) return;
+  async function onDelete(item) {
+    if (!item) return;
+    const id = Number(item.id);
+    const dnNumber = (item.dn_number || item.dnNumber || '').trim();
+    if (!id || !dnNumber) {
+      showToast('删除失败：缺少 DN 号信息。', 'error');
+      return;
+    }
     const perms = getCurrentPermissions();
     if (!perms?.canDelete) {
       showToast(i18n ? i18n.t('auth.toast.denied') : '当前角色无权删除该记录', 'error');
       return;
     }
-    if (!window.confirm(`确认要删除记录 #${id} 吗？`)) return;
-    if (hint) hint.textContent = `正在删除 #${id} …`;
+    const confirmMsg = `确认要删除 DN ${dnNumber}（记录 #${id}）吗？`;
+    if (!window.confirm(confirmMsg)) return;
+    if (hint) hint.textContent = `正在删除 DN ${dnNumber} …`;
     try {
-      const resp = await fetch(`${API_BASE}/api/dn/update/${id}`, { method: 'DELETE' });
+      const resp = await fetch(`${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`, {
+        method: 'DELETE',
+      });
       const text = await resp.text();
       let data = null;
       try {
@@ -1890,7 +1945,8 @@ ${cellsHtml}
       if (hint) hint.textContent = i18n?.t('modal.deleteSuccess') || '删除成功';
       await fetchList();
     } catch (err) {
-      if (hint) hint.textContent = `${i18n?.t('modal.deleteError') || '删除失败'}：${err?.message || err}`;
+      if (hint)
+        hint.textContent = `${i18n?.t('modal.deleteError') || '删除失败'}：${err?.message || err}`;
     }
   }
 
