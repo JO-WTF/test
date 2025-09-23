@@ -816,7 +816,6 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   function buildLocationCell(item) {
     const [lat, lng] = getCoordinateParts(item);
     if (lat && lng) {
-      const coordsText = `${lat}, ${lng}`;
       const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(
         lng
       )}`;
@@ -824,10 +823,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       const label = translateInstant('table.mapIconLabel', 'Open in Google Maps') || 'Open in Google Maps';
       const safeLabel = escapeHtml(label);
       const icon = getIconMarkup('map');
-      return `<div class="coord-cell"><div>${escapeHtml(coordsText)}</div><a href="${safeMapUrl}" target="_blank" rel="noopener" class="icon-link map-link" aria-label="${safeLabel}" data-i18n-aria-label="table.mapIconLabel" title="${safeLabel}" data-i18n-title="table.mapIconLabel">${icon}</a></div>`;
-    }
-    if (lat || lng) {
-      return escapeHtml([lat, lng].filter(Boolean).join(', '));
+      return `<div class="coord-cell"><a href="${safeMapUrl}" target="_blank" rel="noopener" class="icon-link map-link" aria-label="${safeLabel}" data-i18n-aria-label="table.mapIconLabel" title="${safeLabel}" data-i18n-title="table.mapIconLabel">${icon}</a></div>`;
     }
     return '<span class="muted">-</span>';
   }
@@ -880,7 +876,9 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     if (/photo|image|picture|attachment/.test(lowerKey)) {
       const absUrl = toAbsUrl(text);
       const safeUrl = escapeHtml(absUrl);
-      return `<div class="detail-links"><a href="#" class="view-link" data-url="${safeUrl}" data-i18n="table.view">查看</a><a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a></div>`;
+      const viewLabel = translateInstant('table.view', '查看') || '查看';
+      const safeLabel = escapeHtml(viewLabel);
+      return `<div class="detail-links"><a href="#" class="view-link" data-url="${safeUrl}" data-i18n="table.view">${safeLabel}</a></div>`;
     }
     if (/url/.test(lowerKey)) {
       const absUrl = toAbsUrl(text);

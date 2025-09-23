@@ -247,15 +247,25 @@ body.admin-theme {
     }
 .admin-page tr.detail-row .detail-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px 16px
     }
-@media (max-width: 1024px) {
+@media (max-width: 1440px) {
+    .admin-page tr.detail-row .detail-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr))
+        }
+    }
+@media (max-width: 1100px) {
+    .admin-page tr.detail-row .detail-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr))
+        }
+    }
+@media (max-width: 860px) {
     .admin-page tr.detail-row .detail-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr))
         }
     }
-@media (max-width: 720px) {
+@media (max-width: 600px) {
     .admin-page tr.detail-row .detail-grid {
         grid-template-columns: minmax(0, 1fr)
         }
@@ -300,8 +310,8 @@ body.admin-theme {
     }
 .admin-page .coord-cell {
     display: flex;
-    flex-direction: column;
-    gap: 4px
+    align-items: center;
+    justify-content: flex-start
     }
 .admin-page .coord-cell a {
     width: fit-content
@@ -387,9 +397,34 @@ body.admin-theme {
     flex: 1
     }
 .admin-page .rhs {
-    display: grid;
-    grid-template-rows: auto auto;
+    display: flex;
+    flex-direction: column;
     gap: 12px
+    }
+.admin-page .filters-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end
+    }
+.admin-page .filters-grid .field {
+    flex: 1 1 220px;
+    max-width: 250px
+    }
+.admin-page .filters-grid .field input, .admin-page .filters-grid .field select {
+    width: 100%
+    }
+.admin-page .filters-grid .field datalist {
+    width: 100%
+    }
+.admin-page .filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px
+    }
+.admin-page .filter-actions .field {
+    flex: 1 1 100%;
+    max-width: 100%
     }
 .admin-page .row-line {
     display: flex;
