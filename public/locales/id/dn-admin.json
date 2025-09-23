@@ -31,6 +31,7 @@
     "status.pod": "POD",
     "status.waitingFeedback": "Menunggu Umpan Balik Foto",
     "status.noStatus": "Tanpa Status",
+    "status.total": "Total",
     "remark.kw.label": "Kata Kunci Catatan",
     "remark.kw.placeholder": "Pencocokan samar",
     "du.filter.label": "DU ID terkait",

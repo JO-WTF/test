@@ -31,6 +31,7 @@
     "status.pod": "POD",
     "status.waitingFeedback": "Waiting Photo Feedback",
     "status.noStatus": "No Status",
+    "status.total": "Total",
     "remark.kw.label": "Remark Keyword",
     "remark.kw.placeholder": "Fuzzy match",
     "du.filter.label": "Related DU ID",
