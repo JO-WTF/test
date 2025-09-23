@@ -16,7 +16,7 @@ const DN_SEPARATOR_SOURCE = '[\\s,，；;、\\u3001]+';
 const DN_SEP_RE = new RegExp(DN_SEPARATOR_SOURCE, 'gu');
 const DN_SEP_CAPTURE_RE = new RegExp(`(${DN_SEPARATOR_SOURCE})`, 'gu');
 const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
-const DN_VALID_RE = /^[A-Z0-9-]{1,64}$/;
+const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
 const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
 export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {

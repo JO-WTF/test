@@ -2,7 +2,7 @@
     "title": "Manajemen Catatan Pengajuan DN",
     "dn.label": "Nomor DN (mendukung baris/komma/spasi; lebih dari satu = pencarian batch)",
     "dn.placeholder": "Contoh:\nDN123...\nDN456...",
-    "dn.tip": "Petunjuk: Nomor DN dapat berisi huruf, angka, dan tanda hubung.",
+    "dn.tip": "Petunjuk: Nomor DN harus 14-18 karakter. Dua karakter pertama huruf besar, karakter ke-3 s.d. ke-5 huruf besar atau angka, sisanya angka.",
     "status.label": "Status",
     "status.all": "(Semua)",
     "status.filter.any": "Apa saja",

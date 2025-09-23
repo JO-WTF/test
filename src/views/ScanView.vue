@@ -294,7 +294,8 @@ const submitSummaryRows = computed(() => {
   ];
 });
 
-const validateDN = (text) => /^(?=.{14,18}$)[A-Za-z]{1,5}[0-9A-Za-z]+$/.test(text);
+const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
+const validateDN = (text) => DN_VALID_RE.test(String(text || '').toUpperCase());
 
 const getLocation = async () =>
   new Promise((resolve, reject) => {

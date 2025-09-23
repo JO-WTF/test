@@ -138,7 +138,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   const DU_RE_HEAD = /^DID\d{0,13}$/;
   const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
   const DN_SEP_RE = /[\s,，；;、\u3001]+/gu;
-  const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{12,16}$/;
+  const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
 
   const usp = new URLSearchParams(window.location.search);
   const actionsParam = usp.get('actions');
