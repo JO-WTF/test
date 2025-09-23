@@ -2,6 +2,7 @@ import Viewer from 'viewerjs';
 import Toastify from 'toastify-js';
 import {
   ROLE_LIST,
+  STATUS_VALUES,
   STATUS_TRANSLATION_KEYS,
   STATUS_ALIAS_MAP,
   DN_SCAN_STATUS_ORDERED_LIST,
@@ -106,6 +107,24 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const STATUS_ALIAS_LOOKUP = STATUS_ALIAS_MAP || {};
   const STATUS_KNOWN_VALUES = new Set(Object.keys(STATUS_VALUE_TO_KEY));
   const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+  const STATUS_CARD_TOTAL_KEY = '__TOTAL__';
+  const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';
+  const PLAN_MOS_TIMEZONE_OFFSET_MINUTES = 7 * 60;
+  const TRANSPORT_MANAGER_STATUS_CARDS = [
+    { status: STATUS_VALUES.PREPARE_VEHICLE, label: 'Prepare Vehicle' },
+    { status: STATUS_VALUES.ON_THE_WAY, label: 'On the way' },
+    { status: STATUS_VALUES.ON_SITE, label: 'On Site' },
+    { status: STATUS_VALUES.POD, label: 'POD' },
+    { status: STATUS_VALUES.WAITING_PIC_FEEDBACK, label: 'Waiting PIC Feedback' },
+    {
+      status: STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
+      label: 'RePlan MOS due to LSP Delay',
+    },
+    { status: STATUS_VALUES.REPLAN_MOS_PROJECT, label: 'RePlan MOS Project' },
+    { status: STATUS_VALUES.CANCEL_MOS, label: 'Cancel MOS' },
+    { status: STATUS_VALUES.CLOSE_BY_RN, label: 'Close by RN' },
+    { status: STATUS_VALUES.NO_STATUS, label: 'No Status' },
+  ];
   const DEFAULT_MODAL_STATUS_ORDER =
     Array.isArray(DN_SCAN_STATUS_ORDERED_LIST) &&
     DN_SCAN_STATUS_ORDERED_LIST.length
@@ -644,6 +663,68 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const upper = text.toUpperCase();
     if (STATUS_KNOWN_VALUES.has(upper)) return upper;
     return text;
+  }
+
+  function getTodayDateStringInTimezone(timeZone, fallbackOffsetMinutes = 0) {
+    const now = new Date();
+    if (typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function' && timeZone) {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        });
+        const formatted = formatter.format(now);
+        if (formatted && /^\d{4}-\d{2}-\d{2}$/.test(formatted)) {
+          return formatted;
+        }
+        if (formatted) {
+          const parts = formatted.match(/\d+/g);
+          if (parts && parts.length >= 3) {
+            const [year, month, day] = parts;
+            return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    const offsetMinutes = Number(fallbackOffsetMinutes) || 0;
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const target = new Date(utcMs + offsetMinutes * 60000);
+    return target.toISOString().slice(0, 10);
+  }
+
+  function setFormControlValue(control, value) {
+    if (!control) return;
+    const tagName = control.tagName ? control.tagName.toLowerCase() : '';
+    try {
+      if (tagName === 'select') {
+        control.value = value;
+        if (value === '') {
+          if (control.value !== '') {
+            control.selectedIndex = -1;
+          }
+        } else if (control.value !== value) {
+          const options = Array.from(control.options || []);
+          const matched = options.find((opt) => opt.value === value);
+          if (matched) {
+            control.value = matched.value;
+          } else {
+            control.selectedIndex = -1;
+          }
+        }
+        return;
+      }
+      if (tagName === 'input' && (control.type === 'checkbox' || control.type === 'radio')) {
+        control.checked = Boolean(value);
+        return;
+      }
+      control.value = value;
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function i18nStatusDisplay(value) {
@@ -1376,7 +1457,51 @@ ${cellsHtml}
   function renderStatusHighlightCards() {
     if (!statusCardContainer || !statusCardWrapper) return;
     const role = getCurrentRole();
-    const defs = getRoleStatusHighlights(role);
+    let defs = [];
+
+    if (role?.key === 'lsp') {
+      defs = [];
+    } else {
+      if (role?.key === 'transportManager') {
+        defs = TRANSPORT_MANAGER_STATUS_CARDS.map((card) => ({
+          status: card.status,
+          label: card.label,
+        }));
+      } else {
+        defs = getRoleStatusHighlights(role);
+      }
+
+      defs = defs.map((def, index) => {
+        const canonical = normalizeStatusValue(def.status);
+        const status = canonical || def.status || '';
+        const key =
+          status ||
+          (typeof def.labelKey === 'string' && def.labelKey
+            ? `label:${def.labelKey}`
+            : `status:${index}`);
+        return {
+          ...def,
+          status,
+          key,
+          type: 'status',
+        };
+      });
+
+      defs = defs.filter((def) => def.type !== 'status' || def.status);
+
+      if (role?.key === 'transportManager' && defs.length) {
+        defs = [
+          {
+            status: '',
+            label: 'Total',
+            key: STATUS_CARD_TOTAL_KEY,
+            type: 'total',
+          },
+          ...defs,
+        ];
+      }
+    }
+
     statusCardDefs = defs;
     statusCardRefs.clear();
 
@@ -1399,14 +1524,15 @@ ${cellsHtml}
     statusCardWrapper.style.display = '';
     statusCardWrapper.setAttribute('aria-hidden', 'false');
     statusCardContainer.innerHTML = '';
-    const columns = Math.max(1, Math.min(defs.length, 9));
+    const columns = Math.max(1, Math.min(defs.length, 12));
     statusCardContainer.style.setProperty('--status-card-columns', String(columns));
 
     defs.forEach((def) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'status-card';
-      btn.setAttribute('data-status', def.status);
+      btn.setAttribute('data-status', def.type === 'status' ? def.status : '');
+      btn.setAttribute('data-card-key', def.key);
       btn.setAttribute('aria-pressed', 'false');
       btn.setAttribute('aria-busy', 'false');
 
@@ -1423,12 +1549,12 @@ ${cellsHtml}
 
       btn.addEventListener(
         'click',
-        () => handleStatusCardClick(def.status),
+        () => handleStatusCardClick(def),
         { signal }
       );
 
       statusCardContainer.appendChild(btn);
-      statusCardRefs.set(def.status, { button: btn, countEl, labelEl });
+      statusCardRefs.set(def.key, { def, button: btn, countEl, labelEl });
     });
 
     updateStatusCardLabels();
@@ -1438,8 +1564,9 @@ ${cellsHtml}
   function updateStatusCardLabels() {
     if (!statusCardDefs.length) return;
     statusCardDefs.forEach((def) => {
-      const ref = statusCardRefs.get(def.status);
+      const ref = statusCardRefs.get(def.key);
       if (!ref) return;
+      ref.def = def;
       const label = getStatusCardLabel(def);
       ref.labelEl.textContent = label;
       const currentCount = ref.countEl.textContent || '';
@@ -1454,8 +1581,16 @@ ${cellsHtml}
     const statusValue = statusSelect ? statusSelect.value : '';
     const canonicalStatus = normalizeStatusValue(statusValue);
     const canonical = canonicalDelivery || canonicalStatus;
-    statusCardRefs.forEach((ref, status) => {
-      const isActive = Boolean(canonical) && status === canonical;
+    const hasStatus = Boolean(canonical);
+    statusCardRefs.forEach((ref) => {
+      const def = ref.def;
+      if (!def) return;
+      const isActive =
+        def.type === 'status'
+          ? hasStatus && def.status === canonical
+          : def.type === 'total'
+          ? !hasStatus
+          : false;
       ref.button.classList.toggle('active', isActive);
       ref.button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
@@ -1528,39 +1663,106 @@ ${cellsHtml}
     if (cardSignal.aborted || requestId !== statusCardRequestId) return;
 
     const counts = stats?.counts || Object.create(null);
-    const defLookup = new Map(statusCardDefs.map((def) => [def.status, def]));
-    statusCardRefs.forEach((ref, status) => {
-      const rawCount = counts?.[status];
-      const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
-      ref.countEl.textContent = String(displayCount);
-      ref.button.classList.remove('loading');
-      ref.button.setAttribute('aria-busy', 'false');
-      const def = defLookup.get(status) || { status };
-      const label = getStatusCardLabel(def);
-      ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
+    let totalCount = 0;
+
+    statusCardRefs.forEach((ref) => {
+      const def = ref.def;
+      if (!def) return;
+      if (def.type === 'status') {
+        const rawCount = counts?.[def.status];
+        const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
+        totalCount += displayCount;
+        ref.countEl.textContent = String(displayCount);
+        ref.button.classList.remove('loading');
+        ref.button.setAttribute('aria-busy', 'false');
+        const label = getStatusCardLabel(def);
+        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
+      }
+    });
+
+    statusCardRefs.forEach((ref) => {
+      const def = ref.def;
+      if (!def) return;
+      if (def.type !== 'status') {
+        const displayCount = totalCount;
+        ref.countEl.textContent = String(displayCount);
+        ref.button.classList.remove('loading');
+        ref.button.setAttribute('aria-busy', 'false');
+        const label = getStatusCardLabel(def);
+        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
+      }
     });
   }
 
-  function handleStatusCardClick(status) {
-    const canonical = normalizeStatusValue(status);
-    if (!canonical) return;
-    let handled = false;
-    if (statusDeliveryInput) {
-      statusDeliveryInput.value = canonical;
-      handled = true;
-      try {
-        statusDeliveryInput.dispatchEvent(new Event('input', { bubbles: true }));
-      } catch (err) {
-        console.error(err);
+  function applyStatusCardFilter(def, canonicalStatus) {
+    const targetStatus = def?.type === 'status' ? canonicalStatus : '';
+    const todayJakarta = getTodayDateStringInTimezone(
+      PLAN_MOS_TIME_ZONE,
+      PLAN_MOS_TIMEZONE_OFFSET_MINUTES
+    );
+
+    const controlsToReset = [
+      remarkInput,
+      hasSelect,
+      hasCoordinateSelect,
+      fromInput,
+      toInput,
+      duFilterInput,
+      lspInput,
+      regionInput,
+      subconInput,
+      statusWhInput,
+    ];
+    controlsToReset.forEach((control) => setFormControlValue(control, ''));
+
+    if (statusSelect) {
+      if (statusDeliveryInput) {
+        setFormControlValue(statusSelect, '');
+        if (statusSelect.value !== '') {
+          try {
+            statusSelect.selectedIndex = -1;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      } else if (targetStatus) {
+        const option = Array.from(statusSelect.options || []).find(
+          (opt) => normalizeStatusValue(opt.value) === targetStatus
+        );
+        const valueToSet = option ? option.value : targetStatus;
+        setFormControlValue(statusSelect, valueToSet);
+      } else {
+        setFormControlValue(statusSelect, '');
+        if (statusSelect.value !== '') {
+          try {
+            statusSelect.selectedIndex = -1;
+          } catch (err) {
+            console.error(err);
+          }
+        }
       }
-    } else if (statusSelect) {
-      const option = Array.from(statusSelect.options).find(
-        (opt) => normalizeStatusValue(opt.value) === canonical
-      );
-      statusSelect.value = option ? option.value : canonical;
-      handled = true;
     }
-    if (!handled) return;
+
+    if (statusDeliveryInput) {
+      setFormControlValue(statusDeliveryInput, targetStatus);
+    }
+
+    setFormControlValue(planMosDateInput, todayJakarta);
+
+    if (dnInput) {
+      dnInput.value = '';
+      normalizeDnInput({ enforceFormat: false });
+    }
+  }
+
+  function handleStatusCardClick(def) {
+    if (!def || (def.type !== 'status' && def.type !== 'total')) return;
+    const canonicalStatus =
+      def.type === 'status'
+        ? normalizeStatusValue(def.status) || def.status || ''
+        : '';
+    if (def.type === 'status' && !canonicalStatus) return;
+    applyStatusCardFilter(def, canonicalStatus);
     updateStatusCardActiveState();
     q.page = 1;
     fetchList();
