@@ -57,7 +57,7 @@ body.admin-theme {
     margin-bottom: 12px
     }
 .admin-page .status-card-grid {
-    --status-card-columns: 1;
+    --status-card-columns: 13;
     --status-card-min-width: 80px;
     display: grid;
     gap: 12px;
