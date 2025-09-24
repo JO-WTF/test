@@ -176,77 +176,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return result;
   }
 
-  function emitAntSelectOptions(inputEl, options) {
-    if (!inputEl) return;
-    try {
-      inputEl.dispatchEvent(
-        new CustomEvent('ant-select-options-change', {
-          detail: {
-            options: Array.isArray(options) ? options.slice() : [],
-          },
-        })
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  function normalizeAntSelectValues(value) {
-    const source = Array.isArray(value)
-      ? value
-      : typeof value === 'string'
-      ? value.split(/\r?\n/)
-      : value === undefined || value === null
-      ? []
-      : [value];
-    const seen = new Set();
-    const values = [];
-    source.forEach((item) => {
-      if (Array.isArray(item)) {
-        item.forEach((inner) => {
-          if (inner === undefined || inner === null) return;
-          const str = typeof inner === 'string' ? inner : String(inner);
-          const trimmed = str.trim();
-          if (!trimmed || seen.has(trimmed)) return;
-          seen.add(trimmed);
-          values.push(trimmed);
-        });
-        return;
-      }
-      if (item === undefined || item === null) return;
-      const str = typeof item === 'string' ? item : String(item);
-      const trimmed = str.trim();
-      if (!trimmed || seen.has(trimmed)) return;
-      seen.add(trimmed);
-      values.push(trimmed);
-    });
-    return {
-      values,
-      serialized: values.join('\n'),
-    };
-  }
-
-  function emitAntSelectValue(inputEl, value) {
-    if (!inputEl) return;
-    try {
-      const { values, serialized } = normalizeAntSelectValues(value);
-      inputEl.dispatchEvent(
-        new CustomEvent('ant-select-value-change', {
-          detail: {
-            value: serialized,
-            values,
-          },
-        })
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   function registerFilterDropdown(key, inputEl, listEl) {
-    if (!inputEl) return;
-    const useAntSelect = inputEl.dataset?.antSelect === 'true';
-    if (!useAntSelect && !listEl) return;
+    if (!inputEl || !listEl) return;
     const state = {
       input: inputEl,
       list: listEl,
@@ -258,36 +189,29 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
           ? source.filter((option) => option.toLowerCase().includes(q))
           : source;
         const limited = filtered.slice(0, FILTER_OPTION_LIMIT);
-        if (useAntSelect) {
-          emitAntSelectOptions(inputEl, limited);
-          return;
-        }
-        if (!state.list) return;
         state.list.innerHTML = limited
           .map((option) => `<option value="${escapeHtml(option)}"></option>`)
           .join('');
       },
     };
 
-    if (!useAntSelect) {
-      inputEl.setAttribute('autocomplete', 'off');
+    inputEl.setAttribute('autocomplete', 'off');
 
-      inputEl.addEventListener(
-        'focus',
-        () => {
-          state.updateList('');
-        },
-        { signal }
-      );
+    inputEl.addEventListener(
+      'focus',
+      () => {
+        state.updateList('');
+      },
+      { signal }
+    );
 
-      inputEl.addEventListener(
-        'input',
-        () => {
-          state.updateList(inputEl.value || '');
-        },
-        { signal }
-      );
-    }
+    inputEl.addEventListener(
+      'input',
+      () => {
+        state.updateList(inputEl.value || '');
+      },
+      { signal }
+    );
 
     filterDropdowns.set(key, state);
   }
@@ -296,13 +220,6 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const state = filterDropdowns.get(key);
     if (!state) return;
     state.options = normalizeFilterOptionList(options);
-    if (state.input?.dataset?.antSelect === 'true') {
-      emitAntSelectOptions(
-        state.input,
-        state.options.slice(0, FILTER_OPTION_LIMIT)
-      );
-      return;
-    }
     state.updateList(state.input.value || '');
   }
 
@@ -855,6 +772,31 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return formatParts(dayNum, monthIdx, yearNum);
   }
 
+  function serializeMultilineValue(value) {
+    const source = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+      ? value.split(/\r?\n/)
+      : value === undefined || value === null
+      ? []
+      : [value];
+    const seen = new Set();
+    const parts = [];
+    source.forEach((item) => {
+      if (item === undefined || item === null) return;
+      const str = typeof item === 'string' ? item : String(item);
+      str
+        .split(',')
+        .map((part) => part.trim())
+        .forEach((part) => {
+          if (!part || seen.has(part)) return;
+          seen.add(part);
+          parts.push(part);
+        });
+    });
+    return parts.join('\n');
+  }
+
   function setFormControlValue(control, value) {
     if (!control) return;
     const tagName = control.tagName ? control.tagName.toLowerCase() : '';
@@ -881,9 +823,16 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
         return;
       }
       if (control.dataset?.antSelect === 'true') {
-        const { serialized } = normalizeAntSelectValues(value);
-        control.value = serialized;
-        emitAntSelectValue(control, serialized);
+        const serialized = serializeMultilineValue(value);
+        if (control.value !== serialized) {
+          control.value = serialized;
+        }
+        try {
+          control.dispatchEvent(new Event('input', { bubbles: true }));
+          control.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (err) {
+          console.error(err);
+        }
         return;
       }
       control.value = value;

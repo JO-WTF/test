@@ -97,7 +97,11 @@
                     margin: 0;
                   "
                 />
-                <datalist id="f-plan-mos-date-options" style="display: none"></datalist>
+                <datalist
+                  ref="planMosDateDatalistRef"
+                  id="f-plan-mos-date-options"
+                  style="display: none"
+                ></datalist>
               </div>
               <div class="field filter-field">
                 <label data-i18n="region.label">Region</label>
@@ -389,6 +393,7 @@ let cleanup = () => {};
 let i18nInstance = null;
 
 const planMosDateInputRef = ref(null);
+const planMosDateDatalistRef = ref(null);
 const planMosDateSelectOptions = ref([]);
 const planMosDateSelectValue = ref([]);
 const planMosDatePlaceholder = ref('');
@@ -449,27 +454,19 @@ const normalizePlanMosDateValues = (raw) => {
     : raw === undefined || raw === null
     ? []
     : [raw];
-  const result = [];
   const seen = new Set();
-  const normalizedSource = [];
+  const result = [];
   source.forEach((value) => {
-    if (Array.isArray(value)) {
-      value.forEach((inner) => normalizedSource.push(inner));
-      return;
-    }
-    if (typeof value === 'string') {
-      value.split(',').forEach((part) => normalizedSource.push(part));
-      return;
-    }
-    normalizedSource.push(value);
-  });
-  normalizedSource.forEach((value) => {
     if (value === undefined || value === null) return;
     const str = typeof value === 'string' ? value : String(value);
-    const trimmed = str.trim();
-    if (!trimmed || seen.has(trimmed)) return;
-    seen.add(trimmed);
-    result.push(trimmed);
+    str
+      .split(',')
+      .map((part) => part.trim())
+      .forEach((part) => {
+        if (!part || seen.has(part)) return;
+        seen.add(part);
+        result.push(part);
+      });
   });
   return result;
 };
@@ -485,10 +482,10 @@ const planMosDateValuesEqual = (a, b) => {
 };
 
 const serializePlanMosDateValues = (values) => {
-  if (!Array.isArray(values) || !values.length) {
-    return '';
-  }
-  return values.join('\n');
+  const normalized = Array.isArray(values)
+    ? values
+    : normalizePlanMosDateValues(values);
+  return normalized.join('\n');
 };
 
 const setupPlanMosDateSelectBridge = () => {
@@ -501,42 +498,57 @@ const setupPlanMosDateSelectBridge = () => {
     planMosDatePlaceholder.value = inputEl.placeholder || '';
   };
 
-  const handleOptionsChange = (event) => {
-    const rawOptions = Array.isArray(event?.detail?.options)
-      ? event.detail.options
-      : [];
-    planMosDateSelectOptions.value = rawOptions.map((option) => ({
-      label: option,
-      value: option,
-    }));
+  const syncOptions = () => {
+    const listEl = planMosDateDatalistRef.value;
+    if (!listEl) {
+      planMosDateSelectOptions.value = [];
+      return;
+    }
+    const seen = new Set();
+    const mapped = [];
+    listEl.querySelectorAll('option').forEach((optionEl) => {
+      const raw = optionEl.getAttribute('value') ?? optionEl.textContent ?? '';
+      const value = typeof raw === 'string' ? raw.trim() : String(raw || '').trim();
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      mapped.push({ label: value, value });
+    });
+    planMosDateSelectOptions.value = mapped;
   };
 
-  const handleValueChange = (event) => {
-    const rawValue =
-      event?.detail?.values !== undefined
-        ? event.detail.values
-        : event?.detail?.value;
-    const normalized = normalizePlanMosDateValues(rawValue);
+  const syncFromInput = () => {
+    const normalized = normalizePlanMosDateValues(inputEl.value);
     if (planMosDateValuesEqual(planMosDateSelectValue.value, normalized)) {
       return;
     }
     planMosDateSelectValue.value = normalized;
   };
 
-  inputEl.addEventListener('ant-select-options-change', handleOptionsChange);
-  inputEl.addEventListener('ant-select-value-change', handleValueChange);
+  const placeholderObserver = new MutationObserver(syncPlaceholder);
+  placeholderObserver.observe(inputEl, {
+    attributes: true,
+    attributeFilter: ['placeholder'],
+  });
 
-  const observer = new MutationObserver(syncPlaceholder);
-  observer.observe(inputEl, { attributes: true, attributeFilter: ['placeholder'] });
+  let datalistObserver = null;
+  const listEl = planMosDateDatalistRef.value;
+  if (listEl) {
+    datalistObserver = new MutationObserver(syncOptions);
+    datalistObserver.observe(listEl, { childList: true });
+  }
+
+  inputEl.addEventListener('input', syncFromInput);
+  inputEl.addEventListener('change', syncFromInput);
 
   syncPlaceholder();
-  const initialValues = normalizePlanMosDateValues(inputEl.value);
-  planMosDateSelectValue.value = initialValues;
+  syncOptions();
+  syncFromInput();
 
   cleanupPlanMosDateSelect = () => {
-    inputEl.removeEventListener('ant-select-options-change', handleOptionsChange);
-    inputEl.removeEventListener('ant-select-value-change', handleValueChange);
-    observer.disconnect();
+    inputEl.removeEventListener('input', syncFromInput);
+    inputEl.removeEventListener('change', syncFromInput);
+    placeholderObserver.disconnect();
+    datalistObserver?.disconnect();
   };
 };
 
