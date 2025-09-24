@@ -71,6 +71,8 @@
                   :options="planMosDateSelectOptions"
                   :placeholder="planMosDatePlaceholder"
                   :filter-option="filterPlanMosDateOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
                   allow-clear
                   show-search
                   style="width: 100%"
@@ -388,7 +390,7 @@ let i18nInstance = null;
 
 const planMosDateInputRef = ref(null);
 const planMosDateSelectOptions = ref([]);
-const planMosDateSelectValue = ref();
+const planMosDateSelectValue = ref([]);
 const planMosDatePlaceholder = ref('');
 let cleanupPlanMosDateSelect = null;
 
@@ -439,6 +441,56 @@ const filterPlanMosDateOption = (input, option) => {
   return text.includes((input || '').toLowerCase());
 };
 
+const normalizePlanMosDateValues = (raw) => {
+  const source = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+    ? raw.split(/\r?\n/)
+    : raw === undefined || raw === null
+    ? []
+    : [raw];
+  const result = [];
+  const seen = new Set();
+  const normalizedSource = [];
+  source.forEach((value) => {
+    if (Array.isArray(value)) {
+      value.forEach((inner) => normalizedSource.push(inner));
+      return;
+    }
+    if (typeof value === 'string') {
+      value.split(',').forEach((part) => normalizedSource.push(part));
+      return;
+    }
+    normalizedSource.push(value);
+  });
+  normalizedSource.forEach((value) => {
+    if (value === undefined || value === null) return;
+    const str = typeof value === 'string' ? value : String(value);
+    const trimmed = str.trim();
+    if (!trimmed || seen.has(trimmed)) return;
+    seen.add(trimmed);
+    result.push(trimmed);
+  });
+  return result;
+};
+
+const planMosDateValuesEqual = (a, b) => {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+const serializePlanMosDateValues = (values) => {
+  if (!Array.isArray(values) || !values.length) {
+    return '';
+  }
+  return values.join('\n');
+};
+
 const setupPlanMosDateSelectBridge = () => {
   const inputEl = planMosDateInputRef.value;
   if (!inputEl) return;
@@ -460,8 +512,15 @@ const setupPlanMosDateSelectBridge = () => {
   };
 
   const handleValueChange = (event) => {
-    const newValue = event?.detail?.value ?? '';
-    planMosDateSelectValue.value = newValue ? newValue : undefined;
+    const rawValue =
+      event?.detail?.values !== undefined
+        ? event.detail.values
+        : event?.detail?.value;
+    const normalized = normalizePlanMosDateValues(rawValue);
+    if (planMosDateValuesEqual(planMosDateSelectValue.value, normalized)) {
+      return;
+    }
+    planMosDateSelectValue.value = normalized;
   };
 
   inputEl.addEventListener('ant-select-options-change', handleOptionsChange);
@@ -471,7 +530,8 @@ const setupPlanMosDateSelectBridge = () => {
   observer.observe(inputEl, { attributes: true, attributeFilter: ['placeholder'] });
 
   syncPlaceholder();
-  planMosDateSelectValue.value = inputEl.value ? inputEl.value : undefined;
+  const initialValues = normalizePlanMosDateValues(inputEl.value);
+  planMosDateSelectValue.value = initialValues;
 
   cleanupPlanMosDateSelect = () => {
     inputEl.removeEventListener('ant-select-options-change', handleOptionsChange);
@@ -481,9 +541,14 @@ const setupPlanMosDateSelectBridge = () => {
 };
 
 watch(planMosDateSelectValue, (val) => {
+  const normalized = normalizePlanMosDateValues(val);
+  if (!planMosDateValuesEqual(val, normalized)) {
+    planMosDateSelectValue.value = normalized;
+    return;
+  }
   const inputEl = planMosDateInputRef.value;
   if (!inputEl) return;
-  const nextValue = typeof val === 'string' ? val : '';
+  const nextValue = serializePlanMosDateValues(normalized);
   if (inputEl.value === nextValue) return;
   inputEl.value = nextValue;
   try {

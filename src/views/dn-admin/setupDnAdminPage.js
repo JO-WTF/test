@@ -191,13 +191,50 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     }
   }
 
+  function normalizeAntSelectValues(value) {
+    const source = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+      ? value.split(/\r?\n/)
+      : value === undefined || value === null
+      ? []
+      : [value];
+    const seen = new Set();
+    const values = [];
+    source.forEach((item) => {
+      if (Array.isArray(item)) {
+        item.forEach((inner) => {
+          if (inner === undefined || inner === null) return;
+          const str = typeof inner === 'string' ? inner : String(inner);
+          const trimmed = str.trim();
+          if (!trimmed || seen.has(trimmed)) return;
+          seen.add(trimmed);
+          values.push(trimmed);
+        });
+        return;
+      }
+      if (item === undefined || item === null) return;
+      const str = typeof item === 'string' ? item : String(item);
+      const trimmed = str.trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      values.push(trimmed);
+    });
+    return {
+      values,
+      serialized: values.join('\n'),
+    };
+  }
+
   function emitAntSelectValue(inputEl, value) {
     if (!inputEl) return;
     try {
+      const { values, serialized } = normalizeAntSelectValues(value);
       inputEl.dispatchEvent(
         new CustomEvent('ant-select-value-change', {
           detail: {
-            value: value !== undefined && value !== null ? String(value) : '',
+            value: serialized,
+            values,
           },
         })
       );
@@ -844,8 +881,9 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
         return;
       }
       if (control.dataset?.antSelect === 'true') {
-        control.value = value !== undefined && value !== null ? String(value) : '';
-        emitAntSelectValue(control, control.value);
+        const { serialized } = normalizeAntSelectValues(value);
+        control.value = serialized;
+        emitAntSelectValue(control, serialized);
         return;
       }
       control.value = value;
@@ -2127,7 +2165,11 @@ ${cellsHtml}
       const du = (duFilterInput?.value || '').trim();
       const lsp = (lspInput?.value || '').trim();
       const region = (regionInput?.value || '').trim();
-      const planMosDate = (planMosDateInput?.value || '').trim();
+      const planMosDateRaw = planMosDateInput?.value || '';
+      const planMosDateTokens = planMosDateRaw
+        .split(/\r?\n/)
+        .map((token) => token.trim())
+        .filter(Boolean);
       const subcon = (subconInput?.value || '').trim();
       const statusWh = (statusWhInput?.value || '').trim();
       const statusDelivery = (statusDeliveryInput?.value || '').trim();
@@ -2146,7 +2188,11 @@ ${cellsHtml}
       if (dt) params.set('date_to', new Date(`${dt}T23:59:59`).toISOString());
       if (lsp) params.set('lsp', lsp);
       if (region) params.set('region', region);
-      if (planMosDate) params.set('date', planMosDate);
+      if (planMosDateTokens.length === 1) {
+        params.set('date', planMosDateTokens[0]);
+      } else if (planMosDateTokens.length > 1) {
+        planMosDateTokens.forEach((token) => params.append('date', token));
+      }
       if (subcon) params.set('subcon', subcon);
       if (statusWh) params.set('status_wh', statusWh);
       if (statusDelivery) params.set('status_delivery', statusDelivery);
@@ -2927,11 +2973,7 @@ ${cellsHtml}
       Object.entries(defaultValues).forEach(([id, value]) => {
         const node = el(id);
         if (!node) return;
-        try {
-          node.value = value;
-        } catch (err) {
-          console.error(err);
-        }
+        setFormControlValue(node, value);
       });
       if (dnInput) dnInput.value = '';
       normalizeDnInput({ enforceFormat: false });
