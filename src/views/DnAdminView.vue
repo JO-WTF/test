@@ -64,15 +64,38 @@
 
           <div class="rhs">
             <div class="filters-grid">
-              <div class="field filter-field">
+              <div class="field filter-field" style="position: relative">
                 <label data-i18n="planMosDate.label">Plan MOS Date</label>
+                <a-select
+                  v-model:value="planMosDateSelectValue"
+                  :options="planMosDateSelectOptions"
+                  :placeholder="planMosDatePlaceholder"
+                  :filter-option="filterPlanMosDateOption"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
                 <input
+                  ref="planMosDateInputRef"
                   id="f-plan-mos-date"
+                  type="text"
                   list="f-plan-mos-date-options"
                   data-i18n-placeholder="planMosDate.placeholder"
                   placeholder="输入或选择"
+                  data-ant-select="true"
+                  aria-hidden="true"
+                  style="
+                    position: absolute;
+                    opacity: 0;
+                    pointer-events: none;
+                    width: 0;
+                    height: 0;
+                    border: 0;
+                    padding: 0;
+                    margin: 0;
+                  "
                 />
-                <datalist id="f-plan-mos-date-options"></datalist>
+                <datalist id="f-plan-mos-date-options" style="display: none"></datalist>
               </div>
               <div class="field filter-field">
                 <label data-i18n="region.label">Region</label>
@@ -350,7 +373,7 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupDnAdminPage } from './dn-admin/setupDnAdminPage';
@@ -362,6 +385,12 @@ const adminRoot = ref(null);
 const currentLang = ref('zh');
 let cleanup = () => {};
 let i18nInstance = null;
+
+const planMosDateInputRef = ref(null);
+const planMosDateSelectOptions = ref([]);
+const planMosDateSelectValue = ref();
+const planMosDatePlaceholder = ref('');
+let cleanupPlanMosDateSelect = null;
 
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
 
@@ -405,6 +434,66 @@ const statusFilterOptions = [
 
 useBodyTheme('admin-theme');
 
+const filterPlanMosDateOption = (input, option) => {
+  const text = `${option?.label ?? option?.value ?? ''}`.toLowerCase();
+  return text.includes((input || '').toLowerCase());
+};
+
+const setupPlanMosDateSelectBridge = () => {
+  const inputEl = planMosDateInputRef.value;
+  if (!inputEl) return;
+
+  cleanupPlanMosDateSelect?.();
+
+  const syncPlaceholder = () => {
+    planMosDatePlaceholder.value = inputEl.placeholder || '';
+  };
+
+  const handleOptionsChange = (event) => {
+    const rawOptions = Array.isArray(event?.detail?.options)
+      ? event.detail.options
+      : [];
+    planMosDateSelectOptions.value = rawOptions.map((option) => ({
+      label: option,
+      value: option,
+    }));
+  };
+
+  const handleValueChange = (event) => {
+    const newValue = event?.detail?.value ?? '';
+    planMosDateSelectValue.value = newValue ? newValue : undefined;
+  };
+
+  inputEl.addEventListener('ant-select-options-change', handleOptionsChange);
+  inputEl.addEventListener('ant-select-value-change', handleValueChange);
+
+  const observer = new MutationObserver(syncPlaceholder);
+  observer.observe(inputEl, { attributes: true, attributeFilter: ['placeholder'] });
+
+  syncPlaceholder();
+  planMosDateSelectValue.value = inputEl.value ? inputEl.value : undefined;
+
+  cleanupPlanMosDateSelect = () => {
+    inputEl.removeEventListener('ant-select-options-change', handleOptionsChange);
+    inputEl.removeEventListener('ant-select-value-change', handleValueChange);
+    observer.disconnect();
+  };
+};
+
+watch(planMosDateSelectValue, (val) => {
+  const inputEl = planMosDateInputRef.value;
+  if (!inputEl) return;
+  const nextValue = typeof val === 'string' ? val : '';
+  if (inputEl.value === nextValue) return;
+  inputEl.value = nextValue;
+  try {
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+  } catch (err) {
+    console.error(err);
+  }
+});
+
 const applyTranslations = () => {
   if (adminRoot.value && i18nInstance) {
     applyI18n(adminRoot.value, i18nInstance);
@@ -417,6 +506,8 @@ const changeLang = async (lang) => {
 };
 
 onMounted(async () => {
+  setupPlanMosDateSelectBridge();
+
   i18nInstance = createI18n({
     namespaces: ['dn-admin'],
     fallbackLang: 'en',
@@ -443,6 +534,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  cleanupPlanMosDateSelect?.();
   cleanup?.();
 });
 </script>

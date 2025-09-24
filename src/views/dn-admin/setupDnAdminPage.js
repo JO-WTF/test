@@ -176,8 +176,40 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return result;
   }
 
+  function emitAntSelectOptions(inputEl, options) {
+    if (!inputEl) return;
+    try {
+      inputEl.dispatchEvent(
+        new CustomEvent('ant-select-options-change', {
+          detail: {
+            options: Array.isArray(options) ? options.slice() : [],
+          },
+        })
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function emitAntSelectValue(inputEl, value) {
+    if (!inputEl) return;
+    try {
+      inputEl.dispatchEvent(
+        new CustomEvent('ant-select-value-change', {
+          detail: {
+            value: value !== undefined && value !== null ? String(value) : '',
+          },
+        })
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   function registerFilterDropdown(key, inputEl, listEl) {
-    if (!inputEl || !listEl) return;
+    if (!inputEl) return;
+    const useAntSelect = inputEl.dataset?.antSelect === 'true';
+    if (!useAntSelect && !listEl) return;
     const state = {
       input: inputEl,
       list: listEl,
@@ -189,29 +221,36 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
           ? source.filter((option) => option.toLowerCase().includes(q))
           : source;
         const limited = filtered.slice(0, FILTER_OPTION_LIMIT);
+        if (useAntSelect) {
+          emitAntSelectOptions(inputEl, limited);
+          return;
+        }
+        if (!state.list) return;
         state.list.innerHTML = limited
           .map((option) => `<option value="${escapeHtml(option)}"></option>`)
           .join('');
       },
     };
 
-    inputEl.setAttribute('autocomplete', 'off');
+    if (!useAntSelect) {
+      inputEl.setAttribute('autocomplete', 'off');
 
-    inputEl.addEventListener(
-      'focus',
-      () => {
-        state.updateList('');
-      },
-      { signal }
-    );
+      inputEl.addEventListener(
+        'focus',
+        () => {
+          state.updateList('');
+        },
+        { signal }
+      );
 
-    inputEl.addEventListener(
-      'input',
-      () => {
-        state.updateList(inputEl.value || '');
-      },
-      { signal }
-    );
+      inputEl.addEventListener(
+        'input',
+        () => {
+          state.updateList(inputEl.value || '');
+        },
+        { signal }
+      );
+    }
 
     filterDropdowns.set(key, state);
   }
@@ -220,6 +259,13 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     const state = filterDropdowns.get(key);
     if (!state) return;
     state.options = normalizeFilterOptionList(options);
+    if (state.input?.dataset?.antSelect === 'true') {
+      emitAntSelectOptions(
+        state.input,
+        state.options.slice(0, FILTER_OPTION_LIMIT)
+      );
+      return;
+    }
     state.updateList(state.input.value || '');
   }
 
@@ -795,6 +841,11 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       }
       if (tagName === 'input' && (control.type === 'checkbox' || control.type === 'radio')) {
         control.checked = Boolean(value);
+        return;
+      }
+      if (control.dataset?.antSelect === 'true') {
+        control.value = value !== undefined && value !== null ? String(value) : '';
+        emitAntSelectValue(control, control.value);
         return;
       }
       control.value = value;
