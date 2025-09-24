@@ -422,7 +422,9 @@ body.admin-theme {
     max-width: 250px
     }
 .admin-page .filters-grid .field input, .admin-page .filters-grid .field select {
-    width: 100%
+    width: 100%;
+    background-color: #fff;
+    color: #333;
     }
 .admin-page .filters-grid .field datalist {
     width: 100%

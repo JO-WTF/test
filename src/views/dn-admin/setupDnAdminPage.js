@@ -20,7 +20,10 @@ const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
 const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
 const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
-export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
+export function setupDnAdminPage(
+  rootEl,
+  { i18n, applyTranslations, planMosDateSelect, filterSelects, filterInputs } = {}
+) {
   if (!rootEl) return () => {};
 
   const controller = new AbortController();
@@ -28,9 +31,47 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
 
   const el = (id) => rootEl.querySelector(`#${id}`);
 
+  const selectBridgeByKey = new Map();
+  const selectBridgeUnsubscribers = [];
+  const inputBridgeByKey = new Map();
+
+  if (filterSelects && typeof filterSelects === 'object') {
+    Object.entries(filterSelects).forEach(([key, bridge]) => {
+      if (!key || !bridge || typeof bridge !== 'object') return;
+      selectBridgeByKey.set(key, bridge);
+    });
+  }
+
+  if (filterInputs && typeof filterInputs === 'object') {
+    Object.entries(filterInputs).forEach(([key, bridge]) => {
+      if (!key || !bridge || typeof bridge !== 'object') return;
+      inputBridgeByKey.set(key, bridge);
+    });
+  }
+
+  if (planMosDateSelect && typeof planMosDateSelect === 'object') {
+    selectBridgeByKey.set('plan_mos_date', planMosDateSelect);
+  }
+
+  const planMosDateSelectBridge =
+    selectBridgeByKey.get('plan_mos_date') || null;
+  const regionSelectBridge = selectBridgeByKey.get('region') || null;
+  const lspSelectBridge = selectBridgeByKey.get('lsp') || null;
+  const subconSelectBridge = selectBridgeByKey.get('subcon') || null;
+  const statusSelectBridge = selectBridgeByKey.get('status') || null;
+  const statusWhSelectBridge = selectBridgeByKey.get('status_wh') || null;
+  const statusDeliverySelectBridge =
+    selectBridgeByKey.get('status_delivery') || null;
+  const hasCoordinateSelectBridge =
+    selectBridgeByKey.get('has_coordinate') || null;
+  const dateFromBridge = selectBridgeByKey.get('date_from') || null;
+  const dateToBridge = selectBridgeByKey.get('date_to') || null;
+  const remarkInputBridge = inputBridgeByKey.get('remark') || null;
+  const duFilterInputBridge = inputBridgeByKey.get('du') || null;
+
   const dnInput = el('f-dn');
   const dnPreview = el('dn-preview');
-  const duFilterInput = el('f-du');
+  const duFilterInput = duFilterInputBridge ? null : el('f-du');
   const tbl = el('tbl');
   const tbody = tbl?.querySelector('tbody');
   const actionsHeader = tbl?.querySelector('thead th[data-column="actions"]');
@@ -39,26 +80,34 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const pager = el('pager');
   const pginfo = el('pginfo');
 
-  const statusSelect = el('f-status');
-  const remarkInput = el('f-remark');
+  const statusSelect = statusSelectBridge ? null : el('f-status');
+  const remarkInput = remarkInputBridge ? null : el('f-remark');
   const hasSelect = el('f-has');
   const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
-  const hasCoordinateSelect = el('f-has-coordinate');
-  const fromInput = el('f-from');
-  const toInput = el('f-to');
+  const hasCoordinateSelect = hasCoordinateSelectBridge
+    ? null
+    : el('f-has-coordinate');
+  const fromInput = dateFromBridge ? null : el('f-from');
+  const toInput = dateToBridge ? null : el('f-to');
   const pageSizeInput = el('f-ps2');
-  const lspInput = el('f-lsp');
-  const lspOptions = el('f-lsp-options');
-  const regionInput = el('f-region');
-  const regionOptions = el('f-region-options');
-  const planMosDateInput = el('f-plan-mos-date');
-  const planMosDateOptions = el('f-plan-mos-date-options');
-  const subconInput = el('f-subcon');
-  const subconOptions = el('f-subcon-options');
-  const statusWhInput = el('f-status-wh');
-  const statusWhOptions = el('f-status-wh-options');
-  const statusDeliveryInput = el('f-status-delivery');
-  const statusDeliveryOptions = el('f-status-delivery-options');
+  const lspInput = lspSelectBridge ? null : el('f-lsp');
+  const lspOptions = lspSelectBridge ? null : el('f-lsp-options');
+  const regionInput = regionSelectBridge ? null : el('f-region');
+  const regionOptions = regionSelectBridge ? null : el('f-region-options');
+  const planMosDateInput = planMosDateSelectBridge ? null : el('f-plan-mos-date');
+  const planMosDateOptions = planMosDateSelectBridge
+    ? null
+    : el('f-plan-mos-date-options');
+  const subconInput = subconSelectBridge ? null : el('f-subcon');
+  const subconOptions = subconSelectBridge ? null : el('f-subcon-options');
+  const statusWhInput = statusWhSelectBridge ? null : el('f-status-wh');
+  const statusWhOptions = statusWhSelectBridge ? null : el('f-status-wh-options');
+  const statusDeliveryInput = statusDeliverySelectBridge
+    ? null
+    : el('f-status-delivery');
+  const statusDeliveryOptions = statusDeliverySelectBridge
+    ? null
+    : el('f-status-delivery-options');
 
   const mask = el('modal-mask');
   const mId = el('modal-id');
@@ -217,18 +266,264 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   }
 
   function setFilterDropdownOptions(key, options) {
+    const bridge = selectBridgeByKey.get(key);
+    if (bridge && typeof bridge.setOptions === 'function') {
+      try {
+        bridge.setOptions(options);
+      } catch (err) {
+        console.error(err);
+      }
+    }
     const state = filterDropdowns.get(key);
     if (!state) return;
     state.options = normalizeFilterOptionList(options);
     state.updateList(state.input.value || '');
   }
 
-  registerFilterDropdown('lsp', lspInput, lspOptions);
-  registerFilterDropdown('region', regionInput, regionOptions);
-  registerFilterDropdown('plan_mos_date', planMosDateInput, planMosDateOptions);
-  registerFilterDropdown('subcon', subconInput, subconOptions);
-  registerFilterDropdown('status_wh', statusWhInput, statusWhOptions);
-  registerFilterDropdown('status_delivery', statusDeliveryInput, statusDeliveryOptions);
+  function normalizeBridgeValues(values) {
+    if (!Array.isArray(values)) return [];
+    const seen = new Set();
+    const result = [];
+    values.forEach((value) => {
+      if (value === undefined || value === null) return;
+      const str =
+        typeof value === 'string' ? value.trim() : String(value || '').trim();
+      if (!str || seen.has(str)) return;
+      seen.add(str);
+      result.push(str);
+    });
+    return result;
+  }
+
+  function getFilterValues(key, inputEl) {
+    const bridge = selectBridgeByKey.get(key);
+    if (bridge && typeof bridge.getValue === 'function') {
+      try {
+        const values = bridge.getValue();
+        return normalizeBridgeValues(values);
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+    }
+    if (!inputEl) return [];
+    const raw = inputEl.value || '';
+    if (!raw) return [];
+    if (key === 'plan_mos_date') {
+      return raw
+        .split(/\r?\n/)
+        .map((token) => token.trim())
+        .filter(Boolean);
+    }
+    return [raw.trim()].filter(Boolean);
+  }
+
+  function getSingleFilterValue(key, inputEl) {
+    const values = getFilterValues(key, inputEl);
+    return values.length ? values[0] : '';
+  }
+
+  function getInputValue(key, inputEl) {
+    const bridge = inputBridgeByKey.get(key);
+    if (bridge && typeof bridge.getValue === 'function') {
+      try {
+        const raw = bridge.getValue();
+        if (raw === undefined || raw === null) return '';
+        return typeof raw === 'string' ? raw : String(raw);
+      } catch (err) {
+        console.error(err);
+        return '';
+      }
+    }
+    if (!inputEl) return '';
+    try {
+      return inputEl.value || '';
+    } catch (err) {
+      console.error(err);
+    }
+    return '';
+  }
+
+  function setInputValue(key, inputEl, value) {
+    const normalized =
+      value === undefined || value === null
+        ? ''
+        : typeof value === 'string'
+        ? value
+        : String(value);
+    const bridge = inputBridgeByKey.get(key);
+    if (bridge && typeof bridge.setValue === 'function') {
+      try {
+        bridge.setValue(normalized);
+        return;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    setFormControlValue(inputEl, normalized);
+  }
+
+  function normalizeDateControlValue(value) {
+    if (value === undefined || value === null) return '';
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i += 1) {
+        const normalized = normalizeDateControlValue(value[i]);
+        if (normalized) return normalized;
+      }
+      return '';
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return normalizeDateControlValue(new Date(value));
+    }
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) return '';
+      const year = String(value.getFullYear()).padStart(4, '0');
+      const month = String(value.getMonth() + 1).padStart(2, '0');
+      const day = String(value.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    if (value && typeof value === 'object' && typeof value.format === 'function') {
+      try {
+        const formatted = value.format('YYYY-MM-DD');
+        return typeof formatted === 'string' ? normalizeDateControlValue(formatted) : '';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+      }
+      const genericMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+      if (genericMatch) {
+        const year = genericMatch[1].padStart(4, '0');
+        const month = genericMatch[2].padStart(2, '0');
+        const day = genericMatch[3].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      return '';
+    }
+    try {
+      const str = String(value).trim();
+      if (!str) return '';
+      return normalizeDateControlValue(str);
+    } catch (err) {
+      console.error(err);
+    }
+    return '';
+  }
+
+  function getDateFilterValue(key, inputEl) {
+    const bridge = selectBridgeByKey.get(key);
+    if (bridge && typeof bridge.getValue === 'function') {
+      try {
+        const raw = bridge.getValue();
+        return normalizeDateControlValue(raw);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    if (!inputEl) return '';
+    return normalizeDateControlValue(inputEl.value || '');
+  }
+
+  function setFilterValue(key, inputEl, value) {
+    const bridge = selectBridgeByKey.get(key);
+    if (bridge && typeof bridge.setValue === 'function') {
+      try {
+        bridge.setValue(value);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+    const inputBridge = inputBridgeByKey.get(key);
+    if (inputBridge && typeof inputBridge.setValue === 'function') {
+      try {
+        inputBridge.setValue(value);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+    if (!inputEl) return;
+    const normalized = Array.isArray(value)
+      ? value[0] || ''
+      : typeof value === 'string'
+      ? value
+      : value === undefined || value === null
+      ? ''
+      : String(value);
+    if (key === 'plan_mos_date') {
+      const serialized = Array.isArray(value)
+        ? value
+            .map((item) => (typeof item === 'string' ? item.trim() : String(item || '').trim()))
+            .filter(Boolean)
+            .join('\n')
+        : normalized;
+      setFormControlValue(inputEl, serialized);
+      return;
+    }
+    if (key === 'date_from' || key === 'date_to') {
+      setFormControlValue(inputEl, normalizeDateControlValue(value));
+      return;
+    }
+    setFormControlValue(inputEl, normalized);
+  }
+
+  function subscribeToFilterChange(key, handler) {
+    const bridge = selectBridgeByKey.get(key);
+    if (!bridge || typeof bridge.onChange !== 'function') return;
+    try {
+      const unsubscribe = bridge.onChange(handler);
+      if (typeof unsubscribe === 'function') {
+        selectBridgeUnsubscribers.push(unsubscribe);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const FILTER_KEY_BY_ID = new Map([
+    ['f-plan-mos-date', 'plan_mos_date'],
+    ['f-lsp', 'lsp'],
+    ['f-region', 'region'],
+    ['f-subcon', 'subcon'],
+    ['f-status-wh', 'status_wh'],
+    ['f-status-delivery', 'status_delivery'],
+    ['f-from', 'date_from'],
+    ['f-to', 'date_to'],
+    ['f-status', 'status'],
+    ['f-has-coordinate', 'has_coordinate'],
+    ['f-remark', 'remark'],
+    ['f-du', 'du'],
+  ]);
+
+  if (!lspSelectBridge) {
+    registerFilterDropdown('lsp', lspInput, lspOptions);
+  }
+  if (!regionSelectBridge) {
+    registerFilterDropdown('region', regionInput, regionOptions);
+  }
+  if (!planMosDateSelectBridge) {
+    registerFilterDropdown('plan_mos_date', planMosDateInput, planMosDateOptions);
+  }
+  if (!subconSelectBridge) {
+    registerFilterDropdown('subcon', subconInput, subconOptions);
+  }
+  if (!statusWhSelectBridge) {
+    registerFilterDropdown('status_wh', statusWhInput, statusWhOptions);
+  }
+  if (!statusDeliverySelectBridge) {
+    registerFilterDropdown(
+      'status_delivery',
+      statusDeliveryInput,
+      statusDeliveryOptions
+    );
+  }
 
   const expandedRowKeys = new Set();
   const SUMMARY_BASE_COLUMN_COUNT = 11;
@@ -1658,9 +1953,10 @@ ${cellsHtml}
 
   function updateStatusCardActiveState() {
     if (!statusCardRefs.size) return;
-    const deliveryValue = statusDeliveryInput ? statusDeliveryInput.value : '';
+    const deliveryTokens = getFilterValues('status_delivery', statusDeliveryInput);
+    const deliveryValue = deliveryTokens.length ? deliveryTokens[0] : '';
     const canonicalDelivery = normalizeStatusValue(deliveryValue);
-    const statusValue = statusSelect ? statusSelect.value : '';
+    const statusValue = getSingleFilterValue('status', statusSelect);
     const canonicalStatus = normalizeStatusValue(statusValue);
     const canonical = canonicalDelivery || canonicalStatus;
     const hasStatus = Boolean(canonical);
@@ -1784,53 +2080,31 @@ ${cellsHtml}
       'dd MMM yy'
     );
 
-    const controlsToReset = [
-      remarkInput,
-      hasSelect,
-      hasCoordinateSelect,
-      fromInput,
-      toInput,
-      duFilterInput,
-      lspInput,
-      regionInput,
-      subconInput,
-      statusWhInput,
-    ];
-    controlsToReset.forEach((control) => setFormControlValue(control, ''));
+    setInputValue('remark', remarkInput, '');
+    setFormControlValue(hasSelect, '');
+    setFilterValue('has_coordinate', hasCoordinateSelect, '');
+    setFilterValue('date_from', fromInput, '');
+    setFilterValue('date_to', toInput, '');
+    setInputValue('du', duFilterInput, '');
 
-    if (statusSelect) {
-      if (statusDeliveryInput) {
-        setFormControlValue(statusSelect, '');
-        if (statusSelect.value !== '') {
-          try {
-            statusSelect.selectedIndex = -1;
-          } catch (err) {
-            console.error(err);
-          }
-        }
+    setFilterValue('lsp', lspInput, '');
+    setFilterValue('region', regionInput, '');
+    setFilterValue('subcon', subconInput, '');
+    setFilterValue('status_wh', statusWhInput, '');
+
+    if (statusSelectBridge || statusSelect) {
+      if (statusDeliveryInput || statusDeliverySelectBridge) {
+        setFilterValue('status', statusSelect, '');
       } else if (targetStatus) {
-        const option = Array.from(statusSelect.options || []).find(
-          (opt) => normalizeStatusValue(opt.value) === targetStatus
-        );
-        const valueToSet = option ? option.value : targetStatus;
-        setFormControlValue(statusSelect, valueToSet);
+        setFilterValue('status', statusSelect, targetStatus);
       } else {
-        setFormControlValue(statusSelect, '');
-        if (statusSelect.value !== '') {
-          try {
-            statusSelect.selectedIndex = -1;
-          } catch (err) {
-            console.error(err);
-          }
-        }
+        setFilterValue('status', statusSelect, '');
       }
     }
 
-    if (statusDeliveryInput) {
-      setFormControlValue(statusDeliveryInput, targetStatus);
-    }
+    setFilterValue('status_delivery', statusDeliveryInput, targetStatus);
 
-    setFormControlValue(planMosDateInput, todayJakarta);
+    setFilterValue('plan_mos_date', planMosDateInput, todayJakarta);
 
     if (dnInput) {
       dnInput.value = '';
@@ -2067,19 +2341,19 @@ ${cellsHtml}
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = statusSelect?.value || '';
-      const rk = (remarkInput?.value || '').trim();
+      const st = getSingleFilterValue('status', statusSelect);
+      const rk = getInputValue('remark', remarkInput).trim();
       const hp = hasSelect?.value;
-      const hc = hasCoordinateSelect?.value;
-      const df = fromInput?.value;
-      const dt = toInput?.value;
-      const du = (duFilterInput?.value || '').trim();
-      const lsp = (lspInput?.value || '').trim();
-      const region = (regionInput?.value || '').trim();
-      const planMosDate = (planMosDateInput?.value || '').trim();
-      const subcon = (subconInput?.value || '').trim();
-      const statusWh = (statusWhInput?.value || '').trim();
-      const statusDelivery = (statusDeliveryInput?.value || '').trim();
+      const hc = getSingleFilterValue('has_coordinate', hasCoordinateSelect);
+      const df = getDateFilterValue('date_from', fromInput);
+      const dt = getDateFilterValue('date_to', toInput);
+      const du = getInputValue('du', duFilterInput).trim();
+      const lspValues = getFilterValues('lsp', lspInput);
+      const regionValues = getFilterValues('region', regionInput);
+      const planMosDateTokens = getFilterValues('plan_mos_date', planMosDateInput);
+      const subconValues = getFilterValues('subcon', subconInput);
+      const statusWhValues = getFilterValues('status_wh', statusWhInput);
+      const statusDeliveryValues = getFilterValues('status_delivery', statusDeliveryInput);
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
@@ -2093,12 +2367,36 @@ ${cellsHtml}
       if (hc) params.set('has_coordinate', hc);
       if (df) params.set('date_from', new Date(`${df}T00:00:00`).toISOString());
       if (dt) params.set('date_to', new Date(`${dt}T23:59:59`).toISOString());
-      if (lsp) params.set('lsp', lsp);
-      if (region) params.set('region', region);
-      if (planMosDate) params.set('date', planMosDate);
-      if (subcon) params.set('subcon', subcon);
-      if (statusWh) params.set('status_wh', statusWh);
-      if (statusDelivery) params.set('status_delivery', statusDelivery);
+      if (lspValues.length === 1) {
+        params.set('lsp', lspValues[0]);
+      } else if (lspValues.length > 1) {
+        lspValues.forEach((value) => params.append('lsp', value));
+      }
+      if (regionValues.length === 1) {
+        params.set('region', regionValues[0]);
+      } else if (regionValues.length > 1) {
+        regionValues.forEach((value) => params.append('region', value));
+      }
+      if (planMosDateTokens.length === 1) {
+        params.set('date', planMosDateTokens[0]);
+      } else if (planMosDateTokens.length > 1) {
+        planMosDateTokens.forEach((token) => params.append('date', token));
+      }
+      if (subconValues.length === 1) {
+        params.set('subcon', subconValues[0]);
+      } else if (subconValues.length > 1) {
+        subconValues.forEach((value) => params.append('subcon', value));
+      }
+      if (statusWhValues.length === 1) {
+        params.set('status_wh', statusWhValues[0]);
+      } else if (statusWhValues.length > 1) {
+        statusWhValues.forEach((value) => params.append('status_wh', value));
+      }
+      if (statusDeliveryValues.length === 1) {
+        params.set('status_delivery', statusDeliveryValues[0]);
+      } else if (statusDeliveryValues.length > 1) {
+        statusDeliveryValues.forEach((value) => params.append('status_delivery', value));
+      }
     }
 
     params.set('page', q.page);
@@ -2788,21 +3086,33 @@ ${cellsHtml}
     { signal }
   );
 
-  statusSelect?.addEventListener(
-    'change',
-    () => {
+  if (statusSelectBridge) {
+    subscribeToFilterChange('status', () => {
       updateStatusCardActiveState();
-    },
-    { signal }
-  );
+    });
+  } else {
+    statusSelect?.addEventListener(
+      'change',
+      () => {
+        updateStatusCardActiveState();
+      },
+      { signal }
+    );
+  }
 
-  statusDeliveryInput?.addEventListener(
-    'input',
-    () => {
+  if (statusDeliverySelectBridge) {
+    subscribeToFilterChange('status_delivery', () => {
       updateStatusCardActiveState();
-    },
-    { signal }
-  );
+    });
+  } else {
+    statusDeliveryInput?.addEventListener(
+      'input',
+      () => {
+        updateStatusCardActiveState();
+      },
+      { signal }
+    );
+  }
 
   dnInput?.addEventListener(
     'input',
@@ -2874,13 +3184,15 @@ ${cellsHtml}
         'f-status-delivery': '',
       };
       Object.entries(defaultValues).forEach(([id, value]) => {
+        const filterKey = FILTER_KEY_BY_ID.get(id);
+        if (filterKey) {
+          const node = el(id);
+          setFilterValue(filterKey, node, value);
+          return;
+        }
         const node = el(id);
         if (!node) return;
-        try {
-          node.value = value;
-        } catch (err) {
-          console.error(err);
-        }
+        setFormControlValue(node, value);
       });
       if (dnInput) dnInput.value = '';
       normalizeDnInput({ enforceFormat: false });
@@ -3047,6 +3359,14 @@ ${cellsHtml}
         console.error(err);
       }
     }
+    selectBridgeUnsubscribers.forEach((unsubscribe) => {
+      if (typeof unsubscribe !== 'function') return;
+      try {
+        unsubscribe();
+      } catch (err) {
+        console.error(err);
+      }
+    });
     cleanupViewer();
     viewerHost.remove();
   };
