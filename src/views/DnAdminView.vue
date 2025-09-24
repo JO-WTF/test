@@ -240,6 +240,9 @@
                 <div style="display: flex; gap: 8px; flex-wrap: wrap">
                   <button class="btn" id="btn-search" data-i18n="actions.query">查询</button>
                   <button class="btn ghost" id="btn-reset" data-i18n="actions.reset">重置</button>
+                  <button class="btn ghost" id="btn-show-all" data-i18n="actions.showAll">
+                    显示全部 DN
+                  </button>
                   <button class="btn ghost" id="btn-export-all" data-i18n="actions.exportAll">
                     导出全部
                   </button>
@@ -1025,6 +1028,12 @@ const updateDayjsLocale = (lang) => {
 };
 
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+
+try {
+  statusSelectBridge.setValue(STATUS_NOT_EMPTY_VALUE);
+} catch (err) {
+  console.error(err);
+}
 
 const HAS_COORDINATE_OPTION_DEFS = [
   { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },

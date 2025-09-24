@@ -66,6 +66,7 @@
     "actions.label": "操作",
     "actions.query": "查询",
     "actions.reset": "重置",
+    "actions.showAll": "显示全部 DN",
     "actions.exportAll": "导出全部",
     "actions.exportRecords": "导出DN更新记录",
     "actions.trustBackend": "信任后台",
