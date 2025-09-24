@@ -66,6 +66,7 @@
     "actions.label": "Tindakan",
     "actions.query": "Cari",
     "actions.reset": "Atur Ulang",
+    "actions.showAll": "Tampilkan semua DN",
     "actions.exportAll": "Ekspor Semua",
     "actions.exportRecords": "Ekspor Catatan Pembaruan DN",
     "actions.trustBackend": "Percaya Backend",

@@ -202,8 +202,9 @@ export function setupDnAdminPage(
           'TRANSPORTING FROM XD/PM',
           'ARRIVED AT SITE',
         ];
-  const DEFAULT_STATUS_VALUE = statusSelect?.options?.[0]?.value || '';
-  if (statusSelect && DEFAULT_STATUS_VALUE) {
+  const STATUS_ANY_VALUE = '';
+  const DEFAULT_STATUS_VALUE = STATUS_ANY_VALUE;
+  if (statusSelect) {
     statusSelect.value = DEFAULT_STATUS_VALUE;
   }
 
@@ -3155,6 +3156,38 @@ ${cellsHtml}
     { signal }
   );
 
+  function resetAllFilters({ statusValue = STATUS_ANY_VALUE } = {}) {
+    const defaultValues = {
+      'f-status': statusValue,
+      'f-remark': '',
+      'f-has': '',
+      'f-has-coordinate': '',
+      'f-from': '',
+      'f-to': '',
+      'f-ps2': '20',
+      'f-du': '',
+      'f-lsp': '',
+      'f-region': '',
+      'f-plan-mos-date': '',
+      'f-subcon': '',
+      'f-status-wh': '',
+      'f-status-delivery': '',
+    };
+    Object.entries(defaultValues).forEach(([id, value]) => {
+      const filterKey = FILTER_KEY_BY_ID.get(id);
+      if (filterKey) {
+        const node = el(id);
+        setFilterValue(filterKey, node, value);
+        return;
+      }
+      const node = el(id);
+      if (!node) return;
+      setFormControlValue(node, value);
+    });
+    if (dnInput) dnInput.value = '';
+    normalizeDnInput({ enforceFormat: false });
+  }
+
   el('btn-search')?.addEventListener(
     'click',
     () => {
@@ -3167,35 +3200,17 @@ ${cellsHtml}
   el('btn-reset')?.addEventListener(
     'click',
     () => {
-      const defaultValues = {
-        'f-status': DEFAULT_STATUS_VALUE,
-        'f-remark': '',
-        'f-has': '',
-        'f-has-coordinate': '',
-        'f-from': '',
-        'f-to': '',
-        'f-ps2': '20',
-        'f-du': '',
-        'f-lsp': '',
-        'f-region': '',
-        'f-plan-mos-date': '',
-        'f-subcon': '',
-        'f-status-wh': '',
-        'f-status-delivery': '',
-      };
-      Object.entries(defaultValues).forEach(([id, value]) => {
-        const filterKey = FILTER_KEY_BY_ID.get(id);
-        if (filterKey) {
-          const node = el(id);
-          setFilterValue(filterKey, node, value);
-          return;
-        }
-        const node = el(id);
-        if (!node) return;
-        setFormControlValue(node, value);
-      });
-      if (dnInput) dnInput.value = '';
-      normalizeDnInput({ enforceFormat: false });
+      resetAllFilters({ statusValue: DEFAULT_STATUS_VALUE });
+      q.page = 1;
+      fetchList();
+    },
+    { signal }
+  );
+
+  el('btn-show-all')?.addEventListener(
+    'click',
+    () => {
+      resetAllFilters({ statusValue: STATUS_ANY_VALUE });
       q.page = 1;
       fetchList();
     },

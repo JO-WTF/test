@@ -66,6 +66,7 @@
     "actions.label": "Actions",
     "actions.query": "Search",
     "actions.reset": "Reset",
+    "actions.showAll": "Show all DN",
     "actions.exportAll": "Export All",
     "actions.exportRecords": "Export DN Update Records",
     "actions.trustBackend": "Trust Backend",
