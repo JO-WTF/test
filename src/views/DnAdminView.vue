@@ -126,16 +126,16 @@
               </div>
               <div class="field filter-field">
                 <label data-i18n="status.label">状态</label>
-                <select id="f-status">
-                  <option
-                    v-for="option in statusFilterOptions"
-                    :key="option.value"
-                    :value="option.value"
-                    :data-i18n="option.i18nKey || null"
-                  >
-                    {{ option.fallback }}
-                  </option>
-                </select>
+                <a-select
+                  id="f-status"
+                  v-model:value="statusSelectValue"
+                  :options="statusSelectOptions"
+                  :placeholder="statusSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
               <div class="field filter-field">
                 <label data-i18n="statusWh.label">仓库状态</label>
@@ -177,26 +177,35 @@
               </div>
               <div class="field filter-field">
                 <label data-i18n="hasCoord.label">经纬度</label>
-                <select id="f-has-coordinate">
-                  <option value="" data-i18n="hasCoord.any">（不限）</option>
-                  <option value="true" data-i18n="hasCoord.true">有经纬度</option>
-                  <option value="false" data-i18n="hasCoord.false">无经纬度</option>
-                </select>
+                <a-select
+                  id="f-has-coordinate"
+                  v-model:value="hasCoordinateSelectValue"
+                  :options="hasCoordinateSelectOptions"
+                  :placeholder="hasCoordinateSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
               <div class="field filter-field">
                 <label data-i18n="remark.kw.label">备注关键词</label>
-                <input
+                <a-input
                   id="f-remark"
-                  data-i18n-placeholder="remark.kw.placeholder"
-                  placeholder="模糊匹配"
+                  v-model:value="remarkInputValue"
+                  :placeholder="remarkInputPlaceholder"
+                  allow-clear
+                  style="width: 100%"
                 />
               </div>
               <div class="field filter-field">
                 <label data-i18n="du.filter.label">关联 DU ID</label>
-                <input
+                <a-input
                   id="f-du"
-                  data-i18n-placeholder="du.filter.placeholder"
-                  placeholder="精确匹配"
+                  v-model:value="duInputValue"
+                  :placeholder="duInputPlaceholder"
+                  allow-clear
+                  style="width: 100%"
                 />
               </div>
               <div class="field filter-field">
@@ -561,6 +570,178 @@ const createSelectState = (fallbackPlaceholder = DEFAULT_SELECT_PLACEHOLDER) => 
   };
 };
 
+const createSingleSelectState = (fallbackPlaceholder = DEFAULT_SELECT_PLACEHOLDER) => {
+  const options = ref([]);
+  const value = ref('');
+  const placeholder = ref(fallbackPlaceholder);
+  const listeners = new Set();
+
+  const normalizeOptions = (source) => {
+    if (!Array.isArray(source)) return [];
+    const seen = new Set();
+    const normalized = [];
+    source.forEach((option) => {
+      if (option === undefined || option === null) return;
+      if (typeof option === 'object' && option !== null) {
+        const rawValue =
+          Object.prototype.hasOwnProperty.call(option, 'value') && option.value !== undefined
+            ? option.value
+            : option.label ?? '';
+        const rawLabel =
+          Object.prototype.hasOwnProperty.call(option, 'label') && option.label !== undefined
+            ? option.label
+            : rawValue;
+        const valueStr =
+          rawValue === undefined || rawValue === null
+            ? ''
+            : typeof rawValue === 'string'
+            ? rawValue.trim()
+            : String(rawValue).trim();
+        const dedupeKey = valueStr;
+        if (seen.has(dedupeKey)) return;
+        seen.add(dedupeKey);
+        const labelStr =
+          rawLabel === undefined || rawLabel === null
+            ? ''
+            : typeof rawLabel === 'string'
+            ? rawLabel
+            : String(rawLabel);
+        normalized.push({
+          label: labelStr || valueStr,
+          value: valueStr,
+        });
+        return;
+      }
+      const raw = typeof option === 'string' ? option : String(option);
+      const trimmed = raw.trim();
+      if (seen.has(trimmed)) return;
+      seen.add(trimmed);
+      normalized.push({ label: trimmed || raw, value: trimmed });
+    });
+    return normalized;
+  };
+
+  const toSingleValue = (input) => {
+    if (Array.isArray(input)) {
+      for (let i = 0; i < input.length; i += 1) {
+        const candidate = input[i];
+        if (candidate === undefined || candidate === null) continue;
+        return typeof candidate === 'string' ? candidate : String(candidate);
+      }
+      return '';
+    }
+    if (input === undefined || input === null) return '';
+    return typeof input === 'string' ? input : String(input);
+  };
+
+  const setOptions = (next) => {
+    options.value = normalizeOptions(next);
+  };
+
+  const setValue = (next) => {
+    const normalized = toSingleValue(next);
+    if (value.value !== normalized) {
+      value.value = normalized;
+    }
+  };
+
+  watch(value, (val) => {
+    const normalized = toSingleValue(val);
+    if (val !== normalized) {
+      value.value = normalized;
+      return;
+    }
+    const payload = normalized ? [normalized] : [];
+    listeners.forEach((listener) => {
+      try {
+        listener(payload);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+
+  return {
+    options,
+    value,
+    placeholder,
+    bridge: {
+      setOptions,
+      setValue,
+      getValue() {
+        const normalized = toSingleValue(value.value);
+        return normalized ? [normalized] : [];
+      },
+      onChange(listener) {
+        if (typeof listener !== 'function') return () => {};
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    },
+  };
+};
+
+const createTextInputState = (fallbackPlaceholder = '') => {
+  const value = ref('');
+  const placeholder = ref(fallbackPlaceholder);
+  const listeners = new Set();
+
+  const toStringValue = (input) => {
+    if (Array.isArray(input)) {
+      for (let i = 0; i < input.length; i += 1) {
+        const candidate = input[i];
+        if (candidate === undefined || candidate === null) continue;
+        return typeof candidate === 'string' ? candidate : String(candidate);
+      }
+      return '';
+    }
+    if (input === undefined || input === null) return '';
+    return typeof input === 'string' ? input : String(input);
+  };
+
+  const setValue = (next) => {
+    const normalized = toStringValue(next);
+    if (value.value !== normalized) {
+      value.value = normalized;
+    }
+  };
+
+  watch(value, (val) => {
+    const normalized = toStringValue(val);
+    if (val !== normalized) {
+      value.value = normalized;
+      return;
+    }
+    listeners.forEach((listener) => {
+      try {
+        listener(normalized);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+
+  return {
+    value,
+    placeholder,
+    bridge: {
+      setValue,
+      getValue() {
+        return toStringValue(value.value);
+      },
+      onChange(listener) {
+        if (typeof listener !== 'function') return () => {};
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    },
+  };
+};
+
 const normalizeDatePickerValue = (value) => {
   if (value === undefined || value === null) return '';
   if (Array.isArray(value)) {
@@ -650,6 +831,28 @@ const planMosDateSelectValue = planMosDateState.value;
 const planMosDatePlaceholder = planMosDateState.placeholder;
 const planMosDateSelectBridge = planMosDateState.bridge;
 
+const statusSelectState = createSingleSelectState('Any');
+const statusSelectOptions = statusSelectState.options;
+const statusSelectValue = statusSelectState.value;
+const statusSelectPlaceholder = statusSelectState.placeholder;
+const statusSelectBridge = statusSelectState.bridge;
+
+const hasCoordinateSelectState = createSingleSelectState('Any');
+const hasCoordinateSelectOptions = hasCoordinateSelectState.options;
+const hasCoordinateSelectValue = hasCoordinateSelectState.value;
+const hasCoordinateSelectPlaceholder = hasCoordinateSelectState.placeholder;
+const hasCoordinateSelectBridge = hasCoordinateSelectState.bridge;
+
+const remarkInputState = createTextInputState('模糊匹配');
+const remarkInputValue = remarkInputState.value;
+const remarkInputPlaceholder = remarkInputState.placeholder;
+const remarkInputBridge = remarkInputState.bridge;
+
+const duInputState = createTextInputState('精确匹配');
+const duInputValue = duInputState.value;
+const duInputPlaceholder = duInputState.placeholder;
+const duInputBridge = duInputState.bridge;
+
 const fromDateState = createDatePickerState();
 const fromDateValue = fromDateState.value;
 const fromDateBridge = fromDateState.bridge;
@@ -695,8 +898,15 @@ const filterSelectBridges = {
   subcon: subconSelectBridge,
   status_wh: statusWhSelectBridge,
   status_delivery: statusDeliverySelectBridge,
+  status: statusSelectBridge,
+  has_coordinate: hasCoordinateSelectBridge,
   date_from: fromDateBridge,
   date_to: toDateBridge,
+};
+
+const filterInputBridges = {
+  remark: remarkInputBridge,
+  du: duInputBridge,
 };
 
 const datePresets = ref([]);
@@ -714,29 +924,60 @@ const selectPlaceholderConfigs = [
     placeholderRef: statusDeliverySelectPlaceholder,
     translationKey: 'statusDelivery.placeholder',
   },
+  {
+    placeholderRef: statusSelectPlaceholder,
+    translationKey: 'status.filter.any',
+    fallback: 'Any',
+  },
+  {
+    placeholderRef: hasCoordinateSelectPlaceholder,
+    translationKey: 'hasCoord.any',
+    fallback: '（不限）',
+  },
 ];
 
-const updateSelectPlaceholder = (placeholderRef, translationKey) => {
+const inputPlaceholderConfigs = [
+  {
+    placeholderRef: remarkInputPlaceholder,
+    translationKey: 'remark.kw.placeholder',
+    fallback: '模糊匹配',
+  },
+  {
+    placeholderRef: duInputPlaceholder,
+    translationKey: 'du.filter.placeholder',
+    fallback: '精确匹配',
+  },
+];
+
+const updateSelectPlaceholder = (
+  placeholderRef,
+  translationKey,
+  fallback = DEFAULT_SELECT_PLACEHOLDER
+) => {
   if (!placeholderRef) return;
   if (!i18nInstance) {
-    placeholderRef.value = DEFAULT_SELECT_PLACEHOLDER;
+    placeholderRef.value = fallback;
     return;
   }
   try {
     const translated = i18nInstance.t(translationKey);
     placeholderRef.value =
-      translated && translated !== translationKey
-        ? translated
-        : DEFAULT_SELECT_PLACEHOLDER;
+      translated && translated !== translationKey ? translated : fallback;
   } catch (err) {
     console.error(err);
-    placeholderRef.value = DEFAULT_SELECT_PLACEHOLDER;
+    placeholderRef.value = fallback;
   }
 };
 
 const updateAllSelectPlaceholders = () => {
-  selectPlaceholderConfigs.forEach(({ placeholderRef, translationKey }) => {
-    updateSelectPlaceholder(placeholderRef, translationKey);
+  selectPlaceholderConfigs.forEach(({ placeholderRef, translationKey, fallback }) => {
+    updateSelectPlaceholder(placeholderRef, translationKey, fallback);
+  });
+};
+
+const updateAllInputPlaceholders = () => {
+  inputPlaceholderConfigs.forEach(({ placeholderRef, translationKey, fallback }) => {
+    updateSelectPlaceholder(placeholderRef, translationKey, fallback ?? '');
   });
 };
 
@@ -751,6 +992,22 @@ const translateDatePresetLabel = (key) => {
     }
   }
   return DATE_PRESET_FALLBACK_LABELS[key] || key;
+};
+
+const translateOptionLabel = (translationKey, fallback) => {
+  if (translationKey && i18nInstance) {
+    try {
+      const translated = i18nInstance.t(translationKey);
+      if (translated && translated !== translationKey) return translated;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  if (fallback !== undefined && fallback !== null) {
+    const str = String(fallback);
+    if (str) return str;
+  }
+  return translationKey || '';
 };
 
 const refreshDatePresets = () => {
@@ -768,6 +1025,12 @@ const updateDayjsLocale = (lang) => {
 };
 
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+
+const HAS_COORDINATE_OPTION_DEFS = [
+  { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
+  { value: 'true', translationKey: 'hasCoord.true', fallback: '有经纬度' },
+  { value: 'false', translationKey: 'hasCoord.false', fallback: '无经纬度' },
+];
 
 const statusFilterOptions = [
   {
@@ -807,6 +1070,35 @@ const statusFilterOptions = [
   },
 ];
 
+const updateStatusSelectOptions = () => {
+  const options = statusFilterOptions.map(({ value, i18nKey, fallback }) => ({
+    value,
+    label: translateOptionLabel(i18nKey, fallback),
+  }));
+  try {
+    statusSelectBridge.setOptions(options);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const updateHasCoordinateSelectOptions = () => {
+  const options = HAS_COORDINATE_OPTION_DEFS.map(
+    ({ value, translationKey, fallback }) => ({
+      value,
+      label: translateOptionLabel(translationKey, fallback),
+    })
+  );
+  try {
+    hasCoordinateSelectBridge.setOptions(options);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+updateStatusSelectOptions();
+updateHasCoordinateSelectOptions();
+
 useBodyTheme('admin-theme');
 
 const applyTranslations = () => {
@@ -814,6 +1106,9 @@ const applyTranslations = () => {
     applyI18n(adminRoot.value, i18nInstance);
   }
   updateAllSelectPlaceholders();
+  updateAllInputPlaceholders();
+  updateStatusSelectOptions();
+  updateHasCoordinateSelectOptions();
 };
 
 const changeLang = async (lang) => {
@@ -841,6 +1136,7 @@ onMounted(async () => {
     applyTranslations,
     planMosDateSelect: planMosDateSelectBridge,
     filterSelects: filterSelectBridges,
+    filterInputs: filterInputBridges,
   });
 
   i18nInstance.onChange((lang) => {

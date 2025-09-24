@@ -22,7 +22,7 @@ const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
 export function setupDnAdminPage(
   rootEl,
-  { i18n, applyTranslations, planMosDateSelect, filterSelects } = {}
+  { i18n, applyTranslations, planMosDateSelect, filterSelects, filterInputs } = {}
 ) {
   if (!rootEl) return () => {};
 
@@ -33,11 +33,19 @@ export function setupDnAdminPage(
 
   const selectBridgeByKey = new Map();
   const selectBridgeUnsubscribers = [];
+  const inputBridgeByKey = new Map();
 
   if (filterSelects && typeof filterSelects === 'object') {
     Object.entries(filterSelects).forEach(([key, bridge]) => {
       if (!key || !bridge || typeof bridge !== 'object') return;
       selectBridgeByKey.set(key, bridge);
+    });
+  }
+
+  if (filterInputs && typeof filterInputs === 'object') {
+    Object.entries(filterInputs).forEach(([key, bridge]) => {
+      if (!key || !bridge || typeof bridge !== 'object') return;
+      inputBridgeByKey.set(key, bridge);
     });
   }
 
@@ -50,15 +58,20 @@ export function setupDnAdminPage(
   const regionSelectBridge = selectBridgeByKey.get('region') || null;
   const lspSelectBridge = selectBridgeByKey.get('lsp') || null;
   const subconSelectBridge = selectBridgeByKey.get('subcon') || null;
+  const statusSelectBridge = selectBridgeByKey.get('status') || null;
   const statusWhSelectBridge = selectBridgeByKey.get('status_wh') || null;
   const statusDeliverySelectBridge =
     selectBridgeByKey.get('status_delivery') || null;
+  const hasCoordinateSelectBridge =
+    selectBridgeByKey.get('has_coordinate') || null;
   const dateFromBridge = selectBridgeByKey.get('date_from') || null;
   const dateToBridge = selectBridgeByKey.get('date_to') || null;
+  const remarkInputBridge = inputBridgeByKey.get('remark') || null;
+  const duFilterInputBridge = inputBridgeByKey.get('du') || null;
 
   const dnInput = el('f-dn');
   const dnPreview = el('dn-preview');
-  const duFilterInput = el('f-du');
+  const duFilterInput = duFilterInputBridge ? null : el('f-du');
   const tbl = el('tbl');
   const tbody = tbl?.querySelector('tbody');
   const actionsHeader = tbl?.querySelector('thead th[data-column="actions"]');
@@ -67,11 +80,13 @@ export function setupDnAdminPage(
   const pager = el('pager');
   const pginfo = el('pginfo');
 
-  const statusSelect = el('f-status');
-  const remarkInput = el('f-remark');
+  const statusSelect = statusSelectBridge ? null : el('f-status');
+  const remarkInput = remarkInputBridge ? null : el('f-remark');
   const hasSelect = el('f-has');
   const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
-  const hasCoordinateSelect = el('f-has-coordinate');
+  const hasCoordinateSelect = hasCoordinateSelectBridge
+    ? null
+    : el('f-has-coordinate');
   const fromInput = dateFromBridge ? null : el('f-from');
   const toInput = dateToBridge ? null : el('f-to');
   const pageSizeInput = el('f-ps2');
@@ -303,6 +318,51 @@ export function setupDnAdminPage(
     return [raw.trim()].filter(Boolean);
   }
 
+  function getSingleFilterValue(key, inputEl) {
+    const values = getFilterValues(key, inputEl);
+    return values.length ? values[0] : '';
+  }
+
+  function getInputValue(key, inputEl) {
+    const bridge = inputBridgeByKey.get(key);
+    if (bridge && typeof bridge.getValue === 'function') {
+      try {
+        const raw = bridge.getValue();
+        if (raw === undefined || raw === null) return '';
+        return typeof raw === 'string' ? raw : String(raw);
+      } catch (err) {
+        console.error(err);
+        return '';
+      }
+    }
+    if (!inputEl) return '';
+    try {
+      return inputEl.value || '';
+    } catch (err) {
+      console.error(err);
+    }
+    return '';
+  }
+
+  function setInputValue(key, inputEl, value) {
+    const normalized =
+      value === undefined || value === null
+        ? ''
+        : typeof value === 'string'
+        ? value
+        : String(value);
+    const bridge = inputBridgeByKey.get(key);
+    if (bridge && typeof bridge.setValue === 'function') {
+      try {
+        bridge.setValue(normalized);
+        return;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    setFormControlValue(inputEl, normalized);
+  }
+
   function normalizeDateControlValue(value) {
     if (value === undefined || value === null) return '';
     if (Array.isArray(value)) {
@@ -380,6 +440,15 @@ export function setupDnAdminPage(
       }
       return;
     }
+    const inputBridge = inputBridgeByKey.get(key);
+    if (inputBridge && typeof inputBridge.setValue === 'function') {
+      try {
+        inputBridge.setValue(value);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
     if (!inputEl) return;
     const normalized = Array.isArray(value)
       ? value[0] || ''
@@ -427,6 +496,10 @@ export function setupDnAdminPage(
     ['f-status-delivery', 'status_delivery'],
     ['f-from', 'date_from'],
     ['f-to', 'date_to'],
+    ['f-status', 'status'],
+    ['f-has-coordinate', 'has_coordinate'],
+    ['f-remark', 'remark'],
+    ['f-du', 'du'],
   ]);
 
   if (!lspSelectBridge) {
@@ -1883,7 +1956,7 @@ ${cellsHtml}
     const deliveryTokens = getFilterValues('status_delivery', statusDeliveryInput);
     const deliveryValue = deliveryTokens.length ? deliveryTokens[0] : '';
     const canonicalDelivery = normalizeStatusValue(deliveryValue);
-    const statusValue = statusSelect ? statusSelect.value : '';
+    const statusValue = getSingleFilterValue('status', statusSelect);
     const canonicalStatus = normalizeStatusValue(statusValue);
     const canonical = canonicalDelivery || canonicalStatus;
     const hasStatus = Boolean(canonical);
@@ -2007,48 +2080,25 @@ ${cellsHtml}
       'dd MMM yy'
     );
 
-    const controlsToReset = [
-      remarkInput,
-      hasSelect,
-      hasCoordinateSelect,
-      fromInput,
-      toInput,
-      duFilterInput,
-    ];
-    controlsToReset.forEach((control) => setFormControlValue(control, ''));
+    setInputValue('remark', remarkInput, '');
+    setFormControlValue(hasSelect, '');
+    setFilterValue('has_coordinate', hasCoordinateSelect, '');
     setFilterValue('date_from', fromInput, '');
     setFilterValue('date_to', toInput, '');
+    setInputValue('du', duFilterInput, '');
 
     setFilterValue('lsp', lspInput, '');
     setFilterValue('region', regionInput, '');
     setFilterValue('subcon', subconInput, '');
     setFilterValue('status_wh', statusWhInput, '');
 
-    if (statusSelect) {
+    if (statusSelectBridge || statusSelect) {
       if (statusDeliveryInput || statusDeliverySelectBridge) {
-        setFormControlValue(statusSelect, '');
-        if (statusSelect.value !== '') {
-          try {
-            statusSelect.selectedIndex = -1;
-          } catch (err) {
-            console.error(err);
-          }
-        }
+        setFilterValue('status', statusSelect, '');
       } else if (targetStatus) {
-        const option = Array.from(statusSelect.options || []).find(
-          (opt) => normalizeStatusValue(opt.value) === targetStatus
-        );
-        const valueToSet = option ? option.value : targetStatus;
-        setFormControlValue(statusSelect, valueToSet);
+        setFilterValue('status', statusSelect, targetStatus);
       } else {
-        setFormControlValue(statusSelect, '');
-        if (statusSelect.value !== '') {
-          try {
-            statusSelect.selectedIndex = -1;
-          } catch (err) {
-            console.error(err);
-          }
-        }
+        setFilterValue('status', statusSelect, '');
       }
     }
 
@@ -2291,13 +2341,13 @@ ${cellsHtml}
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = statusSelect?.value || '';
-      const rk = (remarkInput?.value || '').trim();
+      const st = getSingleFilterValue('status', statusSelect);
+      const rk = getInputValue('remark', remarkInput).trim();
       const hp = hasSelect?.value;
-      const hc = hasCoordinateSelect?.value;
+      const hc = getSingleFilterValue('has_coordinate', hasCoordinateSelect);
       const df = getDateFilterValue('date_from', fromInput);
       const dt = getDateFilterValue('date_to', toInput);
-      const du = (duFilterInput?.value || '').trim();
+      const du = getInputValue('du', duFilterInput).trim();
       const lspValues = getFilterValues('lsp', lspInput);
       const regionValues = getFilterValues('region', regionInput);
       const planMosDateTokens = getFilterValues('plan_mos_date', planMosDateInput);
@@ -3036,13 +3086,19 @@ ${cellsHtml}
     { signal }
   );
 
-  statusSelect?.addEventListener(
-    'change',
-    () => {
+  if (statusSelectBridge) {
+    subscribeToFilterChange('status', () => {
       updateStatusCardActiveState();
-    },
-    { signal }
-  );
+    });
+  } else {
+    statusSelect?.addEventListener(
+      'change',
+      () => {
+        updateStatusCardActiveState();
+      },
+      { signal }
+    );
+  }
 
   if (statusDeliverySelectBridge) {
     subscribeToFilterChange('status_delivery', () => {
