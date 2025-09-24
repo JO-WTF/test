@@ -20,13 +20,21 @@ const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
 const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
 const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
-export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
+export function setupDnAdminPage(
+  rootEl,
+  { i18n, applyTranslations, planMosDateSelect } = {}
+) {
   if (!rootEl) return () => {};
 
   const controller = new AbortController();
   const { signal } = controller;
 
   const el = (id) => rootEl.querySelector(`#${id}`);
+
+  const planMosDateSelectBridge =
+    planMosDateSelect && typeof planMosDateSelect === 'object'
+      ? planMosDateSelect
+      : null;
 
   const dnInput = el('f-dn');
   const dnPreview = el('dn-preview');
@@ -51,8 +59,10 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const lspOptions = el('f-lsp-options');
   const regionInput = el('f-region');
   const regionOptions = el('f-region-options');
-  const planMosDateInput = el('f-plan-mos-date');
-  const planMosDateOptions = el('f-plan-mos-date-options');
+  const planMosDateInput = planMosDateSelectBridge ? null : el('f-plan-mos-date');
+  const planMosDateOptions = planMosDateSelectBridge
+    ? null
+    : el('f-plan-mos-date-options');
   const subconInput = el('f-subcon');
   const subconOptions = el('f-subcon-options');
   const statusWhInput = el('f-status-wh');
@@ -217,6 +227,15 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   }
 
   function setFilterDropdownOptions(key, options) {
+    if (key === 'plan_mos_date' && planMosDateSelectBridge) {
+      if (typeof planMosDateSelectBridge.setOptions === 'function') {
+        try {
+          planMosDateSelectBridge.setOptions(options);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
     const state = filterDropdowns.get(key);
     if (!state) return;
     state.options = normalizeFilterOptionList(options);
@@ -225,7 +244,9 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
 
   registerFilterDropdown('lsp', lspInput, lspOptions);
   registerFilterDropdown('region', regionInput, regionOptions);
-  registerFilterDropdown('plan_mos_date', planMosDateInput, planMosDateOptions);
+  if (!planMosDateSelectBridge) {
+    registerFilterDropdown('plan_mos_date', planMosDateInput, planMosDateOptions);
+  }
   registerFilterDropdown('subcon', subconInput, subconOptions);
   registerFilterDropdown('status_wh', statusWhInput, statusWhOptions);
   registerFilterDropdown('status_delivery', statusDeliveryInput, statusDeliveryOptions);
@@ -772,31 +793,6 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return formatParts(dayNum, monthIdx, yearNum);
   }
 
-  function serializeMultilineValue(value) {
-    const source = Array.isArray(value)
-      ? value
-      : typeof value === 'string'
-      ? value.split(/\r?\n/)
-      : value === undefined || value === null
-      ? []
-      : [value];
-    const seen = new Set();
-    const parts = [];
-    source.forEach((item) => {
-      if (item === undefined || item === null) return;
-      const str = typeof item === 'string' ? item : String(item);
-      str
-        .split(',')
-        .map((part) => part.trim())
-        .forEach((part) => {
-          if (!part || seen.has(part)) return;
-          seen.add(part);
-          parts.push(part);
-        });
-    });
-    return parts.join('\n');
-  }
-
   function setFormControlValue(control, value) {
     if (!control) return;
     const tagName = control.tagName ? control.tagName.toLowerCase() : '';
@@ -820,19 +816,6 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       }
       if (tagName === 'input' && (control.type === 'checkbox' || control.type === 'radio')) {
         control.checked = Boolean(value);
-        return;
-      }
-      if (control.dataset?.antSelect === 'true') {
-        const serialized = serializeMultilineValue(value);
-        if (control.value !== serialized) {
-          control.value = serialized;
-        }
-        try {
-          control.dispatchEvent(new Event('input', { bubbles: true }));
-          control.dispatchEvent(new Event('change', { bubbles: true }));
-        } catch (err) {
-          console.error(err);
-        }
         return;
       }
       control.value = value;
@@ -1868,7 +1851,15 @@ ${cellsHtml}
       setFormControlValue(statusDeliveryInput, targetStatus);
     }
 
-    setFormControlValue(planMosDateInput, todayJakarta);
+    if (planMosDateSelectBridge && typeof planMosDateSelectBridge.setValue === 'function') {
+      try {
+        planMosDateSelectBridge.setValue(todayJakarta);
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      setFormControlValue(planMosDateInput, todayJakarta);
+    }
 
     if (dnInput) {
       dnInput.value = '';
@@ -2114,11 +2105,29 @@ ${cellsHtml}
       const du = (duFilterInput?.value || '').trim();
       const lsp = (lspInput?.value || '').trim();
       const region = (regionInput?.value || '').trim();
-      const planMosDateRaw = planMosDateInput?.value || '';
-      const planMosDateTokens = planMosDateRaw
-        .split(/\r?\n/)
-        .map((token) => token.trim())
-        .filter(Boolean);
+      const planMosDateTokens = planMosDateSelectBridge
+        ? (() => {
+            try {
+              const values =
+                typeof planMosDateSelectBridge.getValue === 'function'
+                  ? planMosDateSelectBridge.getValue()
+                  : [];
+              return Array.isArray(values)
+                ? values
+                    .map((value) =>
+                      typeof value === 'string' ? value.trim() : String(value || '').trim()
+                    )
+                    .filter(Boolean)
+                : [];
+            } catch (err) {
+              console.error(err);
+              return [];
+            }
+          })()
+        : (planMosDateInput?.value || '')
+            .split(/\r?\n/)
+            .map((token) => token.trim())
+            .filter(Boolean);
       const subcon = (subconInput?.value || '').trim();
       const statusWh = (statusWhInput?.value || '').trim();
       const statusDelivery = (statusDeliveryInput?.value || '').trim();
@@ -2920,6 +2929,16 @@ ${cellsHtml}
         'f-status-delivery': '',
       };
       Object.entries(defaultValues).forEach(([id, value]) => {
+        if (id === 'f-plan-mos-date' && planMosDateSelectBridge) {
+          if (typeof planMosDateSelectBridge.setValue === 'function') {
+            try {
+              planMosDateSelectBridge.setValue(value);
+            } catch (err) {
+              console.error(err);
+            }
+          }
+          return;
+        }
         const node = el(id);
         if (!node) return;
         setFormControlValue(node, value);

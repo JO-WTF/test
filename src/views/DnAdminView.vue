@@ -64,9 +64,10 @@
 
           <div class="rhs">
             <div class="filters-grid">
-              <div class="field filter-field" style="position: relative">
+              <div class="field filter-field">
                 <label data-i18n="planMosDate.label">Plan MOS Date</label>
                 <a-select
+                  id="f-plan-mos-date"
                   v-model:value="planMosDateSelectValue"
                   :options="planMosDateSelectOptions"
                   :placeholder="planMosDatePlaceholder"
@@ -77,31 +78,6 @@
                   show-search
                   style="width: 100%"
                 ></a-select>
-                <input
-                  ref="planMosDateInputRef"
-                  id="f-plan-mos-date"
-                  type="text"
-                  list="f-plan-mos-date-options"
-                  data-i18n-placeholder="planMosDate.placeholder"
-                  placeholder="输入或选择"
-                  data-ant-select="true"
-                  aria-hidden="true"
-                  style="
-                    position: absolute;
-                    opacity: 0;
-                    pointer-events: none;
-                    width: 0;
-                    height: 0;
-                    border: 0;
-                    padding: 0;
-                    margin: 0;
-                  "
-                />
-                <datalist
-                  ref="planMosDateDatalistRef"
-                  id="f-plan-mos-date-options"
-                  style="display: none"
-                ></datalist>
               </div>
               <div class="field filter-field">
                 <label data-i18n="region.label">Region</label>
@@ -392,12 +368,10 @@ const currentLang = ref('zh');
 let cleanup = () => {};
 let i18nInstance = null;
 
-const planMosDateInputRef = ref(null);
-const planMosDateDatalistRef = ref(null);
+const PLAN_MOS_DATE_PLACEHOLDER_FALLBACK = 'Type or select';
 const planMosDateSelectOptions = ref([]);
 const planMosDateSelectValue = ref([]);
-const planMosDatePlaceholder = ref('');
-let cleanupPlanMosDateSelect = null;
+const planMosDatePlaceholder = ref(PLAN_MOS_DATE_PLACEHOLDER_FALLBACK);
 
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
 
@@ -447,8 +421,8 @@ const filterPlanMosDateOption = (input, option) => {
 };
 
 const normalizePlanMosDateValues = (raw) => {
-  const source = Array.isArray(raw)
-    ? raw
+  const queue = Array.isArray(raw)
+    ? raw.slice()
     : typeof raw === 'string'
     ? raw.split(/\r?\n/)
     : raw === undefined || raw === null
@@ -456,8 +430,13 @@ const normalizePlanMosDateValues = (raw) => {
     : [raw];
   const seen = new Set();
   const result = [];
-  source.forEach((value) => {
-    if (value === undefined || value === null) return;
+  for (let i = 0; i < queue.length; i += 1) {
+    const value = queue[i];
+    if (Array.isArray(value)) {
+      queue.push(...value);
+      continue;
+    }
+    if (value === undefined || value === null) continue;
     const str = typeof value === 'string' ? value : String(value);
     str
       .split(',')
@@ -467,7 +446,7 @@ const normalizePlanMosDateValues = (raw) => {
         seen.add(part);
         result.push(part);
       });
-  });
+  }
   return result;
 };
 
@@ -481,100 +460,66 @@ const planMosDateValuesEqual = (a, b) => {
   return true;
 };
 
-const serializePlanMosDateValues = (values) => {
-  const normalized = Array.isArray(values)
-    ? values
-    : normalizePlanMosDateValues(values);
-  return normalized.join('\n');
-};
-
-const setupPlanMosDateSelectBridge = () => {
-  const inputEl = planMosDateInputRef.value;
-  if (!inputEl) return;
-
-  cleanupPlanMosDateSelect?.();
-
-  const syncPlaceholder = () => {
-    planMosDatePlaceholder.value = inputEl.placeholder || '';
-  };
-
-  const syncOptions = () => {
-    const listEl = planMosDateDatalistRef.value;
-    if (!listEl) {
-      planMosDateSelectOptions.value = [];
-      return;
-    }
-    const seen = new Set();
-    const mapped = [];
-    listEl.querySelectorAll('option').forEach((optionEl) => {
-      const raw = optionEl.getAttribute('value') ?? optionEl.textContent ?? '';
-      const value = typeof raw === 'string' ? raw.trim() : String(raw || '').trim();
-      if (!value || seen.has(value)) return;
-      seen.add(value);
-      mapped.push({ label: value, value });
-    });
-    planMosDateSelectOptions.value = mapped;
-  };
-
-  const syncFromInput = () => {
-    const normalized = normalizePlanMosDateValues(inputEl.value);
-    if (planMosDateValuesEqual(planMosDateSelectValue.value, normalized)) {
-      return;
-    }
-    planMosDateSelectValue.value = normalized;
-  };
-
-  const placeholderObserver = new MutationObserver(syncPlaceholder);
-  placeholderObserver.observe(inputEl, {
-    attributes: true,
-    attributeFilter: ['placeholder'],
+const normalizePlanMosDateOptions = (options) => {
+  if (!Array.isArray(options)) return [];
+  const seen = new Set();
+  const mapped = [];
+  options.forEach((option) => {
+    if (option === undefined || option === null) return;
+    const raw = typeof option === 'string' ? option : String(option);
+    const value = raw.trim();
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    mapped.push({ label: value, value });
   });
-
-  let datalistObserver = null;
-  const listEl = planMosDateDatalistRef.value;
-  if (listEl) {
-    datalistObserver = new MutationObserver(syncOptions);
-    datalistObserver.observe(listEl, { childList: true });
-  }
-
-  inputEl.addEventListener('input', syncFromInput);
-  inputEl.addEventListener('change', syncFromInput);
-
-  syncPlaceholder();
-  syncOptions();
-  syncFromInput();
-
-  cleanupPlanMosDateSelect = () => {
-    inputEl.removeEventListener('input', syncFromInput);
-    inputEl.removeEventListener('change', syncFromInput);
-    placeholderObserver.disconnect();
-    datalistObserver?.disconnect();
-  };
+  return mapped;
 };
 
-watch(planMosDateSelectValue, (val) => {
-  const normalized = normalizePlanMosDateValues(val);
-  if (!planMosDateValuesEqual(val, normalized)) {
-    planMosDateSelectValue.value = normalized;
+const planMosDateSelectBridge = {
+  setOptions(options) {
+    planMosDateSelectOptions.value = normalizePlanMosDateOptions(options);
+  },
+  setValue(value) {
+    planMosDateSelectValue.value = normalizePlanMosDateValues(value);
+  },
+  getValue() {
+    return normalizePlanMosDateValues(planMosDateSelectValue.value);
+  },
+};
+
+watch(
+  planMosDateSelectValue,
+  (val) => {
+    const normalized = normalizePlanMosDateValues(val);
+    if (!planMosDateValuesEqual(val, normalized)) {
+      planMosDateSelectValue.value = normalized;
+    }
+  },
+  { deep: true }
+);
+
+const updatePlanMosDatePlaceholder = () => {
+  if (!i18nInstance) {
+    planMosDatePlaceholder.value = PLAN_MOS_DATE_PLACEHOLDER_FALLBACK;
     return;
   }
-  const inputEl = planMosDateInputRef.value;
-  if (!inputEl) return;
-  const nextValue = serializePlanMosDateValues(normalized);
-  if (inputEl.value === nextValue) return;
-  inputEl.value = nextValue;
   try {
-    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+    const translated = i18nInstance.t('planMosDate.placeholder');
+    planMosDatePlaceholder.value =
+      translated && translated !== 'planMosDate.placeholder'
+        ? translated
+        : PLAN_MOS_DATE_PLACEHOLDER_FALLBACK;
   } catch (err) {
     console.error(err);
+    planMosDatePlaceholder.value = PLAN_MOS_DATE_PLACEHOLDER_FALLBACK;
   }
-});
+};
 
 const applyTranslations = () => {
   if (adminRoot.value && i18nInstance) {
     applyI18n(adminRoot.value, i18nInstance);
   }
+  updatePlanMosDatePlaceholder();
 };
 
 const changeLang = async (lang) => {
@@ -583,8 +528,6 @@ const changeLang = async (lang) => {
 };
 
 onMounted(async () => {
-  setupPlanMosDateSelectBridge();
-
   i18nInstance = createI18n({
     namespaces: ['dn-admin'],
     fallbackLang: 'en',
@@ -601,6 +544,7 @@ onMounted(async () => {
   cleanup = setupDnAdminPage(adminRoot.value, {
     i18n: i18nInstance,
     applyTranslations,
+    planMosDateSelect: planMosDateSelectBridge,
   });
 
   i18nInstance.onChange((lang) => {
@@ -611,7 +555,6 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  cleanupPlanMosDateSelect?.();
   cleanup?.();
 });
 </script>
