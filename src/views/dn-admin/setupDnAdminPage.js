@@ -203,7 +203,7 @@ export function setupDnAdminPage(
           'ARRIVED AT SITE',
         ];
   const STATUS_ANY_VALUE = '';
-  const DEFAULT_STATUS_VALUE = STATUS_ANY_VALUE;
+  const DEFAULT_STATUS_VALUE = STATUS_NOT_EMPTY_VALUE;
   if (statusSelect) {
     statusSelect.value = DEFAULT_STATUS_VALUE;
   }
@@ -3156,7 +3156,7 @@ ${cellsHtml}
     { signal }
   );
 
-  function resetAllFilters({ statusValue = STATUS_ANY_VALUE } = {}) {
+  function resetAllFilters({ statusValue = DEFAULT_STATUS_VALUE } = {}) {
     const defaultValues = {
       'f-status': statusValue,
       'f-remark': '',

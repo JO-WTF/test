@@ -1029,6 +1029,12 @@ const updateDayjsLocale = (lang) => {
 
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
 
+try {
+  statusSelectBridge.setValue(STATUS_NOT_EMPTY_VALUE);
+} catch (err) {
+  console.error(err);
+}
+
 const HAS_COORDINATE_OPTION_DEFS = [
   { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
   { value: 'true', translationKey: 'hasCoord.true', fallback: '有经纬度' },
