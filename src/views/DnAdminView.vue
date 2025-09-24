@@ -201,11 +201,27 @@
               </div>
               <div class="field filter-field">
                 <label data-i18n="date.from">开始日期</label>
-                <input id="f-from" type="date" />
+                <a-date-picker
+                  id="f-from"
+                  v-model:value="fromDateValue"
+                  value-format="YYYY-MM-DD"
+                  format="YYYY-MM-DD"
+                  :presets="datePresets"
+                  allow-clear
+                  style="width: 100%"
+                />
               </div>
               <div class="field filter-field">
                 <label data-i18n="date.to">结束日期</label>
-                <input id="f-to" type="date" />
+                <a-date-picker
+                  id="f-to"
+                  v-model:value="toDateValue"
+                  value-format="YYYY-MM-DD"
+                  format="YYYY-MM-DD"
+                  :presets="datePresets"
+                  allow-clear
+                  style="width: 100%"
+                />
               </div>
             </div>
 
@@ -381,12 +397,18 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupDnAdminPage } from './dn-admin/setupDnAdminPage';
 import 'viewerjs/dist/viewer.css';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
+import 'dayjs/locale/zh-cn';
+import 'dayjs/locale/id';
+
+dayjs.extend(customParseFormat);
 
 const adminRoot = ref(null);
 const currentLang = ref('zh');
@@ -394,6 +416,17 @@ let cleanup = () => {};
 let i18nInstance = null;
 
 const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
+const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
+const DATE_PRESET_DEFS = [
+  { key: 'yesterday', offset: -1 },
+  { key: 'today', offset: 0 },
+  { key: 'tomorrow', offset: 1 },
+];
+const DATE_PRESET_FALLBACK_LABELS = {
+  yesterday: 'Yesterday',
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+};
 
 const filterSelectOption = (input, option) => {
   const text = `${option?.label ?? option?.value ?? ''}`.toLowerCase();
@@ -528,11 +561,102 @@ const createSelectState = (fallbackPlaceholder = DEFAULT_SELECT_PLACEHOLDER) => 
   };
 };
 
+const normalizeDatePickerValue = (value) => {
+  if (value === undefined || value === null) return '';
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i += 1) {
+      const normalized = normalizeDatePickerValue(value[i]);
+      if (normalized) return normalized;
+    }
+    return '';
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const parsed = dayjs(value);
+    return parsed.isValid() ? parsed.format(DATE_PICKER_VALUE_FORMAT) : '';
+  }
+  if (value instanceof Date) {
+    const parsed = dayjs(value);
+    return parsed.isValid() ? parsed.format(DATE_PICKER_VALUE_FORMAT) : '';
+  }
+  if (dayjs.isDayjs(value)) {
+    return value.isValid() ? value.format(DATE_PICKER_VALUE_FORMAT) : '';
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    let parsed = dayjs(trimmed, DATE_PICKER_VALUE_FORMAT, true);
+    if (!parsed.isValid()) {
+      parsed = dayjs(trimmed);
+    }
+    return parsed.isValid() ? parsed.format(DATE_PICKER_VALUE_FORMAT) : '';
+  }
+  try {
+    const str = String(value).trim();
+    if (!str) return '';
+    return normalizeDatePickerValue(str);
+  } catch (err) {
+    console.error(err);
+  }
+  return '';
+};
+
+const createDatePickerState = () => {
+  const value = ref('');
+  const listeners = new Set();
+
+  const setValue = (next) => {
+    const normalized = normalizeDatePickerValue(next);
+    if (value.value !== normalized) {
+      value.value = normalized;
+    }
+  };
+
+  watch(value, (val) => {
+    const normalized = normalizeDatePickerValue(val);
+    if (val !== normalized) {
+      value.value = normalized;
+      return;
+    }
+    listeners.forEach((listener) => {
+      try {
+        listener(normalized);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+
+  return {
+    value,
+    bridge: {
+      setValue,
+      getValue() {
+        return normalizeDatePickerValue(value.value);
+      },
+      onChange(listener) {
+        if (typeof listener !== 'function') return () => {};
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    },
+  };
+};
+
 const planMosDateState = createSelectState();
 const planMosDateSelectOptions = planMosDateState.options;
 const planMosDateSelectValue = planMosDateState.value;
 const planMosDatePlaceholder = planMosDateState.placeholder;
 const planMosDateSelectBridge = planMosDateState.bridge;
+
+const fromDateState = createDatePickerState();
+const fromDateValue = fromDateState.value;
+const fromDateBridge = fromDateState.bridge;
+
+const toDateState = createDatePickerState();
+const toDateValue = toDateState.value;
+const toDateBridge = toDateState.bridge;
 
 const regionSelectState = createSelectState();
 const regionSelectOptions = regionSelectState.options;
@@ -571,7 +695,11 @@ const filterSelectBridges = {
   subcon: subconSelectBridge,
   status_wh: statusWhSelectBridge,
   status_delivery: statusDeliverySelectBridge,
+  date_from: fromDateBridge,
+  date_to: toDateBridge,
 };
+
+const datePresets = ref([]);
 
 const selectPlaceholderConfigs = [
   {
@@ -610,6 +738,33 @@ const updateAllSelectPlaceholders = () => {
   selectPlaceholderConfigs.forEach(({ placeholderRef, translationKey }) => {
     updateSelectPlaceholder(placeholderRef, translationKey);
   });
+};
+
+const translateDatePresetLabel = (key) => {
+  const translationKey = `date.presets.${key}`;
+  if (i18nInstance) {
+    try {
+      const translated = i18nInstance.t(translationKey);
+      if (translated && translated !== translationKey) return translated;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  return DATE_PRESET_FALLBACK_LABELS[key] || key;
+};
+
+const refreshDatePresets = () => {
+  const base = dayjs();
+  datePresets.value = DATE_PRESET_DEFS.map(({ key, offset }) => ({
+    label: translateDatePresetLabel(key),
+    value: base.add(offset, 'day'),
+  }));
+};
+
+const updateDayjsLocale = (lang) => {
+  const map = { zh: 'zh-cn', id: 'id', en: 'en' };
+  dayjs.locale(map[lang] || map.en);
+  refreshDatePresets();
 };
 
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
@@ -674,6 +829,7 @@ onMounted(async () => {
   });
   await i18nInstance.init();
   currentLang.value = i18nInstance.state.lang;
+  updateDayjsLocale(currentLang.value);
   applyTranslations();
   document.documentElement.setAttribute(
     'lang',
@@ -690,6 +846,7 @@ onMounted(async () => {
   i18nInstance.onChange((lang) => {
     currentLang.value = lang;
     applyTranslations();
+    updateDayjsLocale(lang);
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : lang);
   });
 });

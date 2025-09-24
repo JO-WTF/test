@@ -53,6 +53,8 @@ export function setupDnAdminPage(
   const statusWhSelectBridge = selectBridgeByKey.get('status_wh') || null;
   const statusDeliverySelectBridge =
     selectBridgeByKey.get('status_delivery') || null;
+  const dateFromBridge = selectBridgeByKey.get('date_from') || null;
+  const dateToBridge = selectBridgeByKey.get('date_to') || null;
 
   const dnInput = el('f-dn');
   const dnPreview = el('dn-preview');
@@ -70,8 +72,8 @@ export function setupDnAdminPage(
   const hasSelect = el('f-has');
   const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
   const hasCoordinateSelect = el('f-has-coordinate');
-  const fromInput = el('f-from');
-  const toInput = el('f-to');
+  const fromInput = dateFromBridge ? null : el('f-from');
+  const toInput = dateToBridge ? null : el('f-to');
   const pageSizeInput = el('f-ps2');
   const lspInput = lspSelectBridge ? null : el('f-lsp');
   const lspOptions = lspSelectBridge ? null : el('f-lsp-options');
@@ -301,6 +303,73 @@ export function setupDnAdminPage(
     return [raw.trim()].filter(Boolean);
   }
 
+  function normalizeDateControlValue(value) {
+    if (value === undefined || value === null) return '';
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i += 1) {
+        const normalized = normalizeDateControlValue(value[i]);
+        if (normalized) return normalized;
+      }
+      return '';
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return normalizeDateControlValue(new Date(value));
+    }
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) return '';
+      const year = String(value.getFullYear()).padStart(4, '0');
+      const month = String(value.getMonth() + 1).padStart(2, '0');
+      const day = String(value.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    if (value && typeof value === 'object' && typeof value.format === 'function') {
+      try {
+        const formatted = value.format('YYYY-MM-DD');
+        return typeof formatted === 'string' ? normalizeDateControlValue(formatted) : '';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+      }
+      const genericMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+      if (genericMatch) {
+        const year = genericMatch[1].padStart(4, '0');
+        const month = genericMatch[2].padStart(2, '0');
+        const day = genericMatch[3].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      return '';
+    }
+    try {
+      const str = String(value).trim();
+      if (!str) return '';
+      return normalizeDateControlValue(str);
+    } catch (err) {
+      console.error(err);
+    }
+    return '';
+  }
+
+  function getDateFilterValue(key, inputEl) {
+    const bridge = selectBridgeByKey.get(key);
+    if (bridge && typeof bridge.getValue === 'function') {
+      try {
+        const raw = bridge.getValue();
+        return normalizeDateControlValue(raw);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    if (!inputEl) return '';
+    return normalizeDateControlValue(inputEl.value || '');
+  }
+
   function setFilterValue(key, inputEl, value) {
     const bridge = selectBridgeByKey.get(key);
     if (bridge && typeof bridge.setValue === 'function') {
@@ -329,6 +398,10 @@ export function setupDnAdminPage(
       setFormControlValue(inputEl, serialized);
       return;
     }
+    if (key === 'date_from' || key === 'date_to') {
+      setFormControlValue(inputEl, normalizeDateControlValue(value));
+      return;
+    }
     setFormControlValue(inputEl, normalized);
   }
 
@@ -352,6 +425,8 @@ export function setupDnAdminPage(
     ['f-subcon', 'subcon'],
     ['f-status-wh', 'status_wh'],
     ['f-status-delivery', 'status_delivery'],
+    ['f-from', 'date_from'],
+    ['f-to', 'date_to'],
   ]);
 
   if (!lspSelectBridge) {
@@ -1941,6 +2016,8 @@ ${cellsHtml}
       duFilterInput,
     ];
     controlsToReset.forEach((control) => setFormControlValue(control, ''));
+    setFilterValue('date_from', fromInput, '');
+    setFilterValue('date_to', toInput, '');
 
     setFilterValue('lsp', lspInput, '');
     setFilterValue('region', regionInput, '');
@@ -2218,8 +2295,8 @@ ${cellsHtml}
       const rk = (remarkInput?.value || '').trim();
       const hp = hasSelect?.value;
       const hc = hasCoordinateSelect?.value;
-      const df = fromInput?.value;
-      const dt = toInput?.value;
+      const df = getDateFilterValue('date_from', fromInput);
+      const dt = getDateFilterValue('date_to', toInput);
       const du = (duFilterInput?.value || '').trim();
       const lspValues = getFilterValues('lsp', lspInput);
       const regionValues = getFilterValues('region', regionInput);
