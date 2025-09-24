@@ -71,7 +71,7 @@
                   v-model:value="planMosDateSelectValue"
                   :options="planMosDateSelectOptions"
                   :placeholder="planMosDatePlaceholder"
-                  :filter-option="filterPlanMosDateOption"
+                  :filter-option="filterSelectOption"
                   mode="multiple"
                   max-tag-count="responsive"
                   allow-clear
@@ -81,33 +81,48 @@
               </div>
               <div class="field filter-field">
                 <label data-i18n="region.label">Region</label>
-                <input
+                <a-select
                   id="f-region"
-                  list="f-region-options"
-                  data-i18n-placeholder="region.placeholder"
-                  placeholder="输入或选择"
-                />
-                <datalist id="f-region-options"></datalist>
+                  v-model:value="regionSelectValue"
+                  :options="regionSelectOptions"
+                  :placeholder="regionSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
               <div class="field filter-field">
                 <label data-i18n="lsp.label">LSP</label>
-                <input
+                <a-select
                   id="f-lsp"
-                  list="f-lsp-options"
-                  data-i18n-placeholder="lsp.placeholder"
-                  placeholder="输入或选择"
-                />
-                <datalist id="f-lsp-options"></datalist>
+                  v-model:value="lspSelectValue"
+                  :options="lspSelectOptions"
+                  :placeholder="lspSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
               <div class="field filter-field">
                 <label data-i18n="subcon.label">分包商</label>
-                <input
+                <a-select
                   id="f-subcon"
-                  list="f-subcon-options"
-                  data-i18n-placeholder="subcon.placeholder"
-                  placeholder="输入或选择"
-                />
-                <datalist id="f-subcon-options"></datalist>
+                  v-model:value="subconSelectValue"
+                  :options="subconSelectOptions"
+                  :placeholder="subconSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
               <div class="field filter-field">
                 <label data-i18n="status.label">状态</label>
@@ -124,23 +139,33 @@
               </div>
               <div class="field filter-field">
                 <label data-i18n="statusWh.label">仓库状态</label>
-                <input
+                <a-select
                   id="f-status-wh"
-                  list="f-status-wh-options"
-                  data-i18n-placeholder="statusWh.placeholder"
-                  placeholder="输入或选择"
-                />
-                <datalist id="f-status-wh-options"></datalist>
+                  v-model:value="statusWhSelectValue"
+                  :options="statusWhSelectOptions"
+                  :placeholder="statusWhSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
               <div class="field filter-field">
                 <label data-i18n="statusDelivery.label">配送状态</label>
-                <input
+                <a-select
                   id="f-status-delivery"
-                  list="f-status-delivery-options"
-                  data-i18n-placeholder="statusDelivery.placeholder"
-                  placeholder="输入或选择"
-                />
-                <datalist id="f-status-delivery-options"></datalist>
+                  v-model:value="statusDeliverySelectValue"
+                  :options="statusDeliverySelectOptions"
+                  :placeholder="statusDeliverySelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
               <div class="field filter-field" style="display: none" aria-hidden="true">
                 <label data-i18n="has.label">是否带附件</label>
@@ -368,10 +393,224 @@ const currentLang = ref('zh');
 let cleanup = () => {};
 let i18nInstance = null;
 
-const PLAN_MOS_DATE_PLACEHOLDER_FALLBACK = 'Type or select';
-const planMosDateSelectOptions = ref([]);
-const planMosDateSelectValue = ref([]);
-const planMosDatePlaceholder = ref(PLAN_MOS_DATE_PLACEHOLDER_FALLBACK);
+const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
+
+const filterSelectOption = (input, option) => {
+  const text = `${option?.label ?? option?.value ?? ''}`.toLowerCase();
+  return text.includes((input || '').toLowerCase());
+};
+
+const normalizeSelectValues = (raw) => {
+  const queue = Array.isArray(raw)
+    ? raw.slice()
+    : typeof raw === 'string'
+    ? raw.split(/\r?\n/)
+    : raw === undefined || raw === null
+    ? []
+    : [raw];
+  const seen = new Set();
+  const result = [];
+  for (let i = 0; i < queue.length; i += 1) {
+    const value = queue[i];
+    if (Array.isArray(value)) {
+      queue.push(...value);
+      continue;
+    }
+    if (value === undefined || value === null) continue;
+    const str = typeof value === 'string' ? value : String(value);
+    str
+      .split(',')
+      .map((part) => part.trim())
+      .forEach((part) => {
+        if (!part || seen.has(part)) return;
+        seen.add(part);
+        result.push(part);
+      });
+  }
+  return result;
+};
+
+const selectValuesEqual = (a, b) => {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+const normalizeSelectOptions = (options) => {
+  if (!Array.isArray(options)) return [];
+  const seen = new Set();
+  const mapped = [];
+  options.forEach((option) => {
+    if (option === undefined || option === null) return;
+    if (typeof option === 'object' && option !== null) {
+      const rawValue =
+        'value' in option && option.value !== undefined
+          ? option.value
+          : option.label ?? '';
+      const value =
+        typeof rawValue === 'string' ? rawValue.trim() : String(rawValue || '').trim();
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      const label =
+        'label' in option && option.label !== undefined
+          ? String(option.label ?? '').trim() || value
+          : value;
+      mapped.push({ label, value });
+      return;
+    }
+    const raw = typeof option === 'string' ? option : String(option);
+    const value = raw.trim();
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    mapped.push({ label: value, value });
+  });
+  return mapped;
+};
+
+const createSelectState = (fallbackPlaceholder = DEFAULT_SELECT_PLACEHOLDER) => {
+  const options = ref([]);
+  const value = ref([]);
+  const placeholder = ref(fallbackPlaceholder);
+  const listeners = new Set();
+
+  const setOptions = (next) => {
+    options.value = normalizeSelectOptions(next);
+  };
+
+  const setValue = (next) => {
+    const normalized = normalizeSelectValues(next);
+    if (!selectValuesEqual(value.value, normalized)) {
+      value.value = normalized;
+    }
+  };
+
+  watch(
+    value,
+    (val) => {
+      const normalized = normalizeSelectValues(val);
+      if (!selectValuesEqual(val, normalized)) {
+        value.value = normalized;
+        return;
+      }
+      listeners.forEach((listener) => {
+        try {
+          listener([...normalized]);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    },
+    { deep: true }
+  );
+
+  return {
+    options,
+    value,
+    placeholder,
+    bridge: {
+      setOptions,
+      setValue,
+      getValue() {
+        return normalizeSelectValues(value.value);
+      },
+      onChange(listener) {
+        if (typeof listener !== 'function') return () => {};
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    },
+  };
+};
+
+const planMosDateState = createSelectState();
+const planMosDateSelectOptions = planMosDateState.options;
+const planMosDateSelectValue = planMosDateState.value;
+const planMosDatePlaceholder = planMosDateState.placeholder;
+const planMosDateSelectBridge = planMosDateState.bridge;
+
+const regionSelectState = createSelectState();
+const regionSelectOptions = regionSelectState.options;
+const regionSelectValue = regionSelectState.value;
+const regionSelectPlaceholder = regionSelectState.placeholder;
+const regionSelectBridge = regionSelectState.bridge;
+
+const lspSelectState = createSelectState();
+const lspSelectOptions = lspSelectState.options;
+const lspSelectValue = lspSelectState.value;
+const lspSelectPlaceholder = lspSelectState.placeholder;
+const lspSelectBridge = lspSelectState.bridge;
+
+const subconSelectState = createSelectState();
+const subconSelectOptions = subconSelectState.options;
+const subconSelectValue = subconSelectState.value;
+const subconSelectPlaceholder = subconSelectState.placeholder;
+const subconSelectBridge = subconSelectState.bridge;
+
+const statusWhSelectState = createSelectState();
+const statusWhSelectOptions = statusWhSelectState.options;
+const statusWhSelectValue = statusWhSelectState.value;
+const statusWhSelectPlaceholder = statusWhSelectState.placeholder;
+const statusWhSelectBridge = statusWhSelectState.bridge;
+
+const statusDeliverySelectState = createSelectState();
+const statusDeliverySelectOptions = statusDeliverySelectState.options;
+const statusDeliverySelectValue = statusDeliverySelectState.value;
+const statusDeliverySelectPlaceholder = statusDeliverySelectState.placeholder;
+const statusDeliverySelectBridge = statusDeliverySelectState.bridge;
+
+const filterSelectBridges = {
+  plan_mos_date: planMosDateSelectBridge,
+  region: regionSelectBridge,
+  lsp: lspSelectBridge,
+  subcon: subconSelectBridge,
+  status_wh: statusWhSelectBridge,
+  status_delivery: statusDeliverySelectBridge,
+};
+
+const selectPlaceholderConfigs = [
+  {
+    placeholderRef: planMosDatePlaceholder,
+    translationKey: 'planMosDate.placeholder',
+  },
+  { placeholderRef: regionSelectPlaceholder, translationKey: 'region.placeholder' },
+  { placeholderRef: lspSelectPlaceholder, translationKey: 'lsp.placeholder' },
+  { placeholderRef: subconSelectPlaceholder, translationKey: 'subcon.placeholder' },
+  { placeholderRef: statusWhSelectPlaceholder, translationKey: 'statusWh.placeholder' },
+  {
+    placeholderRef: statusDeliverySelectPlaceholder,
+    translationKey: 'statusDelivery.placeholder',
+  },
+];
+
+const updateSelectPlaceholder = (placeholderRef, translationKey) => {
+  if (!placeholderRef) return;
+  if (!i18nInstance) {
+    placeholderRef.value = DEFAULT_SELECT_PLACEHOLDER;
+    return;
+  }
+  try {
+    const translated = i18nInstance.t(translationKey);
+    placeholderRef.value =
+      translated && translated !== translationKey
+        ? translated
+        : DEFAULT_SELECT_PLACEHOLDER;
+  } catch (err) {
+    console.error(err);
+    placeholderRef.value = DEFAULT_SELECT_PLACEHOLDER;
+  }
+};
+
+const updateAllSelectPlaceholders = () => {
+  selectPlaceholderConfigs.forEach(({ placeholderRef, translationKey }) => {
+    updateSelectPlaceholder(placeholderRef, translationKey);
+  });
+};
 
 const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
 
@@ -415,111 +654,11 @@ const statusFilterOptions = [
 
 useBodyTheme('admin-theme');
 
-const filterPlanMosDateOption = (input, option) => {
-  const text = `${option?.label ?? option?.value ?? ''}`.toLowerCase();
-  return text.includes((input || '').toLowerCase());
-};
-
-const normalizePlanMosDateValues = (raw) => {
-  const queue = Array.isArray(raw)
-    ? raw.slice()
-    : typeof raw === 'string'
-    ? raw.split(/\r?\n/)
-    : raw === undefined || raw === null
-    ? []
-    : [raw];
-  const seen = new Set();
-  const result = [];
-  for (let i = 0; i < queue.length; i += 1) {
-    const value = queue[i];
-    if (Array.isArray(value)) {
-      queue.push(...value);
-      continue;
-    }
-    if (value === undefined || value === null) continue;
-    const str = typeof value === 'string' ? value : String(value);
-    str
-      .split(',')
-      .map((part) => part.trim())
-      .forEach((part) => {
-        if (!part || seen.has(part)) return;
-        seen.add(part);
-        result.push(part);
-      });
-  }
-  return result;
-};
-
-const planMosDateValuesEqual = (a, b) => {
-  if (a === b) return true;
-  if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-};
-
-const normalizePlanMosDateOptions = (options) => {
-  if (!Array.isArray(options)) return [];
-  const seen = new Set();
-  const mapped = [];
-  options.forEach((option) => {
-    if (option === undefined || option === null) return;
-    const raw = typeof option === 'string' ? option : String(option);
-    const value = raw.trim();
-    if (!value || seen.has(value)) return;
-    seen.add(value);
-    mapped.push({ label: value, value });
-  });
-  return mapped;
-};
-
-const planMosDateSelectBridge = {
-  setOptions(options) {
-    planMosDateSelectOptions.value = normalizePlanMosDateOptions(options);
-  },
-  setValue(value) {
-    planMosDateSelectValue.value = normalizePlanMosDateValues(value);
-  },
-  getValue() {
-    return normalizePlanMosDateValues(planMosDateSelectValue.value);
-  },
-};
-
-watch(
-  planMosDateSelectValue,
-  (val) => {
-    const normalized = normalizePlanMosDateValues(val);
-    if (!planMosDateValuesEqual(val, normalized)) {
-      planMosDateSelectValue.value = normalized;
-    }
-  },
-  { deep: true }
-);
-
-const updatePlanMosDatePlaceholder = () => {
-  if (!i18nInstance) {
-    planMosDatePlaceholder.value = PLAN_MOS_DATE_PLACEHOLDER_FALLBACK;
-    return;
-  }
-  try {
-    const translated = i18nInstance.t('planMosDate.placeholder');
-    planMosDatePlaceholder.value =
-      translated && translated !== 'planMosDate.placeholder'
-        ? translated
-        : PLAN_MOS_DATE_PLACEHOLDER_FALLBACK;
-  } catch (err) {
-    console.error(err);
-    planMosDatePlaceholder.value = PLAN_MOS_DATE_PLACEHOLDER_FALLBACK;
-  }
-};
-
 const applyTranslations = () => {
   if (adminRoot.value && i18nInstance) {
     applyI18n(adminRoot.value, i18nInstance);
   }
-  updatePlanMosDatePlaceholder();
+  updateAllSelectPlaceholders();
 };
 
 const changeLang = async (lang) => {
@@ -545,6 +684,7 @@ onMounted(async () => {
     i18n: i18nInstance,
     applyTranslations,
     planMosDateSelect: planMosDateSelectBridge,
+    filterSelects: filterSelectBridges,
   });
 
   i18nInstance.onChange((lang) => {
