@@ -807,7 +807,7 @@ export function setupAdminPage(
     const safeUrl = escapeHtml(absUrl);
     const label = translateInstant('table.photoIconLabel', 'View photo') || 'View photo';
     const safeLabel = escapeHtml(label);
-    return `<a href="#" class="icon-link view-link" data-url="${safeUrl}" aria-label="${safeLabel}" data-i18n-aria-label="table.photoIconLabel" title="${safeLabel}" data-i18n-title="table.photoIconLabel">${getIconMarkup('photo')}</a>`;
+    return `<button type="button" class="icon-link view-link" data-url="${safeUrl}" aria-label="${safeLabel}" data-i18n-aria-label="table.photoIconLabel" title="${safeLabel}" data-i18n-title="table.photoIconLabel">${getIconMarkup('photo')}</button>`;
   }
 
   function collectDetailEntries(item) {
@@ -848,7 +848,7 @@ export function setupAdminPage(
       const safeUrl = escapeHtml(absUrl);
       const viewLabel = translateInstant('table.view', '查看') || '查看';
       const safeLabel = escapeHtml(viewLabel);
-      return `<div class="detail-links"><a href="#" class="view-link" data-url="${safeUrl}" data-i18n="table.view">${safeLabel}</a></div>`;
+      return `<div class="detail-links"><button type="button" class="view-link" data-url="${safeUrl}" data-i18n="table.view">${safeLabel}</button></div>`;
     }
     if (/url/.test(lowerKey)) {
       const absUrl = toAbsUrl(text);

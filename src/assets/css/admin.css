@@ -308,6 +308,26 @@ body.admin-theme {
 .admin-page tr.detail-row .detail-links a {
     word-break: break-all
     }
+.admin-page tr.detail-row .detail-links .view-link {
+    word-break: break-all;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: #69a8ff;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px
+    }
+.admin-page tr.detail-row .detail-links .view-link:hover {
+    color: #9cc6ff
+    }
+.admin-page tr.detail-row .detail-links .view-link:focus-visible {
+    outline: 2px solid rgba(105, 168, 255, 0.6);
+    outline-offset: 2px
+    }
 .admin-page tr.detail-row .detail-json {
     background: rgba(15, 23, 42, 0.6);
     border-radius: 8px;
