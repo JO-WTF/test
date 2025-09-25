@@ -1648,6 +1648,9 @@ ${cellsHtml}
       form.set('dnNumber', dnNumber);
     }
 
+    const updatedBy = (currentUserInfo?.name || '').trim();
+    form.set('updated_by', updatedBy);
+
     const originalStatusRaw = currentItem?.status || '';
     const originalStatus =
       normalizeStatusValue(originalStatusRaw) || originalStatusRaw || '';
