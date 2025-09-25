@@ -115,7 +115,7 @@ const applyTranslations = () => {
 };
 
 const changeLang = async (lang) => {
-  if (!i18nInstance || !lang || lang === currentLang.value) return;
+  if (!i18nInstance || !lang) return;
   await i18nInstance.setLang(lang);
 };
 
