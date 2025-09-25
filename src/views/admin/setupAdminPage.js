@@ -1254,12 +1254,13 @@ ${cellsHtml}
 
   function openViewerWithUrl(url) {
     if (!url) return;
-    const img = document.createElement('img');
-    img.alt = 'photo';
-    img.src = url;
-    img.dataset.src = url;
+    const image = new Image();
+    image.alt = 'photo';
+    image.src = url;
+
     cleanupViewer();
-    viewer = new Viewer(img, {
+
+    viewer = new Viewer(image, {
       navbar: false,
       title: false,
       toolbar: false,
@@ -1268,9 +1269,6 @@ ${cellsHtml}
       zoomRatio: 0.4,
       loading: true,
       backdrop: true,
-      url(image) {
-        return image.dataset?.src || image.src;
-      },
       hidden() {
         cleanupViewer();
       },
@@ -1389,12 +1387,16 @@ ${cellsHtml}
       }
     });
 
-    tbody.querySelectorAll('.view-link').forEach((a) => {
-      a.addEventListener(
+    tbody.querySelectorAll('.view-link').forEach((trigger) => {
+      trigger.addEventListener(
         'click',
-        (e) => {
-          e.preventDefault();
-          const url = a.getAttribute('data-url');
+        (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const url = trigger.getAttribute('data-url');
+          if (typeof trigger.blur === 'function') {
+            trigger.blur();
+          }
           openViewerWithUrl(url);
         },
         { signal }
