@@ -77,7 +77,7 @@
       </div>
 
       <template v-if="state.isValid">
-        <div class="status-box">
+        <div class="status-box" v-show="!state.submitOk">
           <div class="status-row" :class="{ shake: state.needsStatusShake }">
             <label for="dnStatus">{{ t('updateStatus') }}：</label>
             <select
