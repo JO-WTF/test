@@ -517,6 +517,7 @@ const submitUpdate = async () => {
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
+    fd.append('updated_by', 'driver');
 
     if (state.photoFile instanceof File) {
       fd.append('photo', state.photoFile, state.photoFile.name || 'photo');
