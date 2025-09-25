@@ -1,4 +1,4 @@
-:root {
+body.scan-theme {
     --fg: #eaf2ff;
     --bg: #0b1020;
     --accent: #69a8ff;
@@ -10,10 +10,8 @@ body.scan-theme * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent
     }
-html, body.scan-theme {
-    height: 100%
-    }
-html, body.scan-theme {
+body.scan-theme {
+    min-height: 100vh;
     -webkit-text-size-adjust: 100%;
     touch-action: manipulation
     }
@@ -373,7 +371,8 @@ body.scan-theme .uploader small.muted {
     white-space: nowrap
     }
 /* 兜底：整个页面禁用横向滚动（稳妥） */
-html, body.scan-theme, body.scan-theme .wrap {
+body.scan-theme,
+body.scan-theme .wrap {
     overflow-x: hidden
     }
 @media (max-width: 360px) {

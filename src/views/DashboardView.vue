@@ -1,28 +1,6 @@
 <template>
   <div class="wrap dashboard-view" ref="dashboardRoot">
-    <div class="lang-switch" aria-label="Language switch">
-      <button
-        :class="{ active: currentLang === 'zh' }"
-        aria-label="切换为中文"
-        @click="() => changeLang('zh')"
-      >
-        <img src="https://flagcdn.com/w20/cn.png" alt="CN" />中文
-      </button>
-      <button
-        :class="{ active: currentLang === 'en' }"
-        aria-label="Switch to English"
-        @click="() => changeLang('en')"
-      >
-        <img src="https://flagcdn.com/w20/gb.png" alt="GB" />English
-      </button>
-      <button
-        :class="{ active: currentLang === 'id' }"
-        aria-label="Beralih ke Bahasa Indonesia"
-        @click="() => changeLang('id')"
-      >
-        <img src="https://flagcdn.com/w20/id.png" alt="ID" />Indonesia
-      </button>
-    </div>
+    <LanguageSwitcher v-model="currentLang" @change="changeLang" />
 
     <header class="header">
       <div>
@@ -121,6 +99,7 @@ import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupDashboardPage } from './dashboard/setupDashboardPage';
 import { useBodyTheme } from '../composables/useBodyTheme';
+import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 
 const dashboardRoot = ref(null);
 const currentLang = ref('en');
@@ -136,7 +115,7 @@ const applyTranslations = () => {
 };
 
 const changeLang = async (lang) => {
-  if (!i18nInstance || !lang || lang === currentLang.value) return;
+  if (!i18nInstance || !lang) return;
   await i18nInstance.setLang(lang);
 };
 

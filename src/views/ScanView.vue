@@ -1,28 +1,6 @@
 <template>
   <div class="wrap scan-view">
-    <div class="lang-switch">
-      <button
-        :class="{ active: state.lang === 'zh' }"
-        @click="() => setLang('zh')"
-        aria-label="切换为中文"
-      >
-        <img src="https://flagcdn.com/w20/cn.png" alt="CN" />中文
-      </button>
-      <button
-        :class="{ active: state.lang === 'en' }"
-        @click="() => setLang('en')"
-        aria-label="Switch to English"
-      >
-        <img src="https://flagcdn.com/w20/gb.png" alt="GB" />English
-      </button>
-      <button
-        :class="{ active: state.lang === 'id' }"
-        @click="() => setLang('id')"
-        aria-label="Beralih ke Bahasa Indonesia"
-      >
-        <img src="https://flagcdn.com/w20/id.png" alt="ID" />Indonesia
-      </button>
-    </div>
+    <LanguageSwitcher v-model="state.lang" @change="setLang" />
 
     <div><h1>{{ t('scanTitle') }}</h1></div>
 
@@ -211,6 +189,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Toastify from 'toastify-js';
 import { createI18n } from '../i18n/core';
 import { useBodyTheme } from '../composables/useBodyTheme';
+import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 
 const LICENSE_KEY =
   'DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0NTQzNDEwLU1UQTBOVFF6TkRFd0xYZGxZaTFVY21saGJGQnliMm8iLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tZGxzLmR5bmFtc29mdG9ubGluZS5jb20iLCJvcmdhbml6YXRpb25JRCI6IjEwNDU0MzQxMCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NkbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsImNoZWNrQ29kZSI6MTg2NjI4MDUzMX0=';
