@@ -608,6 +608,22 @@ export function setupAdminPage(
     return null;
   }
 
+  function getEffectiveUserInfo() {
+    if (currentUserInfo?.name) return currentUserInfo;
+    const stored = loadStoredAuthState();
+    if (stored?.userInfo) {
+      const sanitized = sanitizeUserInfo({
+        ...(currentUserInfo || {}),
+        ...stored.userInfo,
+      });
+      if (sanitized) {
+        currentUserInfo = sanitized;
+        return sanitized;
+      }
+    }
+    return currentUserInfo;
+  }
+
   function normalizeStatusValue(raw) {
     const text = (raw || '').trim();
     if (!text) return '';
@@ -1648,7 +1664,8 @@ ${cellsHtml}
       form.set('dnNumber', dnNumber);
     }
 
-    const updatedBy = (currentUserInfo?.name || '').trim();
+    const resolvedUser = getEffectiveUserInfo();
+    const updatedBy = (resolvedUser?.name || '').trim();
     form.set('updated_by', updatedBy);
 
     const originalStatusRaw = currentItem?.status || '';
