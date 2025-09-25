@@ -469,12 +469,6 @@ export function setupAdminPage(
     return `${API_BASE}${basePath}${params}`;
   }
 
-  const viewerHost = document.createElement('div');
-  viewerHost.id = 'viewer-host-dn';
-  viewerHost.style.cssText =
-    'position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;overflow:hidden;';
-  document.body.appendChild(viewerHost);
-
   function cleanupViewer() {
     if (viewer) {
       try {
@@ -1260,8 +1254,10 @@ ${cellsHtml}
 
   function openViewerWithUrl(url) {
     if (!url) return;
-    viewerHost.innerHTML = `<img id="__dn_view" alt="photo" data-src="${url}">`;
-    const img = viewerHost.querySelector('#__dn_view');
+    const img = document.createElement('img');
+    img.alt = 'photo';
+    img.src = url;
+    img.dataset.src = url;
     cleanupViewer();
     viewer = new Viewer(img, {
       navbar: false,
@@ -1273,7 +1269,7 @@ ${cellsHtml}
       loading: true,
       backdrop: true,
       url(image) {
-        return image.getAttribute('data-src');
+        return image.dataset?.src || image.src;
       },
       hidden() {
         cleanupViewer();
@@ -2313,6 +2309,5 @@ ${cellsHtml}
     }
     cleanupFilterSubscriptions();
     cleanupViewer();
-    viewerHost.remove();
   };
 }
