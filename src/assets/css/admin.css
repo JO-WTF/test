@@ -12,7 +12,7 @@ body.admin-theme {
     margin: 0 auto;
     padding: 16px
     }
-.admin-page .dn-admin-container {
+.admin-page .admin-container {
     width: 100%;
     max-width: none;
     margin: 0

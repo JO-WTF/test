@@ -1,30 +1,8 @@
 <template>
   <div class="admin-page" ref="adminRoot">
-    <div class="container">
+    <div class="container admin-container">
       <div class="page-header">
-        <div class="lang-switch" aria-label="Language switch">
-          <button
-            :class="{ active: currentLang === 'zh' }"
-            aria-label="切换为中文"
-            @click="() => changeLang('zh')"
-          >
-            <img src="https://flagcdn.com/w20/cn.png" alt="CN" />中文
-          </button>
-          <button
-            :class="{ active: currentLang === 'en' }"
-            aria-label="Switch to English"
-            @click="() => changeLang('en')"
-          >
-            <img src="https://flagcdn.com/w20/gb.png" alt="GB" />English
-          </button>
-          <button
-            :class="{ active: currentLang === 'id' }"
-            aria-label="Beralih ke Bahasa Indonesia"
-            @click="() => changeLang('id')"
-          >
-            <img src="https://flagcdn.com/w20/id.png" alt="ID" />Indonesia
-          </button>
-        </div>
+        <LanguageSwitcher v-model="currentLang" @change="changeLang" />
         <div class="auth-area">
           <span id="auth-role-tag" class="role-tag" data-i18n="auth.current"></span>
           <button class="btn ghost accent" id="btn-auth" data-i18n="auth.trigger">
@@ -33,7 +11,7 @@
         </div>
       </div>
 
-      <h2 data-i18n="title">DU 提交记录管理</h2>
+      <h2 data-i18n="title">DN 提交记录管理</h2>
 
       <div class="card">
         <div
@@ -46,49 +24,128 @@
         </div>
         <div class="grid-2col">
           <div class="du-col">
-            <label data-i18n="du.label"
-              >DN Number（支持多行/逗号/空格分隔；多于1个则批量查询）</label
+            <label data-i18n="dn.label"
+              >DN 号（支持多行/逗号/空格分隔；多于1个则批量查询）</label
             >
             <div class="du-wrap">
-              <div id="du-hilite" class="du-hilite" aria-hidden="true"></div>
+              <div id="dn-preview" class="du-hilite" aria-hidden="true"></div>
               <textarea
-                id="f-du"
-                data-i18n-placeholder="du.placeholder"
-                placeholder="示例：&#10;DID123...&#10;DID456...&#10;或：DID123..., DID456..."
+                id="f-dn"
+                data-i18n-placeholder="dn.placeholder"
+                placeholder="示例：&#10;DN123...&#10;DN456..."
               ></textarea>
             </div>
-            <div class="muted" style="margin-top: 6px" data-i18n="du.tip">
-              提示：合法格式为 DID + 13位数字 可只输入数字。
+            <div class="muted" style="margin-top: 6px" data-i18n="dn.tip">
+              提示：DN 号支持字母数字与短横线。
             </div>
           </div>
 
           <div class="rhs">
-            <div class="row-line">
-              <div class="field">
+            <div class="filters-grid">
+              <div class="field filter-field">
+                <label data-i18n="planMosDate.label">Plan MOS Date</label>
+                <a-select
+                  id="f-plan-mos-date"
+                  v-model:value="planMosDateSelectValue"
+                  :options="planMosDateSelectOptions"
+                  :placeholder="planMosDatePlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field">
+                <label data-i18n="region.label">Region</label>
+                <a-select
+                  id="f-region"
+                  v-model:value="regionSelectValue"
+                  :options="regionSelectOptions"
+                  :placeholder="regionSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field">
+                <label data-i18n="lsp.label">LSP</label>
+                <a-select
+                  id="f-lsp"
+                  v-model:value="lspSelectValue"
+                  :options="lspSelectOptions"
+                  :placeholder="lspSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field">
+                <label data-i18n="subcon.label">分包商</label>
+                <a-select
+                  id="f-subcon"
+                  v-model:value="subconSelectValue"
+                  :options="subconSelectOptions"
+                  :placeholder="subconSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field">
                 <label data-i18n="status.label">状态</label>
-                <select id="f-status">
-                  <option value="" data-i18n="status.all">（全部）</option>
-                  <option
-                    v-for="option in statusFilterOptions"
-                    :key="option.value"
-                    :value="option.value"
-                    :data-i18n="option.i18nKey || null"
-                  >
-                    {{ option.fallback }}
-                  </option>
-                </select>
+                <a-select
+                  id="f-status"
+                  v-model:value="statusSelectValue"
+                  :options="statusSelectOptions"
+                  :placeholder="statusSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
-
-              <div class="field grow">
-                <label data-i18n="remark.kw.label">备注关键词</label>
-                <input
-                  id="f-remark"
-                  data-i18n-placeholder="remark.kw.placeholder"
-                  placeholder="模糊匹配"
-                />
+              <div class="field filter-field">
+                <label data-i18n="statusWh.label">仓库状态</label>
+                <a-select
+                  id="f-status-wh"
+                  v-model:value="statusWhSelectValue"
+                  :options="statusWhSelectOptions"
+                  :placeholder="statusWhSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
               </div>
-
-              <div class="field">
+              <div class="field filter-field">
+                <label data-i18n="statusDelivery.label">配送状态</label>
+                <a-select
+                  id="f-status-delivery"
+                  v-model:value="statusDeliverySelectValue"
+                  :options="statusDeliverySelectOptions"
+                  :placeholder="statusDeliverySelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field" style="display: none" aria-hidden="true">
                 <label data-i18n="has.label">是否带附件</label>
                 <select id="f-has">
                   <option value="" data-i18n="has.any">（不限）</option>
@@ -96,44 +153,93 @@
                   <option value="false" data-i18n="has.false">无附件</option>
                 </select>
               </div>
-
-              <div class="field">
-                <label data-i18n="perPage.label">每页数量</label>
-                <input
-                  id="f-ps2"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value="20"
-                  class="w120"
-                  data-i18n-placeholder="perPage.placeholder"
-                  placeholder="请输入数量"
+              <div class="field filter-field">
+                <label data-i18n="hasCoord.label">经纬度</label>
+                <a-select
+                  id="f-has-coordinate"
+                  v-model:value="hasCoordinateSelectValue"
+                  :options="hasCoordinateSelectOptions"
+                  :placeholder="hasCoordinateSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field">
+                <label data-i18n="remark.kw.label">备注关键词</label>
+                <a-input
+                  id="f-remark"
+                  v-model:value="remarkInputValue"
+                  :placeholder="remarkInputPlaceholder"
+                  allow-clear
+                  style="width: 100%"
+                />
+              </div>
+              <div class="field filter-field">
+                <label data-i18n="du.filter.label">关联 DU ID</label>
+                <a-input
+                  id="f-du"
+                  v-model:value="duInputValue"
+                  :placeholder="duInputPlaceholder"
+                  allow-clear
+                  style="width: 100%"
+                />
+              </div>
+              <div class="field filter-field">
+                <label data-i18n="date.from">开始日期</label>
+                <a-date-picker
+                  id="f-from"
+                  v-model:value="fromDateValue"
+                  value-format="YYYY-MM-DD"
+                  format="YYYY-MM-DD"
+                  :presets="datePresets"
+                  allow-clear
+                  style="width: 100%"
+                />
+              </div>
+              <div class="field filter-field">
+                <label data-i18n="date.to">结束日期</label>
+                <a-date-picker
+                  id="f-to"
+                  v-model:value="toDateValue"
+                  value-format="YYYY-MM-DD"
+                  format="YYYY-MM-DD"
+                  :presets="datePresets"
+                  allow-clear
+                  style="width: 100%"
                 />
               </div>
             </div>
 
-            <div class="row-line">
-              <div class="field">
-                <label data-i18n="date.from">开始日期</label>
-                <input id="f-from" type="date" />
-              </div>
-              <div class="field">
-                <label data-i18n="date.to">结束日期</label>
-                <input id="f-to" type="date" />
-              </div>
-            </div>
-
-            <div class="row-line">
-              <div class="field" style="gap: 8px; flex: 1">
+            <div class="filter-actions">
+              <div class="field" style="gap: 8px">
                 <label style="visibility: hidden" data-i18n="actions.label">操作</label>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap">
                   <button class="btn" id="btn-search" data-i18n="actions.query">查询</button>
                   <button class="btn ghost" id="btn-reset" data-i18n="actions.reset">重置</button>
+                  <button class="btn ghost" id="btn-show-all" data-i18n="actions.showAll">
+                    显示全部 DN
+                  </button>
                   <button class="btn ghost" id="btn-export-all" data-i18n="actions.exportAll">
                     导出全部
                   </button>
+                  <button
+                    class="btn ghost"
+                    id="btn-export-records"
+                    data-i18n="actions.exportRecords"
+                  >
+                    导出DN更新记录
+                  </button>
                   <button class="btn ghost" id="btn-trust-backend-link" data-i18n="actions.trustBackend">
                     信任后台
+                  </button>
+                  <button
+                    class="btn ghost"
+                    id="btn-sync-google-sheet"
+                    data-i18n="actions.syncGoogleSheet"
+                  >
+                    更新Google Sheet数据
                   </button>
                   <button
                     class="btn ghost"
@@ -155,19 +261,43 @@
         <table id="tbl" style="display: none">
           <thead>
             <tr>
-              <th data-i18n="table.id">ID</th>
-              <th data-i18n="table.du">DN Number</th>
+              <th data-i18n="table.dn">DN 号</th>
+              <th data-i18n="table.region">区域</th>
+              <th data-i18n="table.planMosDate">PLAN MOS DATE</th>
+              <th data-i18n="table.lsp">LSP</th>
+              <th data-i18n="table.issueRemark">ISSUE REMARK</th>
+              <th data-i18n="table.statusDelivery">STATUS DELIVERY</th>
               <th data-i18n="table.status">状态</th>
               <th data-i18n="table.remark">备注</th>
               <th data-i18n="table.photo">照片</th>
               <th data-i18n="table.location">位置</th>
-              <th data-i18n="table.time">时间</th>
-              <th data-i18n="table.actions">操作</th>
+              <th
+                data-i18n="table.updatedAt"
+                data-column="updatedAt"
+                style="display: none"
+                aria-hidden="true"
+              >
+                更新时间
+              </th>
+              <th data-i18n="table.actions" data-column="actions">操作</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
         <div class="pager" id="pager" style="display: none">
+          <label class="pager__page-size">
+            <span data-i18n="perPage.label">每页数量</span>
+            <input
+              id="f-ps2"
+              type="number"
+              min="1"
+              max="100"
+              value="20"
+              class="w120"
+              data-i18n-placeholder="perPage.placeholder"
+              placeholder="请输入数量"
+            />
+          </label>
           <button class="ghost" id="prev" data-i18n="pager.prev">上一页</button>
           <span id="pginfo" class="muted"></span>
           <button class="ghost" id="next" data-i18n="pager.next">下一页</button>
@@ -244,7 +374,7 @@
             data-i18n-placeholder="dn.placeholder"
             placeholder="请输入或粘贴 DN 号"
           ></textarea>
-          <div id="dn-preview" class="dn-preview" aria-live="polite"></div>
+          <div id="dn-preview-modal" class="dn-preview" aria-live="polite"></div>
         </div>
         <div class="foot dn-modal__foot">
           <button class="btn ghost" id="dn-cancel" data-i18n="dn.cancel">取消</button>
@@ -257,39 +387,103 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
-import {
-  STATUS_ORDERED_LIST,
-  STATUS_TRANSLATION_KEYS,
-  STATUS_FALLBACK_LABELS,
-} from '../config.js';
+import { useAdminFilters } from './admin/useAdminFilters';
+import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import 'viewerjs/dist/viewer.css';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
+import 'dayjs/locale/zh-cn';
+import 'dayjs/locale/id';
+
+dayjs.extend(customParseFormat);
 
 const adminRoot = ref(null);
 const currentLang = ref('zh');
-let cleanup = () => {};
+let pageCleanup = () => {};
 let i18nInstance = null;
 
-const statusFilterOptions = STATUS_ORDERED_LIST.map((value) => ({
-  value,
-  i18nKey: STATUS_TRANSLATION_KEYS[value] || '',
-  fallback: STATUS_FALLBACK_LABELS[value] || value,
-}));
+const {
+  planMosDateSelectOptions,
+  planMosDateSelectValue,
+  planMosDatePlaceholder,
+  planMosDateSelectBridge,
+  regionSelectOptions,
+  regionSelectValue,
+  regionSelectPlaceholder,
+  regionSelectBridge,
+  lspSelectOptions,
+  lspSelectValue,
+  lspSelectPlaceholder,
+  subconSelectOptions,
+  subconSelectValue,
+  subconSelectPlaceholder,
+  statusWhSelectOptions,
+  statusWhSelectValue,
+  statusWhSelectPlaceholder,
+  statusDeliverySelectOptions,
+  statusDeliverySelectValue,
+  statusDeliverySelectPlaceholder,
+  statusSelectOptions,
+  statusSelectValue,
+  statusSelectPlaceholder,
+  hasCoordinateSelectOptions,
+  hasCoordinateSelectValue,
+  hasCoordinateSelectPlaceholder,
+  remarkInputValue,
+  remarkInputPlaceholder,
+  duInputValue,
+  duInputPlaceholder,
+  fromDateValue,
+  toDateValue,
+  datePresets,
+  filterSelectBridges,
+  filterInputBridges,
+  updatePlaceholders,
+  updateStatusSelectOptions,
+  updateHasCoordinateSelectOptions,
+  refreshDatePresets,
+} = useAdminFilters();
 
 useBodyTheme('admin-theme');
+
+const filterSelectOption = (input, option) => {
+  const text = `${option?.label ?? option?.value ?? ''}`.toLowerCase();
+  return text.includes((input || '').toLowerCase());
+};
+
+const translate = (key, vars) => {
+  if (!i18nInstance) return undefined;
+  try {
+    return i18nInstance.t(key, vars);
+  } catch (err) {
+    console.error(err);
+    return undefined;
+  }
+};
 
 const applyTranslations = () => {
   if (adminRoot.value && i18nInstance) {
     applyI18n(adminRoot.value, i18nInstance);
   }
+  const translator = (key) => translate(key);
+  updatePlaceholders(translator);
+  updateStatusSelectOptions(translator);
+  updateHasCoordinateSelectOptions(translator);
+  refreshDatePresets(translator);
+};
+
+const updateDayjsLocale = (lang) => {
+  const map = { zh: 'zh-cn', id: 'id', en: 'en' };
+  dayjs.locale(map[lang] || map.en);
 };
 
 const changeLang = async (lang) => {
-  if (!i18nInstance) return;
+  if (!i18nInstance || !lang || lang === currentLang.value) return;
   await i18nInstance.setLang(lang);
 };
 
@@ -301,27 +495,33 @@ onMounted(async () => {
   });
   await i18nInstance.init();
   currentLang.value = i18nInstance.state.lang;
+  updateDayjsLocale(currentLang.value);
   applyTranslations();
   document.documentElement.setAttribute(
     'lang',
     currentLang.value === 'zh' ? 'zh-CN' : currentLang.value
   );
 
-  cleanup = setupAdminPage(adminRoot.value, {
+  pageCleanup = setupAdminPage(adminRoot.value, {
     i18n: i18nInstance,
     applyTranslations,
+    planMosDateSelect: planMosDateSelectBridge,
+    filterSelects: filterSelectBridges,
+    filterInputs: filterInputBridges,
   });
 
   i18nInstance.onChange((lang) => {
     currentLang.value = lang;
+    updateDayjsLocale(lang);
     applyTranslations();
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : lang);
   });
 });
 
 onBeforeUnmount(() => {
-  cleanup?.();
+  pageCleanup?.();
 });
 </script>
+
 
 <style src="../assets/css/admin.css"></style>

@@ -9,19 +9,7 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: () => import('../views/DnAdminView.vue'),
-  },
-  {
-    path: '/du-admin',
-    name: 'du-admin',
     component: () => import('../views/AdminView.vue'),
-    alias: ['/duadmin'],
-  },
-  {
-    path: '/dn-admin',
-    name: 'dn-admin',
-    component: () => import('../views/DnAdminView.vue'),
-    alias: ['/dnadmin'],
   },
   {
     path: '/dashboard',
