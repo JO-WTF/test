@@ -394,7 +394,6 @@ import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
 import { useAdminFilters } from './admin/useAdminFilters';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
-import 'viewerjs/dist/viewer.css';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
 import 'dayjs/locale/zh-cn';

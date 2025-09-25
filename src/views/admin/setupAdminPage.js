@@ -1,4 +1,4 @@
-import Viewer from 'viewerjs';
+import { api as viewerApi } from 'v-viewer';
 import Toastify from 'toastify-js';
 import {
   ROLE_LIST,
@@ -94,7 +94,7 @@ export function setupAdminPage(
   let currentUserInfo = null;
   let cachedItems = [];
   let removeI18nListener = null;
-  let viewer = null;
+  let viewerInstance = null;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
@@ -470,13 +470,13 @@ export function setupAdminPage(
   }
 
   function cleanupViewer() {
-    if (viewer) {
-      try {
-        viewer.destroy();
-      } catch (err) {
-        console.error(err);
-      }
-      viewer = null;
+    if (!viewerInstance) return;
+    const instance = viewerInstance;
+    viewerInstance = null;
+    try {
+      instance.destroy();
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -1254,29 +1254,29 @@ ${cellsHtml}
 
   function openViewerWithUrl(url) {
     if (!url) return;
-    const image = new Image();
-    image.alt = 'photo';
-    image.src = url;
 
     cleanupViewer();
 
-    viewer = new Viewer(image, {
-      navbar: false,
-      title: false,
-      toolbar: false,
-      fullscreen: false,
-      movable: true,
-      zoomRatio: 0.4,
-      loading: true,
-      backdrop: true,
-      hidden() {
-        cleanupViewer();
-      },
-    });
     try {
-      viewer.show();
+      viewerInstance = viewerApi({
+        options: {
+          navbar: false,
+          title: false,
+          toolbar: false,
+          fullscreen: false,
+          movable: true,
+          zoomRatio: 0.4,
+          loading: true,
+          backdrop: true,
+          hidden() {
+            cleanupViewer();
+          },
+        },
+        images: [url],
+      });
     } catch (err) {
       console.error(err);
+      cleanupViewer();
     }
   }
 
