@@ -105,6 +105,51 @@ export function setupAdminPage(
   const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
   const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';
   const PLAN_MOS_TIMEZONE_OFFSET_MINUTES = 7 * 60;
+  const JAKARTA_UTC_OFFSET_MINUTES = 7 * 60;
+
+  function convertDateToJakartaIso(dateString, { endOfDay = false } = {}) {
+    if (!dateString) return '';
+
+    const parts = String(dateString).split('-');
+    if (parts.length < 3) {
+      return formatDateFallback(dateString, { endOfDay });
+    }
+
+    const [yearPart, monthPart, dayPart] = parts;
+    const year = Number(yearPart);
+    const monthIndex = Number(monthPart) - 1;
+    const day = Number(dayPart);
+
+    if (
+      !Number.isFinite(year) ||
+      !Number.isFinite(monthIndex) ||
+      !Number.isFinite(day)
+    ) {
+      return formatDateFallback(dateString, { endOfDay });
+    }
+
+    const hours = endOfDay ? 23 : 0;
+    const minutes = endOfDay ? 59 : 0;
+    const seconds = endOfDay ? 59 : 0;
+    const milliseconds = endOfDay ? 999 : 0;
+
+    const offsetMinutes = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
+      ? JAKARTA_UTC_OFFSET_MINUTES
+      : 0;
+
+    const utcTimestamp =
+      Date.UTC(year, monthIndex, day, hours, minutes, seconds, milliseconds) -
+      offsetMinutes * 60 * 1000;
+
+    return new Date(utcTimestamp).toISOString();
+  }
+
+  function formatDateFallback(dateString, { endOfDay }) {
+    const suffix = endOfDay ? 'T23:59:59' : 'T00:00:00';
+    const value = new Date(`${dateString}${suffix}`);
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
+    return value.toISOString();
+  }
   const TRANSPORT_MANAGER_STATUS_CARDS = [
     { status: STATUS_VALUES.PREPARE_VEHICLE, label: 'Prepare Vehicle' },
     { status: STATUS_VALUES.ON_THE_WAY, label: 'On the way' },
@@ -1513,8 +1558,14 @@ ${cellsHtml}
       if (rk) params.set('remark', rk);
       if (hp) params.set('has_photo', hp);
       if (hc) params.set('has_coordinate', hc);
-      if (df) params.set('date_from', new Date(`${df}T00:00:00`).toISOString());
-      if (dt) params.set('date_to', new Date(`${dt}T23:59:59`).toISOString());
+      if (df) {
+        const jakartaDateFrom = convertDateToJakartaIso(df);
+        if (jakartaDateFrom) params.set('date_from', jakartaDateFrom);
+      }
+      if (dt) {
+        const jakartaDateTo = convertDateToJakartaIso(dt, { endOfDay: true });
+        if (jakartaDateTo) params.set('date_to', jakartaDateTo);
+      }
       if (lspValues.length === 1) {
         params.set('lsp', lspValues[0]);
       } else if (lspValues.length > 1) {
