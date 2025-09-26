@@ -318,13 +318,19 @@
               <option value="" data-i18n="modal.status.keep">（不修改）</option>
             </select>
           </div>
+          <div class="field" id="m-status-delivery-field">
+            <label data-i18n="modal.statusDelivery.label">配送状态</label>
+            <select id="m-status-delivery">
+              <option value="" data-i18n="modal.statusDelivery.keep">（不修改）</option>
+            </select>
+          </div>
           <div class="field grow" id="m-remark-field">
             <label data-i18n="modal.remark.label">备注</label>
-            <input
-              id="m-remark"
-              data-i18n-placeholder="modal.remark.placeholder"
-              placeholder="不修改请留空"
-            />
+              <input
+                id="m-remark"
+                data-i18n-placeholder="modal.remark.placeholder"
+                placeholder="不修改请留空（可选）"
+              />
           </div>
           <div class="field grow" id="m-photo-field">
             <label data-i18n="modal.photo.label">替换照片（可选）</label>
