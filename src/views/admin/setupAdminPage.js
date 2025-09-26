@@ -128,10 +128,11 @@ export function setupAdminPage(
       return formatDateFallback(dateString, { endOfDay });
     }
 
-    const hours = endOfDay ? 23 : 0;
-    const minutes = endOfDay ? 59 : 0;
-    const seconds = endOfDay ? 59 : 0;
-    const milliseconds = endOfDay ? 999 : 0;
+    // 统一将起止日期固定到雅加达中午，避免在不同时区展示或解析时日期被偏移。
+    const hours = 12;
+    const minutes = 0;
+    const seconds = 0;
+    const milliseconds = 0;
 
     const offsetMinutes = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
       ? JAKARTA_UTC_OFFSET_MINUTES
@@ -144,8 +145,8 @@ export function setupAdminPage(
     return new Date(utcTimestamp).toISOString();
   }
 
-  function formatDateFallback(dateString, { endOfDay }) {
-    const suffix = endOfDay ? 'T23:59:59' : 'T00:00:00';
+  function formatDateFallback(dateString, _opts = {}) {
+    const suffix = 'T12:00:00';
     const value = new Date(`${dateString}${suffix}`);
     if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
     return value.toISOString();
