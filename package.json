@@ -12,10 +12,11 @@
     "ant-design-vue": "^4.2.6",
     "dayjs": "^1.11.18",
     "toastify-js": "1.12.0",
-    "viewerjs": "1.11.6",
     "v-viewer": "3.0.11",
+    "viewerjs": "1.11.6",
     "vue": "3.4.38",
-    "vue-router": "4.3.2"
+    "vue-router": "4.3.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "5.0.4",
