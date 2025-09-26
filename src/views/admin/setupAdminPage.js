@@ -141,86 +141,46 @@ export function setupAdminPage(
   const SUMMARY_BASE_COLUMN_COUNT = 11;
   const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 12;
   const DETAIL_KEY_PRIORITY = [
-    'id',
-    'dn_id',
-    'dn_number',
     'du_id',
     'lsp',
-    'lsp_name',
-    'lsp_code',
-    'logistics_provider',
-    'logistics_service_provider',
-    'provider',
-    'provider_name',
-    'provider_code',
     'region',
-    'region_name',
-    'regionName',
-    'area',
-    'territory',
     'plan_mos_date',
-    'plan_mos',
-    'plan_date',
-    'plan_mos_datetime',
-    'plan_mos_at',
-    'plan_mos_time',
-    'plan_mos_dt',
-    'plan_delivery_date',
-    'origin_location',
-    'origin',
-    'origin_address',
-    'origin_city',
-    'origin_branch',
-    'from_location',
-    'from_address',
-    'from_city',
-    'pickup_location',
-    'pickup_address',
-    'destination_location',
-    'destination',
-    'destination_address',
-    'destination_city',
-    'destination_branch',
-    'to_location',
-    'to_address',
-    'status',
-    'remark',
-    'issue_remark',
-    'issueRemark',
-    'issue_remarks',
-    'issueRemarks',
-    'issue_note',
-    'issue_notes',
+    'area',
+    'status_wh',
     'status_delivery',
-    'delivery_status',
-    'statusDelivery',
-    'deliveryStatus',
-    'status_deliver',
+    'status',
+    'issue_remark',
+    'remark',
     'photo_url',
-    'photo',
-    'photo_urls',
-    'photoUrl',
-    'photoURL',
-    'image_url',
-    'image',
-    'imageUrl',
-    'picture_url',
-    'attachment',
-    'attachment_url',
-    'lat',
-    'lng',
-    'latitude',
-    'longitude',
+    'lonlat',
+    'driver_contact_name',
+    'driver_contact_number',
+    'transportation_time',
+    'mos_given_time',
+    'distance_poll_mover_to_site',
+    'delivery_type_a_to_b',
+    'hw_tracker',
+    'lsp_tracker',
+    'expected_arrival_time_from_project',
+    'estimate_depart_from_start_point_etd',
+    'actual_depart_from_start_point_atd',
+    'estimate_arrive_sites_time_eta',
+    'actual_arrive_time_ata',
+    'mos_attempt_1st_time',
+    'mos_attempt_2nd_time',
+    'mos_attempt_3rd_time',
+    'mos_attempt_4th_time',
+    'mos_attempt_5th_time',
+    'mos_attempt_6th_time',
+    'project_request',
+    'mos_type',
+    'subcon',
+    'subcon_receiver_contact_number',
+    'gs_sheet',
+    'gs_row',
     'created_at',
-    'updated_at',
-    'updatedAt',
-    'createdAt',
-    'last_updated',
-    'lastUpdate',
-    'lastUpdated',
-    'modified_at',
-    'modifiedAt',
-    'timestamp',
+    'last_updated_by',
+    'latest_record_created_at',
   ];
   const REGION_FIELD_CANDIDATES = [
     'region',
@@ -820,9 +780,30 @@ export function setupAdminPage(
     return `<button type="button" class="icon-link view-link" data-url="${safeUrl}" aria-label="${safeLabel}" data-i18n-aria-label="table.photoIconLabel" title="${safeLabel}" data-i18n-title="table.photoIconLabel">${getIconMarkup('photo')}</button>`;
   }
 
+  const HIDDEN_DETAIL_FIELDS = new Set(['dn_number', 'id', 'lng', 'lat']);
+
   function collectDetailEntries(item) {
     if (!item || typeof item !== 'object') return [];
-    const entries = Object.entries(item);
+    const entries = Object.entries(item).filter(([key]) => {
+      const normalizedKey = String(key).trim().toLowerCase();
+      return !HIDDEN_DETAIL_FIELDS.has(normalizedKey);
+    });
+    const hasLonlatEntry = entries.some(
+      ([key]) => String(key).trim().toLowerCase() === 'lonlat'
+    );
+    const latValue = item?.lat ?? item?.latitude;
+    const lngValue = item?.lng ?? item?.longitude;
+    const hasCoordinates =
+      latValue !== undefined &&
+      latValue !== null &&
+      lngValue !== undefined &&
+      lngValue !== null;
+    if (!entries.length && !hasCoordinates) {
+      return [];
+    }
+    if (!hasLonlatEntry && hasCoordinates) {
+      entries.push(['lonlat', `${lngValue},${latValue}`]);
+    }
     if (!entries.length) return [];
     const priority = new Map();
     DETAIL_KEY_PRIORITY.forEach((key, index) => {
@@ -838,7 +819,7 @@ export function setupAdminPage(
     });
   }
 
-  function formatDetailValue(key, value) {
+  function formatDetailValue(key, value, item) {
     if (value === null || value === undefined || value === '') {
       return '<span class="muted">-</span>';
     }
@@ -853,6 +834,33 @@ export function setupAdminPage(
     const text = normalizeTextValue(value);
     if (!text) return '<span class="muted">-</span>';
     const lowerKey = key.toLowerCase();
+    if (lowerKey === 'lonlat') {
+      const deriveCoordinate = (source) => {
+        if (source === null || source === undefined) return null;
+        if (typeof source === 'number') return source;
+        const trimmed = String(source).trim();
+        return trimmed ? trimmed : null;
+      };
+      let lng = deriveCoordinate(item?.lng ?? item?.longitude);
+      let lat = deriveCoordinate(item?.lat ?? item?.latitude);
+      const hasCoord = (coord) => coord !== null && coord !== undefined && coord !== '';
+      if ((!hasCoord(lng) || !hasCoord(lat)) && typeof value === 'string') {
+        const parts = value.split(',');
+        if (parts.length >= 2) {
+          if (!hasCoord(lng)) lng = deriveCoordinate(parts[0]);
+          if (!hasCoord(lat)) lat = deriveCoordinate(parts[1]);
+        }
+      }
+      if (hasCoord(lng) && hasCoord(lat)) {
+        const lngText = String(lng).trim();
+        const latText = String(lat).trim();
+        const mapQuery = `${latText},${lngText}`;
+        const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}`;
+        const safeUrl = escapeHtml(mapUrl);
+        const displayText = escapeHtml(`${lngText}, ${latText}`);
+        return `<a href="${safeUrl}" target="_blank" rel="noopener">${displayText}</a>`;
+      }
+    }
     if (/photo|image|picture|attachment/.test(lowerKey)) {
       const absUrl = toAbsUrl(text);
       const safeUrl = escapeHtml(absUrl);
@@ -874,18 +882,11 @@ export function setupAdminPage(
     if (!entries || !entries.length) {
       return `<div class="detail-content">${title}<div class="muted" data-i18n="details.empty">暂无更多字段。</div></div>`;
     }
-    const metaParts = [];
-    if (item && typeof item === 'object') {
-      if (item.dn_number) metaParts.push(escapeHtml(String(item.dn_number)));
-      if (item.id !== undefined && item.id !== null) {
-        metaParts.push(`#${escapeHtml(String(item.id))}`);
-      }
-    }
-    const meta = metaParts.length ? `<div class="detail-meta">${metaParts.join(' · ')}</div>` : '';
+    const meta = '';
     const rows = entries
       .map(([key, value]) => {
         const safeKey = escapeHtml(String(key));
-        const valueHtml = formatDetailValue(String(key), value);
+        const valueHtml = formatDetailValue(String(key), value, item);
         return [
           '<div class="detail-item">',
           `<div class="detail-key">${safeKey}</div>`,
