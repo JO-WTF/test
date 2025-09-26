@@ -464,6 +464,62 @@ function uploadWithProgress({ url, formData, onProgress, timeoutMs = 15000 }) {
   });
 }
 
+const resolveClientProfile = () => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return { isMobile: false, browserId: 'unknown' };
+  }
+
+  let score = 0;
+  const ua = navigator.userAgent || '';
+  const uaData = navigator.userAgentData;
+
+  if (uaData && typeof uaData.mobile === 'boolean' && uaData.mobile) {
+    score += 0.3;
+  }
+
+  if (typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 0) {
+    score += 0.2;
+  }
+
+  if (typeof window.matchMedia === 'function') {
+    try {
+      if (window.matchMedia('(pointer: coarse)').matches) {
+        score += 0.15;
+      }
+    } catch (err) {
+      console.warn('matchMedia pointer coarse check failed', err);
+    }
+  }
+
+  if (typeof window.innerWidth === 'number' && window.innerWidth > 0 && window.innerWidth <= 820) {
+    score += 0.15;
+  }
+
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) {
+    score += 0.1;
+  }
+
+  if (
+    'ontouchstart' in window ||
+    (window.DocumentTouch && typeof document !== 'undefined' && document instanceof window.DocumentTouch)
+  ) {
+    score += 0.1;
+  }
+
+  const isMobile = score > 0.6;
+
+  let browserId = 'unknown';
+  if (uaData?.brands?.length) {
+    browserId = uaData.brands.map((item) => `${item.brand}/${item.version}`).join(' ');
+  } else if (ua) {
+    browserId = ua;
+  }
+
+  return { isMobile, browserId };
+};
+
+const { isMobile: isMobileClient, browserId: browserIdentifier } = resolveClientProfile();
+
 const submitUpdate = async () => {
   if (!state.isValid) return;
   if (!state.dnStatus) {
@@ -517,7 +573,7 @@ const submitUpdate = async () => {
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
-    fd.append('updated_by', 'driver');
+    fd.append('updated_by', isMobileClient ? 'driver' : browserIdentifier);
 
     if (state.photoFile instanceof File) {
       fd.append('photo', state.photoFile, state.photoFile.name || 'photo');
