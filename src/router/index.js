@@ -16,6 +16,11 @@ const routes = [
     name: 'dashboard',
     component: () => import('../views/DashboardView.vue'),
   },
+  {
+    path: '/routes',
+    name: 'routes',
+    component: () => import('../views/RouteCalculatorView.vue'),
+  },
 ];
 
 const router = createRouter({
