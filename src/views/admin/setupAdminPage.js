@@ -6,6 +6,8 @@ import {
   STATUS_TRANSLATION_KEYS,
   STATUS_ALIAS_MAP,
   DN_SCAN_STATUS_ORDERED_LIST,
+  DN_SCAN_STATUS_VALUES,
+  STATUS_DISPLAY_OVERRIDES,
 } from '../../config.js';
 
 import { createDnEntryManager } from './dnEntry.js';
@@ -63,6 +65,8 @@ export function setupAdminPage(
   const mask = el('modal-mask');
   const mId = el('modal-id');
   const mStatus = el('m-status');
+  const mStatusDelivery = el('m-status-delivery');
+  const mStatusDeliveryField = el('m-status-delivery-field');
   const mRemark = el('m-remark');
   const mRemarkField = el('m-remark-field');
   const mPhoto = el('m-photo');
@@ -153,7 +157,7 @@ export function setupAdminPage(
   }
   const TRANSPORT_MANAGER_STATUS_CARDS = [
     { status: STATUS_VALUES.PREPARE_VEHICLE, label: 'Prepare Vehicle' },
-    { status: STATUS_VALUES.ON_THE_WAY, label: 'On the way' },
+    { status: STATUS_VALUES.ON_THE_WAY, label: 'On The Way' },
     { status: STATUS_VALUES.ON_SITE, label: 'On Site' },
     { status: STATUS_VALUES.POD, label: 'POD' },
     { status: STATUS_VALUES.WAITING_PIC_FEEDBACK, label: 'Waiting PIC Feedback' },
@@ -165,6 +169,13 @@ export function setupAdminPage(
     { status: STATUS_VALUES.CANCEL_MOS, label: 'Cancel MOS' },
     { status: STATUS_VALUES.CLOSE_BY_RN, label: 'Close by RN' },
     { status: STATUS_VALUES.NO_STATUS, label: 'No Status' },
+  ];
+  const STATUS_DELIVERY_OPTIONS = [
+    STATUS_VALUES.PREPARE_VEHICLE,
+    STATUS_VALUES.ON_THE_WAY,
+    STATUS_VALUES.ON_SITE,
+    STATUS_VALUES.POD,
+    STATUS_VALUES.WAITING_PIC_FEEDBACK,
   ];
   const DEFAULT_MODAL_STATUS_ORDER =
     Array.isArray(DN_SCAN_STATUS_ORDERED_LIST) &&
@@ -643,6 +654,10 @@ export function setupAdminPage(
 
   function i18nStatusDisplay(value) {
     const canonical = normalizeStatusValue(value);
+    const override =
+      (STATUS_DISPLAY_OVERRIDES && STATUS_DISPLAY_OVERRIDES[canonical]) ||
+      (STATUS_DISPLAY_OVERRIDES && STATUS_DISPLAY_OVERRIDES[value]);
+    if (override) return override;
     const key = STATUS_VALUE_TO_KEY[canonical] || STATUS_VALUE_TO_KEY[value];
     if (key && i18n) {
       try {
@@ -1081,6 +1096,7 @@ ${cellsHtml}
     statusCards.updateActiveState();
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
+    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
     dnEntry.renderFilterPreview();
   }
 
@@ -1097,6 +1113,7 @@ ${cellsHtml}
     updateRoleBadge();
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
+    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
     updateModalFieldVisibility();
     updateActionColumnVisibility();
     rerenderTableActions();
@@ -1156,6 +1173,17 @@ ${cellsHtml}
     const perms = getCurrentPermissions();
     const allowRemark = Boolean(perms?.allowRemark);
     const allowPhoto = Boolean(perms?.allowPhoto);
+    const allowStatusDelivery = Boolean(perms?.canEdit);
+
+    if (mStatusDeliveryField) {
+      mStatusDeliveryField.style.display = allowStatusDelivery ? '' : 'none';
+    }
+    if (mStatusDelivery) {
+      mStatusDelivery.disabled = !allowStatusDelivery;
+      if (!allowStatusDelivery) {
+        setFormControlValue(mStatusDelivery, '');
+      }
+    }
 
     if (mRemarkField) {
       mRemarkField.style.display = allowRemark ? '' : 'none';
@@ -1263,6 +1291,73 @@ ${cellsHtml}
     } else {
       mStatus.value = '';
     }
+  }
+
+  function populateModalStatusDeliveryOptions(selected) {
+    if (!mStatusDelivery) return;
+    const selectedRaw = selected || '';
+    const selectedCanonical = normalizeStatusValue(selectedRaw);
+    const keepLabel = i18n?.t('modal.statusDelivery.keep') || '（不修改）';
+
+    mStatusDelivery.innerHTML = '';
+    const keepOption = document.createElement('option');
+    keepOption.value = '';
+    keepOption.setAttribute('data-i18n', 'modal.statusDelivery.keep');
+    keepOption.textContent = keepLabel;
+    mStatusDelivery.appendChild(keepOption);
+
+    const appended = new Set();
+    STATUS_DELIVERY_OPTIONS.forEach((value) => {
+      const canonical = normalizeStatusValue(value);
+      if (!canonical || appended.has(canonical)) return;
+      appended.add(canonical);
+      const opt = document.createElement('option');
+      opt.value = canonical;
+      opt.textContent = getModalStatusLabel(canonical);
+      if (canonical === selectedCanonical) {
+        opt.selected = true;
+      }
+      mStatusDelivery.appendChild(opt);
+    });
+
+    if (selectedCanonical && !appended.has(selectedCanonical)) {
+      const opt = document.createElement('option');
+      opt.value = selectedCanonical;
+      opt.textContent = getModalStatusLabel(selectedCanonical);
+      opt.selected = true;
+      mStatusDelivery.appendChild(opt);
+      appended.add(selectedCanonical);
+    }
+
+    if (selectedCanonical) {
+      setFormControlValue(mStatusDelivery, selectedCanonical);
+    } else {
+      setFormControlValue(mStatusDelivery, '');
+    }
+  }
+
+  function syncStatusDeliveryWithStatus() {
+    if (!mStatus || !mStatusDelivery) return;
+    const canonicalStatus = normalizeStatusValue(mStatus.value);
+    if (!canonicalStatus) {
+      setFormControlValue(mStatusDelivery, '');
+      return;
+    }
+    const nextValue =
+      canonicalStatus === DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE
+        ? STATUS_VALUES.ON_SITE
+        : STATUS_VALUES.ON_THE_WAY;
+    setFormControlValue(mStatusDelivery, nextValue);
+  }
+
+  if (mStatus && mStatusDelivery) {
+    mStatus.addEventListener(
+      'change',
+      () => {
+        syncStatusDeliveryWithStatus();
+      },
+      { signal }
+    );
   }
 
   function refreshDnEntryVisibility() {
@@ -1693,6 +1788,14 @@ ${cellsHtml}
     }
     const canonicalStatus = normalizeStatusValue(item.status);
     populateModalStatusOptions(canonicalStatus);
+    const statusDeliveryRaw =
+      item.status_delivery ||
+      item.statusDelivery ||
+      item.status_deliver ||
+      item.statusDeliver ||
+      '';
+    const canonicalStatusDelivery = normalizeStatusValue(statusDeliveryRaw);
+    populateModalStatusDeliveryOptions(canonicalStatusDelivery);
     updateModalFieldVisibility();
     if (mMsg) mMsg.textContent = '';
     if (mask) mask.style.display = 'flex';
@@ -1702,6 +1805,9 @@ ${cellsHtml}
     if (mask) mask.style.display = 'none';
     editingId = 0;
     editingItem = null;
+    if (mStatusDelivery) {
+      setFormControlValue(mStatusDelivery, '');
+    }
   }
 
   function buildFormDataForSave() {
@@ -1709,6 +1815,9 @@ ${cellsHtml}
     const form = new FormData();
     const statusValRaw = mStatus?.value || '';
     const statusVal = normalizeStatusValue(statusValRaw) || statusValRaw;
+    const statusDeliveryRaw = mStatusDelivery?.value || '';
+    const statusDeliveryVal =
+      normalizeStatusValue(statusDeliveryRaw) || statusDeliveryRaw;
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
     const currentItem = editingItem || null;
@@ -1728,6 +1837,16 @@ ${cellsHtml}
     if (statusToSubmit) {
       form.set('status', statusToSubmit);
     }
+    const originalStatusDeliveryRaw =
+      currentItem?.status_delivery ||
+      currentItem?.statusDelivery ||
+      currentItem?.status_deliver ||
+      currentItem?.statusDeliver ||
+      '';
+    const originalStatusDelivery =
+      normalizeStatusValue(originalStatusDeliveryRaw) || originalStatusDeliveryRaw || '';
+    const statusDeliveryToSubmit = statusDeliveryVal || originalStatusDelivery;
+    form.set('status_delivery', statusDeliveryToSubmit || '');
     if (remarkVal) form.set('remark', remarkVal);
     if (allowPhoto) {
       form.set('photo', mPhoto.files[0]);
@@ -1735,10 +1854,12 @@ ${cellsHtml}
     return {
       form,
       statusVal,
+      statusDeliveryVal,
       remarkVal,
       allowPhoto,
       dnNumber,
       statusToSubmit,
+      statusDeliveryToSubmit,
     };
   }
 
@@ -1789,7 +1910,12 @@ ${cellsHtml}
       return false;
     }
 
-    if (!payload.statusVal && !payload.remarkVal && !payload.allowPhoto) {
+    if (
+      !payload.statusVal &&
+      !payload.statusDeliveryVal &&
+      !payload.remarkVal &&
+      !payload.allowPhoto
+    ) {
       if (mMsg)
         mMsg.textContent = i18n
           ? i18n.t('modal.nothingToSave')
@@ -2351,6 +2477,7 @@ ${cellsHtml}
       updateRoleBadge();
       refreshDnEntryVisibility();
       populateModalStatusOptions('');
+      populateModalStatusDeliveryOptions('');
       updateModalFieldVisibility();
       rerenderTableActions();
       statusCards.render();
