@@ -67,6 +67,8 @@
     "actions.query": "Search",
     "actions.reset": "Reset",
     "actions.showAll": "Show all DN",
+    "actions.statusSwitch.checked": "Only DN with status",
+    "actions.statusSwitch.unchecked": "Show all DN",
     "actions.exportAll": "Export DN",
     "actions.exportRecords": "Export DN Update Records",
     "actions.trustBackend": "Trust Backend",

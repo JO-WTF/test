@@ -2454,10 +2454,12 @@ ${cellsHtml}
     { signal }
   );
 
-  el('btn-show-all')?.addEventListener(
-    'click',
-    () => {
-      resetAllFilters({ statusValue: STATUS_ANY_VALUE });
+  rootEl.addEventListener(
+    'admin:status-switch-change',
+    (event) => {
+      const detail = event?.detail || {};
+      const targetValue = detail.showOnlyNonEmpty ? DEFAULT_STATUS_VALUE : STATUS_ANY_VALUE;
+      setFilterValue('status', targetValue);
       q.page = 1;
       fetchList();
     },

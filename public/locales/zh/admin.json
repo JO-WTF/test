@@ -67,6 +67,8 @@
     "actions.query": "查询",
     "actions.reset": "重置",
     "actions.showAll": "显示全部 DN",
+    "actions.statusSwitch.checked": "仅显示有状态 DN",
+    "actions.statusSwitch.unchecked": "显示全部 DN",
     "actions.exportAll": "导出DN",
     "actions.exportRecords": "导出DN更新记录",
     "actions.trustBackend": "信任后台",
