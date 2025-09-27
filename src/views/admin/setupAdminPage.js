@@ -1427,7 +1427,9 @@ ${cellsHtml}
 
   function setupStatusMismatchTooltips() {
     if (!tbody) return;
-    const tooltipTargets = tbody.querySelectorAll('[data-status-mismatch="true"]');
+    const tooltipTargets = tbody.querySelectorAll(
+      '.status-mismatch[data-status-mismatch="true"]'
+    );
     if (!tooltipTargets.length) return;
     tooltipTargets.forEach((target) => {
       const message =
@@ -1448,7 +1450,7 @@ ${cellsHtml}
                     role: 'img',
                     'aria-label': message,
                   },
-                  '✖'
+                  '!'
                 ),
             }
           );
@@ -1463,7 +1465,14 @@ ${cellsHtml}
     if (!tbody) return;
     cleanupStatusMismatchTooltips();
     const tooltipMessage = getStatusMismatchTooltipMessage();
+    const processedRows = new Set();
     tbody.querySelectorAll('td[data-raw-status]').forEach((td) => {
+      const summaryRow = td.closest('tr.summary-row');
+      if (summaryRow && !processedRows.has(summaryRow)) {
+        summaryRow.classList.remove('status-mismatch-row');
+        summaryRow.removeAttribute('data-status-mismatch');
+        processedRows.add(summaryRow);
+      }
       const raw = td.getAttribute('data-raw-status') || '';
       const canonical = normalizeStatusValue(raw);
       const value = canonical || raw;
@@ -1481,6 +1490,10 @@ ${cellsHtml}
         indicator.setAttribute('data-status-mismatch', 'true');
         indicator.setAttribute('data-tooltip-message', tooltipMessage);
         td.appendChild(indicator);
+        if (summaryRow) {
+          summaryRow.classList.add('status-mismatch-row');
+          summaryRow.setAttribute('data-status-mismatch', 'true');
+        }
       }
     });
     setupStatusMismatchTooltips();
