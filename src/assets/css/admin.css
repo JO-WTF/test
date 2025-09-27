@@ -227,16 +227,32 @@ body.admin-theme {
 .admin-page .status-mismatch {
     display: inline-flex;
     align-items: center;
-    margin-left: 4px
+    margin-left: 6px
     }
 .admin-page .status-mismatch-icon {
     color: #ff4d4f;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: help
+    cursor: help;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 1px rgba(255, 77, 79, 0.2);
+    flex-shrink: 0
+    }
+.admin-page tr.summary-row.status-mismatch-row {
+    background: rgba(255, 77, 79, 0.12)
+    }
+.admin-page tr.summary-row.status-mismatch-row.expandable:hover {
+    background: rgba(255, 77, 79, 0.18)
+    }
+.admin-page tr.summary-row.status-mismatch-row.expanded {
+    background: rgba(255, 77, 79, 0.18)
     }
 .admin-page tr.summary-row .row-toggle::before {
     content: '▸';
