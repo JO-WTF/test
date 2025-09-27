@@ -219,20 +219,14 @@
                   <button class="btn" id="btn-search" data-i18n="actions.query">查询</button>
                   <button class="btn ghost" id="btn-reset" data-i18n="actions.reset">重置</button>
                   <div class="status-switch">
-                    <a-switch
+                    <Switch
                       id="status-visibility-switch"
                       v-model:checked="showOnlyNonEmptyStatus"
                       size="small"
                       :checked-children="statusSwitchCheckedLabel"
                       :un-checked-children="statusSwitchUncheckedLabel"
+                      :default-checked="true"
                     />
-                    <label
-                      for="status-visibility-switch"
-                      class="status-switch__label"
-                      data-i18n="actions.showAll"
-                    >
-                      显示全部 DN
-                    </label>
                   </div>
                   <button class="btn ghost" id="btn-export-all" data-i18n="actions.exportAll">
                     导出DN
@@ -406,6 +400,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Switch } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { createI18n } from '../i18n/core';
@@ -481,12 +476,12 @@ let syncingFromSwitch = false;
 const statusSwitchCheckedLabel = computed(() => {
   // ensure reactivity on language change
   currentLang.value;
-  return translate('actions.statusSwitch.checked') ?? '仅显示有状态 DN';
+  return translate('actions.statusSwitch.checked') ?? '仅显示已更新DN';
 });
 
 const statusSwitchUncheckedLabel = computed(() => {
   currentLang.value;
-  return translate('actions.statusSwitch.unchecked') ?? '显示全部 DN';
+  return translate('actions.statusSwitch.unchecked') ?? '显示所有DN';
 });
 
 const translate = (key, vars) => {
