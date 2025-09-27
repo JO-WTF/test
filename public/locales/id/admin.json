@@ -67,6 +67,8 @@
     "actions.query": "Cari",
     "actions.reset": "Atur Ulang",
     "actions.showAll": "Tampilkan semua DN",
+    "actions.statusSwitch.checked": "Hanya DN dengan status",
+    "actions.statusSwitch.unchecked": "Tampilkan semua DN",
     "actions.exportAll": "Ekspor DN",
     "actions.exportRecords": "Ekspor Catatan Pembaruan DN",
     "actions.trustBackend": "Percaya Backend",

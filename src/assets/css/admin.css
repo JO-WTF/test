@@ -475,6 +475,17 @@ body.admin-theme {
     flex: 1 1 100%;
     max-width: 100%
     }
+.admin-page .status-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px
+    }
+.admin-page .status-switch__label {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px
+    }
 .admin-page .row-line {
     display: flex;
     gap: 10px;

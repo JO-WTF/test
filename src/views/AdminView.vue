@@ -218,9 +218,22 @@
                 <div style="display: flex; gap: 8px; flex-wrap: wrap">
                   <button class="btn" id="btn-search" data-i18n="actions.query">查询</button>
                   <button class="btn ghost" id="btn-reset" data-i18n="actions.reset">重置</button>
-                  <button class="btn ghost" id="btn-show-all" data-i18n="actions.showAll">
-                    显示全部 DN
-                  </button>
+                  <div class="status-switch">
+                    <a-switch
+                      id="status-visibility-switch"
+                      v-model:checked="showOnlyNonEmptyStatus"
+                      size="small"
+                      :checked-children="statusSwitchCheckedLabel"
+                      :un-checked-children="statusSwitchUncheckedLabel"
+                    />
+                    <label
+                      for="status-visibility-switch"
+                      class="status-switch__label"
+                      data-i18n="actions.showAll"
+                    >
+                      显示全部 DN
+                    </label>
+                  </div>
                   <button class="btn ghost" id="btn-export-all" data-i18n="actions.exportAll">
                     导出DN
                   </button>
@@ -392,13 +405,13 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
-import { useAdminFilters } from './admin/useAdminFilters';
+import { useAdminFilters, STATUS_NOT_EMPTY_VALUE } from './admin/useAdminFilters';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
@@ -461,6 +474,21 @@ const filterSelectOption = (input, option) => {
   return text.includes((input || '').toLowerCase());
 };
 
+const showOnlyNonEmptyStatus = ref(true);
+let syncingFromStatusSelect = false;
+let syncingFromSwitch = false;
+
+const statusSwitchCheckedLabel = computed(() => {
+  // ensure reactivity on language change
+  currentLang.value;
+  return translate('actions.statusSwitch.checked') ?? '仅显示有状态 DN';
+});
+
+const statusSwitchUncheckedLabel = computed(() => {
+  currentLang.value;
+  return translate('actions.statusSwitch.unchecked') ?? '显示全部 DN';
+});
+
 const translate = (key, vars) => {
   if (!i18nInstance) return undefined;
   try {
@@ -481,6 +509,47 @@ const applyTranslations = () => {
   updateHasCoordinateSelectOptions(translator);
   refreshDatePresets(translator);
 };
+
+const normalizeStatusSelection = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter((item) => typeof item === 'string' && item);
+  if (typeof raw === 'string' && raw) return [raw];
+  return [];
+};
+
+watch(
+  statusSelectValue,
+  (val) => {
+    const normalized = normalizeStatusSelection(val);
+    const nextChecked =
+      normalized.length === 1 && normalized[0] === STATUS_NOT_EMPTY_VALUE;
+    if (syncingFromSwitch) {
+      syncingFromSwitch = false;
+      if (showOnlyNonEmptyStatus.value !== nextChecked) {
+        syncingFromStatusSelect = true;
+        showOnlyNonEmptyStatus.value = nextChecked;
+      }
+      return;
+    }
+    if (showOnlyNonEmptyStatus.value !== nextChecked) {
+      syncingFromStatusSelect = true;
+      showOnlyNonEmptyStatus.value = nextChecked;
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+watch(showOnlyNonEmptyStatus, (checked) => {
+  if (syncingFromStatusSelect) {
+    syncingFromStatusSelect = false;
+    return;
+  }
+  syncingFromSwitch = true;
+  const event = new CustomEvent('admin:status-switch-change', {
+    detail: { showOnlyNonEmpty: checked },
+  });
+  adminRoot.value?.dispatchEvent(event);
+});
 
 const updateDayjsLocale = (lang) => {
   const map = { zh: 'zh-cn', id: 'id', en: 'en' };
