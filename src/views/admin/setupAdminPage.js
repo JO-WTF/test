@@ -482,7 +482,7 @@ export function setupAdminPage(
       setFormControlValue(pageSizeInput, String(fallback));
       return fallback;
     }
-    const normalized = Math.min(100, Math.max(1, Math.floor(raw)));
+    const normalized = Math.min(1000, Math.max(1, Math.floor(raw)));
     if (String(normalized) !== String(pageSizeInput.value)) {
       setFormControlValue(pageSizeInput, String(normalized));
     }
