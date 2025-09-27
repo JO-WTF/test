@@ -221,6 +221,23 @@ body.admin-theme {
     color: #7f96c2;
     margin-top: 4px
     }
+.admin-page .status-text {
+    display: inline-block
+    }
+.admin-page .status-mismatch {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px
+    }
+.admin-page .status-mismatch-icon {
+    color: #ff4d4f;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help
+    }
 .admin-page tr.summary-row .row-toggle::before {
     content: '▸';
     display: inline-block;

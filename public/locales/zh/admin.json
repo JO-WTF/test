@@ -112,6 +112,7 @@
     "table.updatedAt": "更新时间",
     "table.coords": "经纬度",
     "table.actions": "操作",
+    "table.statusMismatchTooltip": "配送状态(status_delivery)与司机上传的货物状态(status)不一致，请检查并更新。",
     "table.expandHint": "点击查看全部字段",
     "table.photoIconLabel": "查看照片",
     "table.mapIconLabel": "在 Google 地图中打开",
