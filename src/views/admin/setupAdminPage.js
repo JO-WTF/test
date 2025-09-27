@@ -1,3 +1,5 @@
+import { createApp, h } from 'vue';
+import { Tooltip } from 'ant-design-vue';
 import { api as viewerApi } from 'v-viewer';
 import Toastify from 'toastify-js';
 import {
@@ -99,6 +101,7 @@ export function setupAdminPage(
   let cachedItems = [];
   let removeI18nListener = null;
   let viewerInstance = null;
+  let statusMismatchTooltips = [];
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
@@ -107,6 +110,8 @@ export function setupAdminPage(
   const STATUS_ALIAS_LOOKUP = STATUS_ALIAS_MAP || {};
   const STATUS_KNOWN_VALUES = new Set(Object.keys(STATUS_VALUE_TO_KEY));
   const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+  const STATUS_MISMATCH_TOOLTIP_FALLBACK =
+    '配送状态(status_delivery)与司机上传的货物状态(status)不一致，请检查并更新。';
   const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';
   const PLAN_MOS_TIMEZONE_OFFSET_MINUTES = 7 * 60;
   const JAKARTA_UTC_OFFSET_MINUTES = 7 * 60;
@@ -667,6 +672,22 @@ export function setupAdminPage(
     return text;
   }
 
+  function shouldShowStatusMismatch(statusDeliveryRaw, statusRaw) {
+    const delivery = normalizeStatusValue(statusDeliveryRaw);
+    const status = normalizeStatusValue(statusRaw);
+    if (!delivery) return false;
+    if (delivery === STATUS_VALUES.ON_THE_WAY) {
+      return status === DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
+    }
+    if (
+      delivery === STATUS_VALUES.ON_SITE ||
+      delivery === STATUS_VALUES.POD
+    ) {
+      return status !== DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
+    }
+    return false;
+  }
+
   function i18nStatusDisplay(value) {
     const canonical = normalizeStatusValue(value);
     const override =
@@ -694,6 +715,10 @@ export function setupAdminPage(
       console.error(err);
     }
     return fallback;
+  }
+
+  function getStatusMismatchTooltipMessage() {
+    return translateInstant('table.statusMismatchTooltip', STATUS_MISMATCH_TOOLTIP_FALLBACK);
   }
 
   function normalizeTextValue(value) {
@@ -801,6 +826,11 @@ export function setupAdminPage(
 
   function getIssueRemarkDisplay(item) {
     return getFirstNonEmpty(item, ISSUE_REMARK_FIELD_CANDIDATES);
+  }
+
+  function getStatusDeliveryCanonicalValue(item) {
+    const raw = getFirstNonEmpty(item, STATUS_DELIVERY_FIELD_CANDIDATES);
+    return normalizeStatusValue(raw);
   }
 
   function getStatusDeliveryDisplay(item) {
@@ -992,6 +1022,7 @@ export function setupAdminPage(
     const planMos = getPlanMosDateDisplay(item);
     const issueRemark = getIssueRemarkDisplay(item);
     const statusDelivery = getStatusDeliveryDisplay(item);
+    const statusDeliveryCanonical = getStatusDeliveryCanonicalValue(item);
     const updatedAt = getUpdatedAtDisplay(item);
     const remarkText = normalizeTextValue(item?.remark);
     const remarkDisplay = remarkText
@@ -999,9 +1030,9 @@ export function setupAdminPage(
       : '<span class="muted">-</span>';
     const statusValue = normalizeStatusValue(item?.status);
     const statusRaw = statusValue || item?.status || '';
-    const statusCell = `<td data-raw-status="${escapeHtml(statusRaw)}">${i18nStatusDisplay(
-      statusRaw
-    )}</td>`;
+    const statusCell = `<td data-raw-status="${escapeHtml(statusRaw)}" data-status-delivery="${escapeHtml(
+      statusDeliveryCanonical || ''
+    )}">${i18nStatusDisplay(statusRaw)}</td>`;
     const photoCell = buildPhotoCell(item);
     const locationCell = buildLocationCell(item);
     const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
@@ -1379,14 +1410,80 @@ ${cellsHtml}
     dnEntry.refreshVisibility();
   }
 
+  function cleanupStatusMismatchTooltips() {
+    if (!statusMismatchTooltips.length) return;
+    statusMismatchTooltips.forEach(({ app, mountEl }) => {
+      try {
+        app.unmount();
+      } catch (err) {
+        console.error(err);
+      }
+      if (mountEl && mountEl.parentNode) {
+        mountEl.parentNode.removeChild(mountEl);
+      }
+    });
+    statusMismatchTooltips = [];
+  }
+
+  function setupStatusMismatchTooltips() {
+    if (!tbody) return;
+    const tooltipTargets = tbody.querySelectorAll('[data-status-mismatch="true"]');
+    if (!tooltipTargets.length) return;
+    tooltipTargets.forEach((target) => {
+      const message =
+        target.getAttribute('data-tooltip-message') || getStatusMismatchTooltipMessage();
+      const mountEl = document.createElement('span');
+      target.appendChild(mountEl);
+      const app = createApp({
+        render() {
+          return h(
+            Tooltip,
+            { title: message, placement: 'top' },
+            {
+              default: () =>
+                h(
+                  'span',
+                  {
+                    class: 'status-mismatch-icon',
+                    role: 'img',
+                    'aria-label': message,
+                  },
+                  '✖'
+                ),
+            }
+          );
+        },
+      });
+      statusMismatchTooltips.push({ app, mountEl });
+      app.mount(mountEl);
+    });
+  }
+
   function translateStatusCells() {
     if (!tbody) return;
+    cleanupStatusMismatchTooltips();
+    const tooltipMessage = getStatusMismatchTooltipMessage();
     tbody.querySelectorAll('td[data-raw-status]').forEach((td) => {
       const raw = td.getAttribute('data-raw-status') || '';
       const canonical = normalizeStatusValue(raw);
       const value = canonical || raw;
-      td.textContent = i18nStatusDisplay(value);
+      const display = i18nStatusDisplay(value);
+      td.innerHTML = '';
+      const textSpan = document.createElement('span');
+      textSpan.className = 'status-text';
+      textSpan.textContent = display || '';
+      td.appendChild(textSpan);
+
+      const statusDeliveryValue = td.getAttribute('data-status-delivery') || '';
+      if (shouldShowStatusMismatch(statusDeliveryValue, raw)) {
+        const indicator = document.createElement('span');
+        indicator.className = 'status-mismatch';
+        indicator.setAttribute('data-status-mismatch', 'true');
+        indicator.setAttribute('data-tooltip-message', tooltipMessage);
+        td.appendChild(indicator);
+      }
     });
+    setupStatusMismatchTooltips();
   }
 
   function applyStatusCardFilter(def, canonicalStatus) {
@@ -1483,6 +1580,7 @@ ${cellsHtml}
   function renderRows(items) {
     if (!tbody) return;
     updateActionColumnVisibility();
+    cleanupStatusMismatchTooltips();
     cachedItems = Array.isArray(items) ? items.slice() : [];
     const currentKeys = new Set();
     const showActions = shouldShowActionsColumn();
@@ -2539,5 +2637,6 @@ ${cellsHtml}
     }
     cleanupFilterSubscriptions();
     cleanupViewer();
+    cleanupStatusMismatchTooltips();
   };
 }

@@ -112,6 +112,7 @@
     "table.updatedAt": "Last Updated",
     "table.coords": "Coordinates",
     "table.actions": "Actions",
+    "table.statusMismatchTooltip": "Delivery status (status_delivery) does not match the driver-uploaded cargo status (status). Please review and update.",
     "table.expandHint": "Click to view all fields",
     "table.photoIconLabel": "View photo",
     "table.mapIconLabel": "Open in Google Maps",

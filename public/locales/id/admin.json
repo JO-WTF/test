@@ -112,6 +112,7 @@
     "table.updatedAt": "Terakhir Diperbarui",
     "table.coords": "Koordinat",
     "table.actions": "Tindakan",
+    "table.statusMismatchTooltip": "Status pengiriman (status_delivery) tidak selaras dengan status muatan yang diunggah pengemudi (status). Harap periksa dan perbarui.",
     "table.expandHint": "Klik untuk melihat semua kolom",
     "table.photoIconLabel": "Lihat foto",
     "table.mapIconLabel": "Buka di Google Maps",
