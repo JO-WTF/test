@@ -67,7 +67,7 @@
     "actions.query": "Cari",
     "actions.reset": "Atur Ulang",
     "actions.showAll": "Tampilkan semua DN",
-    "actions.exportAll": "Ekspor Semua",
+    "actions.exportAll": "Ekspor DN",
     "actions.exportRecords": "Ekspor Catatan Pembaruan DN",
     "actions.trustBackend": "Percaya Backend",
     "actions.syncGoogleSheet": "Perbarui data Google Sheet",
@@ -152,7 +152,7 @@
     "dn.toast.denied": "Peran saat ini tidak dapat melakukan entri DN",
     "dn.toast.empty": "Masukkan minimal satu nomor DN",
     "dn.toast.error": "Gagal melakukan entri DN",
-    "actions.exporting": "Sedang mengekspor semua data, mohon tunggu…",
+    "actions.exporting": "Sedang mengekspor data, mohon tunggu…",
     "actions.exportNone": "Tidak ada data yang cocok untuk diekspor.",
     "actions.exportError": "Ekspor gagal",
     "pager.info": "Halaman {page} / {pages}, total {total} item"

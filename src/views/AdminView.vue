@@ -222,7 +222,7 @@
                     显示全部 DN
                   </button>
                   <button class="btn ghost" id="btn-export-all" data-i18n="actions.exportAll">
-                    导出全部
+                    导出DN
                   </button>
                   <button
                     class="btn ghost"

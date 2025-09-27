@@ -2261,9 +2261,10 @@ ${cellsHtml}
   async function exportAll() {
     if (!hint) return;
     try {
-      hint.textContent = i18n?.t('actions.exporting') || '正在导出全部数据，请稍候…';
+      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
       const params = getExportSearchParams();
-      const basePath = q.mode === 'batch' ? '/api/dn/batch/list' : '/api/dn/list';
+      const basePath =
+        q.mode === 'batch' ? '/api/dn/list/batch' : '/api/dn/list/search';
       const url = buildExportUrl(basePath, params);
 
       const resp = await fetch(url);
@@ -2299,7 +2300,7 @@ ${cellsHtml}
   async function exportUpdateRecords() {
     if (!hint) return;
     try {
-      hint.textContent = i18n?.t('actions.exporting') || '正在导出全部数据，请稍候…';
+      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
       const params = getExportSearchParams();
       const url = buildExportUrl('/api/dn/records', params);
 
