@@ -67,7 +67,7 @@
     "actions.query": "查询",
     "actions.reset": "重置",
     "actions.showAll": "显示全部 DN",
-    "actions.exportAll": "导出全部",
+    "actions.exportAll": "导出DN",
     "actions.exportRecords": "导出DN更新记录",
     "actions.trustBackend": "信任后台",
     "actions.syncGoogleSheet": "更新Google Sheet数据",
@@ -152,7 +152,7 @@
     "dn.toast.denied": "当前角色无权录入 DN",
     "dn.toast.empty": "请至少输入一个 DN 号",
     "dn.toast.error": "DN 录入失败",
-    "actions.exporting": "正在导出全部数据，请稍候…",
+    "actions.exporting": "正在导出数据，请稍候…",
     "actions.exportNone": "没有匹配的数据可导出。",
     "actions.exportError": "导出失败",
     "pager.info": "第 {page} / {pages} 页，共 {total} 条"

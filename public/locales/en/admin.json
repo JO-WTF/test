@@ -67,7 +67,7 @@
     "actions.query": "Search",
     "actions.reset": "Reset",
     "actions.showAll": "Show all DN",
-    "actions.exportAll": "Export All",
+    "actions.exportAll": "Export DN",
     "actions.exportRecords": "Export DN Update Records",
     "actions.trustBackend": "Trust Backend",
     "actions.syncGoogleSheet": "Update Google Sheet Data",
@@ -152,7 +152,7 @@
     "dn.toast.denied": "Current role cannot add DN entries",
     "dn.toast.empty": "Please input at least one DN number",
     "dn.toast.error": "DN import failed",
-    "actions.exporting": "Exporting all data, please wait…",
+    "actions.exporting": "Exporting data, please wait…",
     "actions.exportNone": "No matching data to export.",
     "actions.exportError": "Export failed",
     "pager.info": "Page {page} / {pages}, total {total} items"
