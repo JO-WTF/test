@@ -291,7 +291,7 @@
               id="f-ps2"
               type="number"
               min="1"
-              max="100"
+              max="1000"
               value="20"
               class="w120"
               data-i18n-placeholder="perPage.placeholder"
