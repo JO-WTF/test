@@ -1507,11 +1507,20 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     );
   }
 
-  el('btn-search')?.addEventListener(
-    'click',
-    () => {
-      q.page = 1;
-      fetchList();
+  const triggerSearch = () => {
+    q.page = 1;
+    fetchList();
+  };
+
+  el('btn-search')?.addEventListener('click', triggerSearch, { signal });
+
+  el('f-ps2')?.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        triggerSearch();
+      }
     },
     { signal }
   );
