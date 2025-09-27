@@ -474,6 +474,21 @@ export function setupAdminPage(
 
   const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
 
+  function getNormalizedPageSize() {
+    const fallback = 20;
+    if (!pageSizeInput) return fallback;
+    const raw = Number(pageSizeInput.value);
+    if (!Number.isFinite(raw) || raw <= 0) {
+      setFormControlValue(pageSizeInput, String(fallback));
+      return fallback;
+    }
+    const normalized = Math.min(100, Math.max(1, Math.floor(raw)));
+    if (String(normalized) !== String(pageSizeInput.value)) {
+      setFormControlValue(pageSizeInput, String(normalized));
+    }
+    return normalized;
+  }
+
   function buildSearchUrl(paramInput, mode = q.mode) {
     const params =
       typeof paramInput === 'string'
@@ -1622,7 +1637,7 @@ ${cellsHtml}
   function buildParamsAuto() {
     const params = new URLSearchParams();
     const tokens = dnEntry.normalizeFilterInput({ enforceFormat: false });
-    const ps = Number(pageSizeInput?.value) || 20;
+    const ps = getNormalizedPageSize();
     q.page_size = ps;
 
     if (tokens.length > 1) {
@@ -2365,6 +2380,19 @@ ${cellsHtml}
     'click',
     () => {
       q.page++;
+      fetchList();
+    },
+    { signal }
+  );
+
+  pageSizeInput?.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const ps = getNormalizedPageSize();
+      q.page = 1;
+      q.page_size = ps;
       fetchList();
     },
     { signal }
