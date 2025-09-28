@@ -190,12 +190,14 @@ import Toastify from 'toastify-js';
 import { createI18n } from '../i18n/core';
 import { useBodyTheme } from '../composables/useBodyTheme';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
+import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
 
-const LICENSE_KEY =
-  'DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0NTQzNDEwLU1UQTBOVFF6TkRFd0xYZGxZaTFVY21saGJGQnliMm8iLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tZGxzLmR5bmFtc29mdG9ubGluZS5jb20iLCJvcmdhbml6YXRpb25JRCI6IjEwNDU0MzQxMCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NkbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsImNoZWNrQ29kZSI6MTg2NjI4MDUzMX0=';
+const LICENSE_KEY = getDynamsoftLicenseKey();
 
-if (window?.Dynamsoft?.DBR?.BarcodeScanner) {
+if (LICENSE_KEY && window?.Dynamsoft?.DBR?.BarcodeScanner) {
   window.Dynamsoft.DBR.BarcodeScanner.license = LICENSE_KEY;
+} else if (!LICENSE_KEY) {
+  console.warn('Dynamsoft license key is not configured. Scanner features may be unavailable.');
 }
 
 const i18n = createI18n({
@@ -544,7 +546,7 @@ const submitUpdate = async () => {
   state.submitOk = false;
 
   try {
-    const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '';
+    const API_BASE = getApiBase();
 
     if (!API_BASE) {
       await new Promise((r) => setTimeout(r, 300));

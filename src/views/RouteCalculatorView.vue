@@ -75,9 +75,13 @@
 import { computed, nextTick, ref } from 'vue';
 import * as XLSX from 'xlsx';
 import { useBodyTheme } from '../composables/useBodyTheme';
+import { getMapboxAccessToken } from '../utils/env.js';
 
-const MAPBOX_ACCESS_TOKEN =
-  'pk.eyJ1IjoicnFiMjR2cDIiLCJhIjoiY201dGlodTU3MHcyYzJqcTBoN3BsdDA4NiJ9.YSHAPavjlOhdbKx8Z7gPWA';
+const MAPBOX_ACCESS_TOKEN = getMapboxAccessToken();
+
+if (!MAPBOX_ACCESS_TOKEN) {
+  console.warn('Mapbox access token is not configured. Route calculations will fail.');
+}
 
 useBodyTheme(null);
 
@@ -245,6 +249,10 @@ const processRowsSequentially = async () => {
 };
 
 const fetchRoute = async (origin, destination) => {
+  if (!MAPBOX_ACCESS_TOKEN) {
+    throw new Error('Mapbox access token is not configured');
+  }
+
   const url = new URL(
     `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.lon},${origin.lat};${destination.lon},${destination.lat}`
   );
