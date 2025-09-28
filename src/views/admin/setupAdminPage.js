@@ -93,6 +93,7 @@ export function setupAdminPage(
   const dnClose = el('dn-close');
   const dnCancel = el('dn-cancel');
   const dnConfirm = el('dn-confirm');
+  const archiveExpiredDnBtn = el('btn-archive-expired-dn');
 
   let editingId = 0;
   let editingItem = null;
@@ -104,6 +105,8 @@ export function setupAdminPage(
   let statusMismatchTooltips = [];
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
+  const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
+  const ARCHIVE_THRESHOLD_DAYS = 55;
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
 
   const STATUS_VALUE_TO_KEY = STATUS_TRANSLATION_KEYS || {};
@@ -542,6 +545,10 @@ export function setupAdminPage(
     return getCurrentRole()?.permissions || null;
   }
 
+  function isTransportManagerRole(roleKey = currentRoleKey) {
+    return roleKey === TRANSPORT_MANAGER_ROLE_KEY;
+  }
+
   const dnEntry = createDnEntryManager({
     dnInput,
     dnPreview,
@@ -557,6 +564,7 @@ export function setupAdminPage(
     API_BASE,
     showToast,
     getCurrentPermissions,
+    getCurrentRoleKey: () => currentRoleKey,
     fetchList,
   });
 
@@ -1408,6 +1416,11 @@ ${cellsHtml}
 
   function refreshDnEntryVisibility() {
     dnEntry.refreshVisibility();
+    if (!archiveExpiredDnBtn) return;
+    const visible = isTransportManagerRole();
+    archiveExpiredDnBtn.style.display = visible ? '' : 'none';
+    archiveExpiredDnBtn.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    archiveExpiredDnBtn.disabled = !visible;
   }
 
   function cleanupStatusMismatchTooltips() {
@@ -2597,6 +2610,89 @@ ${cellsHtml}
         showToast(composed, 'error');
       } finally {
         syncSheetBtn.disabled = false;
+      }
+    },
+    { signal }
+  );
+
+  archiveExpiredDnBtn?.addEventListener(
+    'click',
+    async () => {
+      if (!archiveExpiredDnBtn || archiveExpiredDnBtn.disabled) return;
+      archiveExpiredDnBtn.disabled = true;
+      try {
+        const resp = await fetch(`${API_BASE}/api/dn/archive/mark`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threshold_days: ARCHIVE_THRESHOLD_DAYS }),
+        });
+
+        const contentType = resp.headers?.get('content-type') || '';
+        let payload = null;
+        let text = '';
+
+        if (contentType.includes('application/json')) {
+          try {
+            payload = await resp.json();
+          } catch (err) {
+            console.error(err);
+          }
+        } else {
+          try {
+            text = await resp.text();
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        const messageFromResp =
+          (payload && (payload.message || payload.msg || payload.detail)) || text || '';
+
+        if (!resp.ok || (payload && payload.ok === false)) {
+          const baseError =
+            i18n?.t('actions.archiveExpiredDnError') || '归档过期 DN 标记失败';
+          const errorMessage = messageFromResp
+            ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: messageFromResp }) ||
+              `${baseError}：${messageFromResp}`
+            : baseError;
+          showToast(errorMessage, 'error');
+          return;
+        }
+
+        const rawMatchedRows = payload?.data?.matched_rows;
+        let matchedCount = null;
+        if (typeof rawMatchedRows === 'number' && Number.isFinite(rawMatchedRows)) {
+          matchedCount = rawMatchedRows;
+        } else if (typeof rawMatchedRows === 'string') {
+          const parsed = Number(rawMatchedRows);
+          if (Number.isFinite(parsed)) matchedCount = parsed;
+        }
+
+        const baseSuccess =
+          i18n?.t('actions.archiveExpiredDnSuccess') || '已触发归档过期 DN 标记任务';
+        let successMessage = baseSuccess;
+        if (matchedCount !== null) {
+          successMessage =
+            i18n?.t('actions.archiveExpiredDnSuccessWithCount', { count: matchedCount }) ||
+            `${baseSuccess}，匹配 ${matchedCount} 条记录`;
+        } else if (messageFromResp) {
+          successMessage =
+            i18n?.t('actions.archiveExpiredDnSuccessWithMsg', { msg: messageFromResp }) ||
+            `${baseSuccess}：${messageFromResp}`;
+        }
+
+        showToast(successMessage, 'success');
+      } catch (err) {
+        const fallbackError =
+          i18n?.t('actions.archiveExpiredDnError') || '归档过期 DN 标记失败';
+        const message = err?.message || err;
+        const composed = message
+          ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: message }) ||
+            `${fallbackError}：${message}`
+          : fallbackError;
+        showToast(composed, 'error');
+      } finally {
+        archiveExpiredDnBtn.disabled = !isTransportManagerRole();
       }
     },
     { signal }

@@ -22,12 +22,24 @@ export function createDnEntryManager({
   API_BASE,
   showToast,
   getCurrentPermissions,
+  getCurrentRoleKey,
   fetchList,
 }) {
+  const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
+
+  function isTransportManager() {
+    if (typeof getCurrentRoleKey === 'function') {
+      return getCurrentRoleKey() === TRANSPORT_MANAGER_ROLE_KEY;
+    }
+    return false;
+  }
+
   function refreshVisibility() {
     if (!dnBtn) return;
-    dnBtn.style.display = 'none';
-    dnBtn.setAttribute('aria-hidden', 'true');
+    const visible = isTransportManager();
+    dnBtn.style.display = visible ? '' : 'none';
+    dnBtn.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    dnBtn.disabled = !visible;
   }
 
   function normalizeRawSoft(raw) {
@@ -292,6 +304,7 @@ export function createDnEntryManager({
 
   attachFilterEvents();
   attachModalEvents();
+  refreshVisibility();
 
   return {
     refreshVisibility,
