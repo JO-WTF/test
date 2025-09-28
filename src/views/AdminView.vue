@@ -217,7 +217,7 @@
                 <label style="visibility: hidden" data-i18n="actions.label">操作</label>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap">
                   <button class="btn" id="btn-search" data-i18n="actions.query">查询</button>
-                  <button class="btn ghost" id="btn-reset" data-i18n="actions.reset">重置</button>
+                  <button class="btn" id="btn-reset" data-i18n="actions.reset">重置</button>
                   <div class="status-switch">
                     <Switch
                       id="status-visibility-switch"
@@ -228,21 +228,21 @@
                       :default-checked="true"
                     />
                   </div>
-                  <button class="btn ghost" id="btn-export-all" data-i18n="actions.exportAll">
+                  <button class="btn" id="btn-export-all" data-i18n="actions.exportAll">
                     导出DN
                   </button>
                   <button
-                    class="btn ghost"
+                    class="btn"
                     id="btn-export-records"
                     data-i18n="actions.exportRecords"
                   >
                     导出DN更新记录
                   </button>
-                  <button class="btn ghost" id="btn-trust-backend-link" data-i18n="actions.trustBackend">
+                  <button class="btn" id="btn-trust-backend-link" data-i18n="actions.trustBackend">
                     信任后台
                   </button>
                   <button
-                    class="btn ghost"
+                    class="btn"
                     id="btn-sync-google-sheet"
                     data-i18n="actions.syncGoogleSheet"
                   >
