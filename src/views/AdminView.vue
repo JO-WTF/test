@@ -251,10 +251,17 @@
                   <button
                     class="btn ghost"
                     id="btn-dn-entry"
-                    style="display: none"
                     data-i18n="actions.dnEntry"
                   >
                     DN 录入
+                  </button>
+                  <button
+                    class="btn ghost"
+                    id="btn-archive-expired-dn"
+                    data-i18n="actions.archiveExpiredDn"
+                    disabled
+                  >
+                    归档过期DN
                   </button>
                 </div>
               </div>
