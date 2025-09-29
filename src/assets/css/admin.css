@@ -53,6 +53,65 @@ body.admin-theme {
     padding: 14px;
     margin-top: 14px
     }
+.admin-page .lsp-summary-card-section {
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(105, 168, 255, 0.08);
+    border: 1px solid rgba(105, 168, 255, 0.25);
+    overflow-x: auto;
+    scrollbar-width: thin
+    }
+.admin-page .lsp-summary-card-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: stretch
+    }
+.admin-page .lsp-summary-card {
+    appearance: none;
+    border: 1px solid #24345c;
+    border-radius: 999px;
+    background: rgba(11, 19, 40, 0.92);
+    color: #eaf2ff;
+    padding: 6px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease
+    }
+.admin-page .lsp-summary-card:hover {
+    border-color: #69a8ff;
+    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.35)
+    }
+.admin-page .lsp-summary-card:focus-visible {
+    outline: 2px solid rgba(105, 168, 255, 0.75);
+    outline-offset: 2px
+    }
+.admin-page .lsp-summary-card.active {
+    border-color: #69a8ff;
+    background: rgba(105, 168, 255, 0.22);
+    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.45)
+    }
+.admin-page .lsp-summary-card.loading {
+    cursor: progress;
+    opacity: 0.7
+    }
+.admin-page .lsp-summary-card__label {
+    font-weight: 600;
+    color: #cfe2ff
+    }
+.admin-page .lsp-summary-card__stats {
+    color: #9cc6ff
+    }
+.admin-page .lsp-summary-card--placeholder {
+    cursor: progress;
+    opacity: 0.7
+    }
 .admin-page .status-card-section {
     margin-bottom: 12px
     }

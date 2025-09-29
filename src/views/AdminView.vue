@@ -271,6 +271,15 @@
       </div>
 
       <div class="card">
+        <div
+          id="lsp-summary-card-wrapper"
+          class="lsp-summary-card-section"
+          style="display: none"
+          role="group"
+          aria-hidden="true"
+        >
+          <div id="lsp-summary-card-container" class="lsp-summary-card-container"></div>
+        </div>
         <div id="hint" class="muted" data-i18n="hint.ready">输入条件后点击查询。</div>
         <table id="tbl" style="display: none">
           <thead>
