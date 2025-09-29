@@ -11,6 +11,7 @@ import {
   DN_SCAN_STATUS_VALUES,
   STATUS_DISPLAY_OVERRIDES,
 } from '../../config.js';
+import { getApiBase } from '../../utils/env.js';
 
 import { createDnEntryManager } from './dnEntry.js';
 import { createStatusCardManager } from './statusCards.js';
@@ -18,10 +19,7 @@ import { createFilterBridgeManager } from './filterBridgeManager.js';
 import { getTodayDateStringInTimezone } from './dateUtils.js';
 import { escapeHtml, setFormControlValue } from './utils.js';
 
-const API_BASE =
-  (window.APP_CONFIG && window.APP_CONFIG.API_BASE) ||
-  window.API_BASE ||
-  window.location.origin;
+const API_BASE = getApiBase();
 
 export function setupAdminPage(
   rootEl,

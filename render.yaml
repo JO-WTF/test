@@ -2,16 +2,15 @@ services:
   - type: static
     name: your-static-site
     envVars:
-      - key: API_BASE
+      - key: VITE_API_BASE
+        sync: false
+      - key: VITE_MAPBOX_ACCESS_TOKEN
+        sync: false
+      - key: VITE_DYNAMSOFT_LICENSE_KEY
         sync: false
     buildCommand: |
       npm install
       npm run build
-      cat > dist/config.js <<EOCONFIG
-      window.APP_CONFIG = {
-        API_BASE: "${API_BASE}"
-      };
-      EOCONFIG
     staticPublishPath: dist
     routes:
       # Fallback rewrite so SPA routes load correctly on direct visits

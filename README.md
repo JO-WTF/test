@@ -23,4 +23,15 @@ npm run build
 
 The production bundle is emitted to `dist/`.
 
-Environment-specific API endpoints can be injected by overriding `window.APP_CONFIG.API_BASE` (for example, via `dist/config.js`).
+## Configuration
+
+Sensitive values such as API endpoints and third-party keys are loaded from environment variables.
+Create a `.env` file (or copy `.env` to `.env.local`) and provide the values appropriate for your environment:
+
+```
+VITE_API_BASE=https://api.example.com
+VITE_MAPBOX_ACCESS_TOKEN=pk.your-mapbox-token
+VITE_DYNAMSOFT_LICENSE_KEY=your-dynamsoft-license
+```
+
+These variables are read at build time by Vite. Ensure any deployment platform exposes the `VITE_*` variables during the build step so the application can access them at runtime.

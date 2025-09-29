@@ -1,3 +1,5 @@
+import { getApiBase } from '../../utils/env.js';
+
 const STATUS_ORDER = [
   'NEW MOS',
   'PREPARE VEHICLE',
@@ -31,9 +33,7 @@ const STATUS_INDEX = STATUS_ORDER.reduce((acc, key, idx) => {
   return acc;
 }, {});
 
-const API_BASE =
-  (window.APP_CONFIG && window.APP_CONFIG.API_BASE) ||
-  'https://back.idnsc.dpdns.org';
+const API_BASE = getApiBase();
 
 export function setupDashboardPage(rootEl, opts = {}) {
   if (!rootEl) {
