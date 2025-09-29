@@ -1,26 +1,16 @@
 <!-- DemoLine.vue -->
 <template>
-  <div class="p-3">
-    <!-- 指标切换（按钮样式、充满一行） -->
-    <div style="margin-bottom: 8px;">
-      <a-radio-group
-        v-model:value="metric"
-        button-style="solid"
-        style="width: 100%; display: flex; gap: 8px; flex-wrap: wrap;"
-      >
-        <a-radio-button :value="'status_not_empty'" style="flex: 1 1 200px; text-align: center;">
-          status_not_empty
-        </a-radio-button>
-        <a-radio-button :value="'total_dn'" style="flex: 1 1 200px; text-align: center;">
-          total_dn
-        </a-radio-button>
-        <a-radio-button :value="'rate'" style="flex: 1 1 200px; text-align: center;">
-          更新率（status_not_empty / total_dn）
-        </a-radio-button>
-      </a-radio-group>
+  <div class="stats-view">
+    <div class="chart-shell">
+      <div class="metric-toggle">
+        <a-radio-group v-model:value="metric" button-style="solid">
+          <a-radio-button :value="'status_not_empty'">status_not_empty</a-radio-button>
+          <a-radio-button :value="'total_dn'">total_dn</a-radio-button>
+          <a-radio-button :value="'rate'">更新率（status_not_empty / total_dn）</a-radio-button>
+        </a-radio-group>
+      </div>
+      <div ref="containerRef" class="chart"></div>
     </div>
-
-    <div ref="containerRef" style="height: 420px;"></div>
   </div>
 </template>
 
@@ -93,6 +83,9 @@ const yDomain = computed(() => {
     const pad = min === 0 ? 1 : Math.abs(min) * 0.1;
     min -= pad;
     max += pad;
+  } else {
+    const padMax = Math.abs(max) * 0.1 || 1;
+    max += padMax;
   }
   return [min, max];
 });
@@ -116,6 +109,7 @@ onMounted(async () => {
     xField: 'time',
     yField: 'value',
     seriesField: 'category',
+    autoFit: true,
 
     // 散点样式
     point: {
@@ -185,7 +179,59 @@ watch([data, isRate, yTitle, yDomain], () => {
 </script>
 
 <style scoped>
-.p-3 {
-  padding: 12px;
+.stats-view {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.chart-shell {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 32px);
+  max-height: calc(100vh - 32px);
+  background: var(--color-background, #fff);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.metric-toggle {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 2;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+}
+
+.metric-toggle :deep(.ant-radio-group) {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.metric-toggle :deep(.ant-radio-button-wrapper) {
+  border-radius: 999px !important;
+  border: none !important;
+  padding: 0 16px;
+  height: 32px;
+  line-height: 30px;
+  box-shadow: none;
+}
+
+.metric-toggle :deep(.ant-radio-group-solid .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)) {
+  background: #1677ff;
+  color: #fff;
+}
+
+.chart {
+  position: absolute;
+  inset: 0;
 }
 </style>
