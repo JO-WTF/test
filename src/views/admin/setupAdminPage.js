@@ -1698,11 +1698,9 @@ ${cellsHtml}
     setFilterValue('subcon', '');
     setFilterValue('status_wh', '');
 
-    if (targetStatus) {
-      setFilterValue('status', targetStatus);
-    } else {
-      setFilterValue('status', '');
-    }
+    // Clicking a status card should only apply the status_delivery filter.
+    // Keep the status filter cleared so the query does not constrain by status.
+    setFilterValue('status', '');
 
     setFilterValue('status_delivery', targetStatus);
 
