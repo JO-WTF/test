@@ -1,333 +1,182 @@
+<!-- DemoLine.vue -->
 <template>
-  <div class="admin-page lsp-stats-view">
-    <div class="container admin-container">
-      <header class="page-header lsp-stats-view__header">
-        <div class="lsp-stats-view__title-group">
-          <h1 class="lsp-stats-view__title">LSP 统计</h1>
-          <p class="lsp-stats-view__subtitle">基于配送状态的 DN 更新概览</p>
-        </div>
-        <div class="lsp-stats-view__actions">
-          <router-link to="/admin" class="btn ghost">返回管理页</router-link>
-        </div>
-      </header>
-
-      <section class="card lsp-stats-view__card">
-        <div v-if="isLoading" class="lsp-stats-view__state">正在加载统计数据…</div>
-        <div v-else-if="error" class="lsp-stats-view__state lsp-stats-view__state--error">{{ error }}</div>
-        <div v-else-if="!chartData.length" class="lsp-stats-view__state">暂无统计数据</div>
-        <div v-else class="lsp-stats-view__content">
-          <div class="lsp-stats-view__controls">
-            <a-radio-group v-model:value="selectedMetric" button-style="solid">
-              <a-radio-button value="updateRate">更新率</a-radio-button>
-              <a-radio-button value="statusNotEmpty">更新记录数</a-radio-button>
-              <a-radio-button value="totalDn">总记录数</a-radio-button>
-            </a-radio-group>
-          </div>
-          <div ref="chartContainer" class="lsp-stats-view__chart" aria-label="LSP 统计折线图"></div>
-          <footer class="lsp-stats-view__footer">数据来源：/api/dn/status-delivery/lsp-summary-records</footer>
-        </div>
-      </section>
+  <div class="p-3">
+    <!-- 指标切换（按钮样式、充满一行） -->
+    <div style="margin-bottom: 8px;">
+      <a-radio-group
+        v-model:value="metric"
+        button-style="solid"
+        style="width: 100%; display: flex; gap: 8px; flex-wrap: wrap;"
+      >
+        <a-radio-button :value="'status_not_empty'" style="flex: 1 1 200px; text-align: center;">
+          status_not_empty
+        </a-radio-button>
+        <a-radio-button :value="'total_dn'" style="flex: 1 1 200px; text-align: center;">
+          total_dn
+        </a-radio-button>
+        <a-radio-button :value="'rate'" style="flex: 1 1 200px; text-align: center;">
+          更新率（status_not_empty / total_dn）
+        </a-radio-button>
+      </a-radio-group>
     </div>
+
+    <div ref="containerRef" style="height: 420px;"></div>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import dayjs from 'dayjs';
-import { Line as LinePlot } from '@ant-design/plots/es/core/plots/line';
-import { getApiBase } from '../utils/env';
-import { useBodyTheme } from '../composables/useBodyTheme';
+import { ref, onMounted, watch, computed } from 'vue';
+import { Line } from '@antv/g2plot';
+// Ant Design Vue（确保在你的入口里已完成 app.use(Antd) 并引入样式）
+/* import 'ant-design-vue/dist/antd.css' // 如果你还没全局引入样式，可在入口加上 */
 
-useBodyTheme('admin-theme');
+const containerRef = ref(null);
+const chartRef = ref(null);
 
-const chartContainer = ref(null);
-const chartInstance = ref(null);
-const isLoading = ref(false);
-const error = ref('');
-const rawRecords = ref([]);
-const selectedMetric = ref('updateRate');
-const numberFormatter = new Intl.NumberFormat('en-US');
+const raw = ref([]);
+const metric = ref('status_not_empty'); // 'status_not_empty' | 'total_dn' | 'rate'
 
-const metrics = {
-  updateRate: {
-    key: 'updateRate',
-    label: '更新率',
-    axisTitle: '更新率（%）',
-    valueAccessor: (record) => {
-      const percent = record.totalDn > 0 ? (record.statusNotEmpty / record.totalDn) * 100 : 0;
-      return Number.isFinite(percent) ? Number(percent.toFixed(2)) : 0;
-    },
-    valueFormatter: (value) => `${value.toFixed(2)}%`,
-  },
-  statusNotEmpty: {
-    key: 'statusNotEmpty',
-    label: '更新记录数',
-    axisTitle: '更新记录数',
-    valueAccessor: (record) => record.statusNotEmpty,
-    valueFormatter: (value) => numberFormatter.format(value),
-  },
-  totalDn: {
-    key: 'totalDn',
-    label: '总记录数',
-    axisTitle: '总记录数',
-    valueAccessor: (record) => record.totalDn,
-    valueFormatter: (value) => numberFormatter.format(value),
-  },
+/** 拉取数据 */
+const fetchData = async () => {
+  const res = await fetch('/api/dn/status-delivery/lsp-summary-records'); // ← 改成你的接口
+  const json = await res.json();
+  const arr = (json?.data ?? [])
+    .map((item) => ({
+      time: new Date(item.recorded_at),
+      lsp: item.lsp,
+      status_not_empty: Number(item.status_not_empty ?? 0),
+      total_dn: Number(item.total_dn ?? 0),
+    }))
+    .sort((a, b) => a.time - b.time);
+  raw.value = arr;
 };
 
-const metricConfig = computed(() => metrics[selectedMetric.value] ?? metrics.updateRate);
-
-const normalizedRecords = computed(() => {
-  return rawRecords.value
-    .map((item) => {
-      const lspName = String(item?.lsp ?? '').trim() || '未命名 LSP';
-      const totalDn = Number.parseFloat(item?.total_dn ?? 0);
-      const statusNotEmpty = Number.parseFloat(item?.status_not_empty ?? 0);
-      const recordedAt = dayjs(item?.recorded_at);
-      const recordedAtDate = recordedAt.isValid()
-        ? recordedAt.toDate()
-        : new Date(item?.recorded_at || Date.now());
-      const timestamp = recordedAt.isValid()
-        ? recordedAt.valueOf()
-        : recordedAtDate.getTime();
-      const recordedAtLabel = recordedAt.isValid()
-        ? recordedAt.format('YYYY-MM-DD HH:mm')
-        : String(item?.recorded_at ?? '未知时间');
-
-      return {
-        id: item?.id ?? `${lspName}-${timestamp}`,
-        lsp: lspName,
-        totalDn: Number.isFinite(totalDn) ? totalDn : 0,
-        statusNotEmpty: Number.isFinite(statusNotEmpty) ? statusNotEmpty : 0,
-        recordedAt: recordedAtDate,
-        recordedAtLabel,
-        recordedAtTimestamp: timestamp,
-      };
-    })
-    .sort((a, b) => a.recordedAtTimestamp - b.recordedAtTimestamp);
+/** 根据当前指标生成绘图数据 */
+const data = computed(() => {
+  return raw.value.map((d) => {
+    const total = d.total_dn || 0;
+    const filled = d.status_not_empty || 0;
+    const val =
+      metric.value === 'total_dn'
+        ? total
+        : metric.value === 'status_not_empty'
+        ? filled
+        : total > 0
+        ? filled / total
+        : 0; // rate
+    return { time: d.time, value: val, category: d.lsp };
+  });
 });
 
-const chartData = computed(() => {
-  const metric = metricConfig.value;
-  return normalizedRecords.value.map((record) => ({
-    lsp: record.lsp,
-    recordedAt: record.recordedAt,
-    recordedAtLabel: record.recordedAtLabel,
-    value: metric.valueAccessor(record),
-  }));
+const isRate = computed(() => metric.value === 'rate');
+const yTitle = computed(() =>
+  metric.value === 'total_dn' ? 'total_dn' : metric.value === 'status_not_empty' ? 'status_not_empty' : '更新率',
+);
+const valueFormatter = (v) => (isRate.value ? `${(v * 100).toFixed(1)}%` : String(v));
+
+/** y 轴范围（自动适配） */
+const yDomain = computed(() => {
+  const vals = data.value.map((d) => d.value).filter((v) => Number.isFinite(v));
+  if (!vals.length) return undefined;
+  let min = Math.min(...vals);
+  let max = Math.max(...vals);
+  if (min === max) {
+    const pad = min === 0 ? 1 : Math.abs(min) * 0.1;
+    min -= pad;
+    max += pad;
+  }
+  return [min, max];
 });
 
-const buildRequestUrl = () => {
-  const apiBase = getApiBase();
-  if (apiBase) {
-    try {
-      const url = new URL('/api/dn/status-delivery/lsp-summary-records', apiBase);
-      return url.toString();
-    } catch (err) {
-      console.error(err);
-    }
-  }
-  return '/api/dn/status-delivery/lsp-summary-records';
-};
+/** 统一的时间格式化 */
+const fmtTime = (t) =>
+  new Date(t).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 
-const fetchLspStats = async () => {
-  isLoading.value = true;
-  error.value = '';
-  try {
-    const response = await fetch(buildRequestUrl(), {
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+/** 初始化图表 */
+onMounted(async () => {
+  await fetchData();
 
-    if (!response.ok) {
-      throw new Error(`获取统计数据失败（${response.status}）`);
-    }
-
-    const payload = await response.json();
-    if (!payload?.ok || !Array.isArray(payload?.data)) {
-      throw new Error('接口返回数据格式不符合预期');
-    }
-
-    rawRecords.value = payload.data;
-  } catch (err) {
-    console.error(err);
-    error.value = err?.message || '无法获取 LSP 统计数据';
-    rawRecords.value = [];
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const renderChart = async () => {
-  if (!chartContainer.value) return;
-
-  await nextTick();
-
-  if (!chartData.value.length) {
-    if (chartInstance.value) {
-      chartInstance.value.destroy();
-      chartInstance.value = null;
-    }
-    return;
-  }
-
-  const metric = metricConfig.value;
-  const options = {
-    data: chartData.value,
-    xField: 'recordedAt',
+  chartRef.value = new Line(containerRef.value, {
+    data: data.value,
+    xField: 'time',
     yField: 'value',
-    seriesField: 'lsp',
-    colorField: 'lsp',
-    connectNulls: true,
-    shape: 'smooth',
-    axis: {
-      x: {
-        title: '记录时间',
-        labelFormatter: (value) => dayjs(value).format('HH:mm'),
-      },
-      y: {
-        title: metric.axisTitle,
-        labelFormatter: (value) => metric.valueFormatter(Number(value)),
+    seriesField: 'category',
+
+    // 散点样式
+    point: {
+      size: 4,
+      shape: 'circle',
+      style: { lineWidth: 1, opacity: 0.9 },
+    },
+
+    xAxis: {
+      type: 'time',
+      title: { text: '时间' },
+      label: {
+        formatter: (v) => fmtTime(v),
       },
     },
-    legend: {
-      color: {
-        position: 'top',
-        title: 'LSP',
+    yAxis: {
+      title: { text: yTitle.value },
+      label: {
+        formatter: (v) => (isRate.value ? `${(Number(v) * 100).toFixed(0)}%` : `${v}`),
       },
+      // 动态范围
+      min: yDomain.value?.[0],
+      max: yDomain.value?.[1],
+      nice: true,
+    },
+
+    legend: {
+      // 不显示尺寸图例
+      position: 'top',
+    },
+
+    tooltip: {
+      // 自定义提示：将 y 值格式化
+      formatter: (datum) => ({
+        name: yTitle.value,
+        value: valueFormatter(datum.value),
+      }),
+      title: (title, datum) => fmtTime(datum?.time ?? title),
+    },
+  });
+
+  chartRef.value.render();
+});
+
+/** 数据或配置变化时更新图表 */
+watch([data, isRate, yTitle, yDomain], () => {
+  if (!chartRef.value) return;
+  chartRef.value.update({
+    data: data.value,
+    yAxis: {
+      title: { text: yTitle.value },
+      label: {
+        formatter: (v) => (isRate.value ? `${(Number(v) * 100).toFixed(0)}%` : `${v}`),
+      },
+      min: yDomain.value?.[0],
+      max: yDomain.value?.[1],
+      nice: true,
     },
     tooltip: {
-      title: 'recordedAtLabel',
-      items: [
-        {
-          channel: 'y',
-          name: metric.label,
-          valueFormatter: (value) => metric.valueFormatter(Number(value)),
-        },
-      ],
+      formatter: (datum) => ({
+        name: yTitle.value,
+        value: valueFormatter(datum.value),
+      }),
     },
-    meta: {
-      recordedAt: {
-        type: 'time',
-      },
-      value: {
-        formatter: (value) => metric.valueFormatter(Number(value)),
-      },
-    },
-  };
-
-  if (chartInstance.value) {
-    chartInstance.value.update(options);
-  } else {
-    chartInstance.value = new LinePlot(chartContainer.value, options);
-  }
-
-  chartInstance.value.render();
-};
-
-onMounted(async () => {
-  await fetchLspStats();
-  await renderChart();
-});
-
-watch(chartData, () => {
-  renderChart();
-});
-
-watch(metricConfig, () => {
-  renderChart();
-});
-
-onBeforeUnmount(() => {
-  chartInstance.value?.destroy();
-  chartInstance.value = null;
+  });
 });
 </script>
 
 <style scoped>
-.lsp-stats-view {
-  min-height: 100vh;
-  padding: 16px 0 48px;
-  color: #eaf2ff;
-}
-
-.lsp-stats-view__header {
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.lsp-stats-view__title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: #f5f9ff;
-}
-
-.lsp-stats-view__subtitle {
-  margin: 4px 0 0;
-  color: #9cc6ff;
-  font-size: 14px;
-}
-
-.lsp-stats-view__actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.lsp-stats-view__card {
-  min-height: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.lsp-stats-view__state {
-  text-align: center;
-  padding: 80px 16px;
-  color: #c7d9ff;
-}
-
-.lsp-stats-view__state--error {
-  color: #ff9aa6;
-}
-
-.lsp-stats-view__content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.lsp-stats-view__controls {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.lsp-stats-view__chart {
-  width: 100%;
-  min-height: 360px;
-}
-
-.lsp-stats-view__footer {
-  font-size: 12px;
-  color: #5f7ba8;
-  text-align: right;
-}
-
-:deep(.ant-radio-group-solid .ant-radio-button-wrapper) {
-  background: #162348;
-  border-color: #24345c;
-  color: #cfe2ff;
-}
-
-:deep(.ant-radio-group-solid .ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover) {
-  color: #f5f9ff;
-}
-
-:deep(.ant-radio-group-solid .ant-radio-button-wrapper-checked) {
-  background: #69a8ff;
-  border-color: #69a8ff;
-  color: #08142c;
+.p-3 {
+  padding: 12px;
 }
 </style>
