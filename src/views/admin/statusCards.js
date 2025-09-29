@@ -26,6 +26,8 @@ export function createStatusCardManager({
   getStatusFilterValue,
   onApplyFilter,
   transportManagerCards = DEFAULT_TRANSPORT_MANAGER_STATUS_CARDS,
+  onStatsFetched,
+  onLoadingChange,
 }) {
   let defs = [];
   const refs = new Map();
@@ -259,11 +261,14 @@ export function createStatusCardManager({
     });
     const totalRaw = Number(data?.total ?? data?.count);
     const total = Number.isFinite(totalRaw) ? totalRaw : null;
-    return { counts, total };
+    const lspSummary = Array.isArray(data?.lsp_summary) ? data.lsp_summary : [];
+    return { counts, total, lspSummary };
   }
 
   async function refreshCounts() {
-    if (!defs.length || !refs.size) return;
+    const shouldFetchStats =
+      (defs.length && refs.size) || typeof onStatsFetched === 'function';
+    if (!shouldFetchStats) return;
     requestId += 1;
     const currentRequestId = requestId;
 
@@ -278,11 +283,21 @@ export function createStatusCardManager({
     abortController = controller;
     const { signal: cardSignal } = controller;
 
-    refs.forEach((ref) => {
-      ref.button.classList.add('loading');
-      ref.button.setAttribute('aria-busy', 'true');
-      ref.countEl.textContent = '…';
-    });
+    if (refs.size) {
+      refs.forEach((ref) => {
+        ref.button.classList.add('loading');
+        ref.button.setAttribute('aria-busy', 'true');
+        ref.countEl.textContent = '…';
+      });
+    }
+
+    if (typeof onLoadingChange === 'function') {
+      try {
+        onLoadingChange(true);
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
     let stats = null;
     try {
@@ -294,7 +309,32 @@ export function createStatusCardManager({
       }
     }
 
-    if (cardSignal.aborted || currentRequestId !== requestId) return;
+    if (cardSignal.aborted || currentRequestId !== requestId) {
+      if (typeof onLoadingChange === 'function') {
+        try {
+          onLoadingChange(false);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      return;
+    }
+
+    if (typeof onLoadingChange === 'function') {
+      try {
+        onLoadingChange(false);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (typeof onStatsFetched === 'function') {
+      try {
+        onStatsFetched(stats);
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
     const counts = stats?.counts || Object.create(null);
     let totalCount = 0;

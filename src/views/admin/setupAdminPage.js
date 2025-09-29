@@ -15,6 +15,7 @@ import { getApiBase } from '../../utils/env.js';
 
 import { createDnEntryManager } from './dnEntry.js';
 import { createStatusCardManager } from './statusCards.js';
+import { createLspSummaryCardManager } from './lspSummaryCards.js';
 import { createFilterBridgeManager } from './filterBridgeManager.js';
 import { getTodayDateStringInTimezone } from './dateUtils.js';
 import { escapeHtml, setFormControlValue } from './utils.js';
@@ -83,6 +84,8 @@ export function setupAdminPage(
 
   const statusCardWrapper = el('status-card-wrapper');
   const statusCardContainer = el('status-card-container');
+  const lspSummaryWrapper = el('lsp-summary-card-wrapper');
+  const lspSummaryContainer = el('lsp-summary-card-container');
 
   const dnBtn = el('btn-dn-entry');
   const dnModal = el('dn-modal');
@@ -566,6 +569,18 @@ export function setupAdminPage(
     fetchList,
   });
 
+  const lspSummaryCards = createLspSummaryCardManager({
+    container: lspSummaryContainer,
+    wrapper: lspSummaryWrapper,
+    signal,
+    getActiveLspValues: () => getFilterValues('lsp'),
+    onCardClick(item) {
+      if (!item || !item.lsp) return;
+      applyLspSummaryCardFilter(item.lsp);
+      lspSummaryCards.updateActiveState();
+    },
+  });
+
   const statusCards = createStatusCardManager({
     container: statusCardContainer,
     wrapper: statusCardWrapper,
@@ -583,6 +598,16 @@ export function setupAdminPage(
       statusCards.updateActiveState();
       q.page = 1;
       fetchList();
+    },
+    onStatsFetched(stats) {
+      const summary = Array.isArray(stats?.lspSummary)
+        ? stats.lspSummary
+        : [];
+      lspSummaryCards.setData(summary);
+      lspSummaryCards.updateActiveState();
+    },
+    onLoadingChange(isLoading) {
+      lspSummaryCards.setLoading(isLoading);
     },
   });
 
@@ -1146,6 +1171,7 @@ ${cellsHtml}
     updateRoleBadge();
     statusCards.updateLabels();
     statusCards.updateActiveState();
+    lspSummaryCards.updateActiveState();
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
     populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
@@ -1171,6 +1197,7 @@ ${cellsHtml}
     rerenderTableActions();
     statusCards.render();
     statusCards.refreshCounts();
+    lspSummaryCards.updateActiveState();
     persistAuthState(currentRoleKey, currentUserInfo);
   }
 
@@ -1508,6 +1535,23 @@ ${cellsHtml}
       }
     });
     setupStatusMismatchTooltips();
+  }
+
+  function applyLspSummaryCardFilter(lspName) {
+    const normalizedLsp = normalizeTextValue(lspName);
+    if (!normalizedLsp) return;
+    resetAllFilters({ statusValue: DEFAULT_STATUS_VALUE });
+    const todayJakarta = getTodayDateStringInTimezone(
+      PLAN_MOS_TIME_ZONE,
+      PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
+      'dd MMM yy'
+    );
+    setFilterValue('plan_mos_date', todayJakarta);
+    setFilterValue('lsp', normalizedLsp);
+    statusCards.updateActiveState();
+    lspSummaryCards.updateActiveState();
+    q.page = 1;
+    fetchList();
   }
 
   function applyStatusCardFilter(def, canonicalStatus) {
@@ -2438,6 +2482,10 @@ ${cellsHtml}
 
   subscribeToFilterChange('status_delivery', () => {
     statusCards.updateActiveState();
+  });
+
+  subscribeToFilterChange('lsp', () => {
+    lspSummaryCards.updateActiveState();
   });
 
   function resetAllFilters({ statusValue = DEFAULT_STATUS_VALUE } = {}) {
