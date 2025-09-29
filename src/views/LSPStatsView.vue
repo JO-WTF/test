@@ -93,8 +93,25 @@ const yDomain = computed(() => {
 const TIME_ZONE = 'Asia/Jakarta';
 
 /** 统一的时间格式化 */
-const fmtTime = (t) =>
-  new Date(t).toLocaleString('zh-CN', {
+const fmtTime = (input) => {
+  let millis;
+
+  if (input instanceof Date) {
+    millis = input.getTime();
+  } else if (typeof input === 'number') {
+    millis = input;
+  } else if (typeof input === 'string') {
+    const numeric = Number(input);
+    millis = Number.isNaN(numeric) ? Date.parse(input) : numeric;
+  } else {
+    millis = NaN;
+  }
+
+  if (!Number.isFinite(millis)) {
+    return '';
+  }
+
+  return new Date(millis).toLocaleString('zh-CN', {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -102,6 +119,7 @@ const fmtTime = (t) =>
     hour12: false,
     timeZone: TIME_ZONE,
   });
+};
 
 /** 初始化图表 */
 onMounted(async () => {
