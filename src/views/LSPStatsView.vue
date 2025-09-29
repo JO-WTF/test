@@ -90,6 +90,8 @@ const yDomain = computed(() => {
   return [min, max];
 });
 
+const TIME_ZONE = 'Asia/Jakarta';
+
 /** 统一的时间格式化 */
 const fmtTime = (t) =>
   new Date(t).toLocaleString('zh-CN', {
@@ -98,6 +100,7 @@ const fmtTime = (t) =>
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
+    timeZone: TIME_ZONE,
   });
 
 /** 初始化图表 */
