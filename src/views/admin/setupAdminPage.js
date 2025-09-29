@@ -64,6 +64,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   const statusCardRefs = new Map();
   let statusCardAbortController = null;
   let statusCardRequestId = 0;
+  let statusCardActiveStatus = '';
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
@@ -349,7 +350,7 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     if (!statusCardRefs.size) return;
     const select = el('f-status');
     const value = select ? select.value : '';
-    const canonical = normalizeStatusValue(value);
+    const canonical = statusCardActiveStatus || normalizeStatusValue(value);
     statusCardRefs.forEach((ref, status) => {
       const isActive = Boolean(canonical) && status === canonical;
       ref.button.classList.toggle('active', isActive);
@@ -443,27 +444,10 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   function handleStatusCardClick(status) {
     const canonical = normalizeStatusValue(status);
     if (!canonical) return;
-    const select = el('f-status');
-    if (select) {
-      let hasOption = false;
-      Array.from(select.options).forEach((opt) => {
-        if (opt.value === canonical) hasOption = true;
-      });
-      if (!hasOption) {
-        const option = document.createElement('option');
-        option.value = canonical;
-        option.textContent = i18nStatusDisplay(canonical);
-        select.appendChild(option);
-      }
-      select.value = canonical;
-      try {
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      } catch (err) {
-        console.error(err);
-      }
-    }
+    statusCardActiveStatus = canonical;
+    updateStatusCardActiveState();
     q.page = 1;
-    fetchList();
+    fetchList({ ignoreStatusFilter: true });
   }
 
   function getCurrentRole() {
@@ -943,12 +927,14 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
   el('f-status')?.addEventListener(
     'change',
     () => {
+      statusCardActiveStatus = '';
       updateStatusCardActiveState();
     },
     { signal }
   );
 
-  function buildParamsAuto() {
+  function buildParamsAuto(options = {}) {
+    const { ignoreStatusFilter = false } = options;
     const p = new URLSearchParams();
     const ids = toTokenList(duInput?.value || '');
     const ps = Number(el('f-ps2')?.value) || 20;
@@ -959,7 +945,8 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = el('f-status')?.value;
+      const stRaw = el('f-status')?.value;
+      const st = ignoreStatusFilter ? '' : stRaw;
       const rk = (el('f-remark')?.value || '').trim();
       const hp = el('f-has')?.value;
       const df = el('f-from')?.value;
@@ -1123,14 +1110,14 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
     });
   }
 
-  async function fetchList() {
+  async function fetchList(options = {}) {
     if (!hint || !tbl || !pager || !pginfo) return;
     try {
       hint.textContent = '加载中…';
       tbl.style.display = 'none';
       pager.style.display = 'none';
 
-      const params = buildParamsAuto();
+      const params = buildParamsAuto(options);
       q.lastParams = params;
 
       const url = `${API_BASE}${q.mode === 'batch' ? '/api/du/batch?' : '/api/du/search?'}${params}`;
@@ -1534,6 +1521,8 @@ export function setupAdminPage(rootEl, { i18n, applyTranslations }) {
       });
       renderTokens(['DID']);
       q.page = 1;
+      statusCardActiveStatus = '';
+      updateStatusCardActiveState();
       fetchList();
     },
     { signal }

@@ -77,6 +77,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   const statusCardRefs = new Map();
   let statusCardAbortController = null;
   let statusCardRequestId = 0;
+  let statusCardActiveStatus = '';
   let viewer = null;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
@@ -1018,7 +1019,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   function updateStatusCardActiveState() {
     if (!statusCardRefs.size) return;
     const value = statusSelect ? statusSelect.value : '';
-    const canonical = normalizeStatusValue(value);
+    const canonical = statusCardActiveStatus || normalizeStatusValue(value);
     statusCardRefs.forEach((ref, status) => {
       const isActive = Boolean(canonical) && status === canonical;
       ref.button.classList.toggle('active', isActive);
@@ -1100,15 +1101,12 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   }
 
   function handleStatusCardClick(status) {
-    if (!statusSelect) return;
     const canonical = normalizeStatusValue(status);
-    const option = Array.from(statusSelect.options).find(
-      (opt) => normalizeStatusValue(opt.value) === canonical
-    );
-    statusSelect.value = option ? option.value : canonical;
+    if (!canonical) return;
+    statusCardActiveStatus = canonical;
     updateStatusCardActiveState();
     q.page = 1;
-    fetchList();
+    fetchList({ ignoreStatusFilter: true });
   }
 
   function openViewerWithUrl(url) {
@@ -1270,7 +1268,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     });
   }
 
-  function buildParamsAuto() {
+  function buildParamsAuto(options = {}) {
+    const { ignoreStatusFilter = false } = options;
     const params = new URLSearchParams();
     const tokens = normalizeDnInput({ enforceFormat: false });
     const ps = Number(pageSizeInput?.value) || 20;
@@ -1281,7 +1280,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = statusSelect?.value;
+      const stRaw = statusSelect?.value;
+      const st = ignoreStatusFilter ? '' : stRaw;
       const rk = (remarkInput?.value || '').trim();
       const hp = hasSelect?.value;
       const df = fromInput?.value;
@@ -1310,14 +1310,14 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
     return `${API_BASE}${sep}${u}`;
   }
 
-  async function fetchList() {
+  async function fetchList(options = {}) {
     if (!hint || !tbl || !pager || !pginfo) return;
     try {
       hint.textContent = i18n?.t('hint.loading') || '加载中…';
       tbl.style.display = 'none';
       pager.style.display = 'none';
 
-      const params = buildParamsAuto();
+      const params = buildParamsAuto(options);
       const url = buildSearchUrl(params);
       const resp = await fetch(url);
       const text = await resp.text();
@@ -1859,6 +1859,7 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
   statusSelect?.addEventListener(
     'change',
     () => {
+      statusCardActiveStatus = '';
       updateStatusCardActiveState();
     },
     { signal }
@@ -1891,6 +1892,8 @@ export function setupDnAdminPage(rootEl, { i18n, applyTranslations } = {}) {
       if (dnInput) dnInput.value = '';
       normalizeDnInput({ enforceFormat: false });
       q.page = 1;
+      statusCardActiveStatus = '';
+      updateStatusCardActiveState();
       fetchList();
     },
     { signal }
