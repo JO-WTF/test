@@ -1,5 +1,5 @@
 import { createApp, h } from 'vue';
-import { Tooltip } from 'ant-design-vue';
+import { Tooltip, Input } from 'ant-design-vue';
 import { api as viewerApi } from 'v-viewer';
 import Toastify from 'toastify-js';
 import {
@@ -104,6 +104,7 @@ export function setupAdminPage(
   let removeI18nListener = null;
   let viewerInstance = null;
   let statusMismatchTooltips = [];
+  let detailInputMounts = [];
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
@@ -219,18 +220,18 @@ export function setupAdminPage(
     'remark',
     'photo_url',
     'lonlat',
+    'mos_given_time',
+    'expected_arrival_time_from_project',
+    'hw_tracker',
+    'lsp_tracker',
     'driver_contact_name',
     'driver_contact_number',
     'transportation_time',
-    'mos_given_time',
     'distance_poll_mover_to_site',
     'delivery_type_a_to_b',
-    'hw_tracker',
-    'lsp_tracker',
-    'expected_arrival_time_from_project',
     'estimate_depart_from_start_point_etd',
-    'actual_depart_from_start_point_atd',
     'estimate_arrive_sites_time_eta',
+    'actual_depart_from_start_point_atd',
     'actual_arrive_time_ata',
     'mos_attempt_1st_time',
     'mos_attempt_2nd_time',
@@ -248,6 +249,17 @@ export function setupAdminPage(
     'last_updated_by',
     'latest_record_created_at',
   ];
+  const DETAIL_INPUT_FIELD_SET = new Set(
+    [
+      'distance_poll_mover_to_site',
+      'driver_contact_name',
+      'driver_contact_number',
+      'delivery_type_a_to_b',
+      'transportation_time',
+      'estimate_depart_from_start_point_etd',
+      'estimate_arrive_sites_time_eta',
+    ].map((key) => key.toLowerCase())
+  );
   const REGION_FIELD_CANDIDATES = [
     'region',
     'region_name',
@@ -752,6 +764,32 @@ export function setupAdminPage(
     return translateInstant('table.statusMismatchTooltip', STATUS_MISMATCH_TOOLTIP_FALLBACK);
   }
 
+  function shouldRenderDetailInput(key) {
+    if (!key) return false;
+    const normalized = String(key).trim().toLowerCase();
+    return DETAIL_INPUT_FIELD_SET.has(normalized);
+  }
+
+  function encodeDetailInputValue(value) {
+    if (value === undefined || value === null) return '';
+    try {
+      return encodeURIComponent(String(value));
+    } catch (err) {
+      console.error(err);
+    }
+    return '';
+  }
+
+  function decodeDetailInputValue(value) {
+    if (!value) return '';
+    try {
+      return decodeURIComponent(value);
+    } catch (err) {
+      console.error(err);
+    }
+    return value;
+  }
+
   function normalizeTextValue(value) {
     if (value === null || value === undefined) return '';
     if (typeof value === 'string') return value.trim();
@@ -1022,8 +1060,20 @@ export function setupAdminPage(
     const meta = '';
     const rows = entries
       .map(([key, value]) => {
-        const safeKey = escapeHtml(String(key));
-        const valueHtml = formatDetailValue(String(key), value, item);
+        const keyString = String(key);
+        const safeKey = escapeHtml(keyString);
+        if (shouldRenderDetailInput(keyString)) {
+          const textValue = normalizeTextValue(value);
+          const encodedValue = escapeHtml(encodeDetailInputValue(textValue));
+          const attrKey = escapeHtml(keyString.trim().toLowerCase());
+          return [
+            '<div class="detail-item detail-item-input">',
+            `<div class="detail-key">${safeKey}</div>`,
+            `<div class="detail-value detail-value-input" data-input-key="${attrKey}" data-input-value="${encodedValue}"></div>`,
+            '</div>',
+          ].join('');
+        }
+        const valueHtml = formatDetailValue(keyString, value, item);
         return [
           '<div class="detail-item">',
           `<div class="detail-key">${safeKey}</div>`,
@@ -1032,7 +1082,9 @@ export function setupAdminPage(
         ].join('');
       })
       .join('');
-    return `<div class="detail-content">${title}${meta}<div class="detail-grid">${rows}</div></div>`;
+    const saveLabel = translateInstant('details.save', '保存') || '保存';
+    const saveButtonHtml = `<div class="detail-actions"><button type="button" class="btn detail-save-btn" disabled aria-disabled="true" data-i18n="details.save">${escapeHtml(saveLabel)}</button></div>`;
+    return `<div class="detail-content">${title}${meta}<div class="detail-grid">${rows}</div>${saveButtonHtml}</div>`;
   }
 
   function buildSummaryRow(item, detailEntries, { rowKey, expanded, hasDetails, showActions }) {
@@ -1176,6 +1228,7 @@ ${cellsHtml}
     populateModalStatusOptions(mStatus?.value || '');
     populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
     dnEntry.renderFilterPreview();
+    updateDetailSaveButtonLabels();
   }
 
   if (i18n && typeof i18n.onChange === 'function') {
@@ -1463,6 +1516,59 @@ ${cellsHtml}
     statusMismatchTooltips = [];
   }
 
+  function cleanupDetailInputs() {
+    if (!detailInputMounts.length) return;
+    detailInputMounts.forEach(({ app, mountEl }) => {
+      try {
+        app.unmount();
+      } catch (err) {
+        console.error(err);
+      }
+      if (mountEl) {
+        mountEl.innerHTML = '';
+        delete mountEl.dataset.inputCurrent;
+      }
+    });
+    detailInputMounts = [];
+  }
+
+  function setupDetailInputs() {
+    if (!tbody) return;
+    const targets = tbody.querySelectorAll('.detail-value[data-input-key]');
+    if (!targets.length) return;
+    targets.forEach((target) => {
+      const encodedValue = target.getAttribute('data-input-value') || '';
+      const initialValue = decodeDetailInputValue(encodedValue);
+      const app = createApp({
+        data() {
+          return {
+            currentValue: initialValue,
+          };
+        },
+        render() {
+          return h(Input, {
+            value: this.currentValue,
+            'onUpdate:value': (next) => {
+              this.currentValue = next;
+              target.dataset.inputCurrent = encodeDetailInputValue(next);
+            },
+          });
+        },
+      });
+      target.dataset.inputCurrent = encodeDetailInputValue(initialValue);
+      detailInputMounts.push({ app, mountEl: target });
+      app.mount(target);
+    });
+  }
+
+  function updateDetailSaveButtonLabels() {
+    if (!tbody) return;
+    const label = translateInstant('details.save', '保存') || '保存';
+    tbody.querySelectorAll('.detail-save-btn').forEach((btn) => {
+      btn.textContent = label;
+    });
+  }
+
   function setupStatusMismatchTooltips() {
     if (!tbody) return;
     const tooltipTargets = tbody.querySelectorAll(
@@ -1649,6 +1755,7 @@ ${cellsHtml}
     if (!tbody) return;
     updateActionColumnVisibility();
     cleanupStatusMismatchTooltips();
+    cleanupDetailInputs();
     cachedItems = Array.isArray(items) ? items.slice() : [];
     const currentKeys = new Set();
     const showActions = shouldShowActionsColumn();
@@ -1680,6 +1787,7 @@ ${cellsHtml}
         return summaryHtml + (detailHtml || '');
       })
       .join('');
+    setupDetailInputs();
     hideUpdatedAtColumn();
     Array.from(expandedRowKeys).forEach((key) => {
       if (!currentKeys.has(key)) {
@@ -2796,5 +2904,6 @@ ${cellsHtml}
     cleanupFilterSubscriptions();
     cleanupViewer();
     cleanupStatusMismatchTooltips();
+    cleanupDetailInputs();
   };
 }

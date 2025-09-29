@@ -215,6 +215,13 @@ body.admin-theme {
     color: #07122b;
     cursor: pointer
     }
+.admin-page .btn:disabled, .admin-page .btn[disabled] {
+    cursor: not-allowed;
+    background: #2b3352;
+    color: #8aa2c8;
+    box-shadow: none;
+    opacity: 0.85
+    }
 .admin-page .btn.accent {
     background: linear-gradient(135deg, #8bbdff, #69a8ff);
     color: #07122b;
@@ -390,6 +397,32 @@ body.admin-theme {
     font-size: 13px;
     color: #eaf2ff;
     word-break: break-word
+    }
+.admin-page tr.detail-row .detail-item.detail-item-input {
+    background: rgba(10, 18, 42, 0.75)
+    }
+.admin-page tr.detail-row .detail-value.detail-value-input {
+    display: flex
+    }
+.admin-page tr.detail-row .detail-value.detail-value-input .ant-input {
+    width: 100%;
+    background: #647FBC;
+    border: 1px solid #2a3b63;
+    border-radius: 6px;
+    color: #ffffff
+    }
+.admin-page tr.detail-row .detail-value.detail-value-input .ant-input:focus {
+    border-color: #69a8ff;
+    box-shadow: none
+    }
+.admin-page tr.detail-row .detail-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end
+    }
+.admin-page tr.detail-row .detail-actions .detail-save-btn {
+    padding-left: 28px;
+    padding-right: 28px
     }
 .admin-page tr.detail-row .detail-links {
     display: flex;
