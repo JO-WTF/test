@@ -93,7 +93,8 @@ const normalizeNumber = (value) => {
 
 const isOnSiteStatus = (status) => {
   if (!status) return false;
-  return String(status).trim().toLowerCase() === 'on site';
+  const normalized = String(status).trim().toLowerCase();
+  return normalized === 'on site' || normalized === 'arrived at site';
 };
 
 const formatField = (value) => {
