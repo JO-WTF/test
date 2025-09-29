@@ -66,7 +66,13 @@ const mapContainer = ref(null);
 const mapInstance = shallowRef(null);
 const mapLoaded = ref(false);
 const activeMarkers = [];
+const activeRoutes = [];
 let pendingMarkerData = null;
+let currentRouteGeneration = 0;
+
+const ORIGIN_COORDINATES = [107.08, -6.29];
+const ROUTE_SOURCE_PREFIX = 'dn-route-source-';
+const ROUTE_LAYER_PREFIX = 'dn-route-layer-';
 
 const apiBase = getApiBase();
 
@@ -117,9 +123,21 @@ const formatForPopup = (value, fallback = '—') => {
   return escapeHtml(text);
 };
 
+const createPointKey = (item, lat, lng, index) => {
+  if (item?.id !== undefined && item?.id !== null) {
+    return `id-${item.id}`;
+  }
+
+  if (item?.dn_number) {
+    return `dn-${String(item.dn_number).replace(/\s+/g, '-')}`;
+  }
+
+  return `coord-${lng}-${lat}-${index}`;
+};
+
 const mapPoints = computed(() => {
   return dnItems.value
-    .map((item) => {
+    .map((item, index) => {
       const lat = normalizeNumber(item.lat);
       const lng = normalizeNumber(item.lng);
       if (lat === null || lng === null) return null;
@@ -132,6 +150,7 @@ const mapPoints = computed(() => {
         latitude: lat,
         longitude: lng,
         isOnSite: isOnSiteStatus(item.status),
+        key: createPointKey(item, lat, lng, index),
       };
     })
     .filter(Boolean);
@@ -148,9 +167,93 @@ const clearMarkers = () => {
   }
 };
 
-const updateMarkers = (points) => {
+const clearRoutes = () => {
+  if (!mapInstance.value) return;
+
+  while (activeRoutes.length) {
+    const { layerId, sourceId } = activeRoutes.pop();
+    try {
+      if (mapInstance.value.getLayer(layerId)) {
+        mapInstance.value.removeLayer(layerId);
+      }
+      if (mapInstance.value.getSource(sourceId)) {
+        mapInstance.value.removeSource(sourceId);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+};
+
+const fetchRouteGeoJson = async (from, to) => {
+  const coordinates = `${from[0]},${from[1]};${to[0]},${to[1]}`;
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?geometries=geojson&overview=full&access_token=${mapboxToken}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`路线获取失败（${response.status}）`);
+  }
+
+  const payload = await response.json();
+  const route = payload?.routes?.[0]?.geometry;
+  if (!route) {
+    throw new Error('未获取到路线数据');
+  }
+
+  return {
+    type: 'Feature',
+    geometry: route,
+    properties: {},
+  };
+};
+
+const addRouteToMap = (point, geojson) => {
+  if (!mapInstance.value) return;
+
+  const sourceId = `${ROUTE_SOURCE_PREFIX}${point.key}`;
+  const layerId = `${ROUTE_LAYER_PREFIX}${point.key}`;
+
+  try {
+    if (mapInstance.value.getLayer(layerId)) {
+      mapInstance.value.removeLayer(layerId);
+    }
+    if (mapInstance.value.getSource(sourceId)) {
+      mapInstance.value.removeSource(sourceId);
+    }
+
+    mapInstance.value.addSource(sourceId, {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [geojson],
+      },
+    });
+
+    mapInstance.value.addLayer({
+      id: layerId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-color': point.isOnSite ? '#22c55e' : '#2563eb',
+        'line-width': 4,
+        'line-opacity': 0.7,
+      },
+    });
+
+    activeRoutes.push({ layerId, sourceId });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const updateMarkers = async (points) => {
   if (!mapInstance.value || !mapLoaded.value) return;
   clearMarkers();
+  clearRoutes();
   if (!Array.isArray(points) || !points.length) return;
 
   const bounds = new mapboxgl.LngLatBounds();
@@ -191,6 +294,27 @@ const updateMarkers = (points) => {
       duration: 800,
     });
   }
+
+  const routeGeneration = ++currentRouteGeneration;
+
+  await Promise.allSettled(
+    points.map(async (point) => {
+      try {
+        const geojson = await fetchRouteGeoJson(ORIGIN_COORDINATES, [
+          point.longitude,
+          point.latitude,
+        ]);
+
+        if (routeGeneration !== currentRouteGeneration) {
+          return;
+        }
+
+        addRouteToMap(point, geojson);
+      } catch (err) {
+        console.error(err);
+      }
+    })
+  );
 };
 
 const scheduleMarkerUpdate = (points) => {
@@ -204,7 +328,9 @@ const scheduleMarkerUpdate = (points) => {
     return;
   }
 
-  updateMarkers(points);
+  updateMarkers(points).catch((err) => {
+    console.error(err);
+  });
 };
 
 const initializeMap = () => {
@@ -223,7 +349,9 @@ const initializeMap = () => {
 
   map.on('load', () => {
     mapLoaded.value = true;
-    updateMarkers(pendingMarkerData || mapPoints.value);
+    updateMarkers(pendingMarkerData || mapPoints.value).catch((err) => {
+      console.error(err);
+    });
     pendingMarkerData = null;
   });
 
@@ -301,6 +429,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearMarkers();
+  clearRoutes();
   if (mapInstance.value) {
     try {
       mapInstance.value.remove();
