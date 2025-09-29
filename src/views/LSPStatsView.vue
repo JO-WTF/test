@@ -200,7 +200,7 @@ watch([data, isRate, yTitle, yDomain], () => {
 
 .metric-toggle {
   position: absolute;
-  top: 16px;
+  top: 72px;
   left: 16px;
   z-index: 2;
   padding: 8px 12px;
