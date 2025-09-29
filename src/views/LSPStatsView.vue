@@ -13,9 +13,9 @@
       <div class="chart-shell">
         <div class="metric-toggle">
           <a-radio-group v-model:value="metric" button-style="solid">
-            <a-radio-button :value="'status_not_empty'">status_not_empty</a-radio-button>
-            <a-radio-button :value="'total_dn'">total_dn</a-radio-button>
             <a-radio-button :value="'rate'">更新率（status_not_empty / total_dn）</a-radio-button>
+            <a-radio-button :value="'status_not_empty'">已更新</a-radio-button>
+            <a-radio-button :value="'total_dn'">总数</a-radio-button>
           </a-radio-group>
         </div>
         <div ref="containerRef" class="chart"></div>
@@ -35,7 +35,7 @@ const containerRef = ref(null);
 const chartRef = ref(null);
 
 const raw = ref([]);
-const metric = ref('status_not_empty'); // 'status_not_empty' | 'total_dn' | 'rate'
+const metric = ref('rate'); // 'status_not_empty' | 'total_dn' | 'rate'
 
 const apiBase = getApiBase();
 const buildRequestUrl = () => {
@@ -46,16 +46,58 @@ const buildRequestUrl = () => {
 };
 
 /** 拉取数据 */
+const TZ_PATTERN = /([zZ])|([+-]\d{2}:?\d{2})$/;
+
+const normalizeToJakartaDate = (value) => {
+  if (!value && value !== 0) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const replaced = trimmed.replace(' ', 'T');
+    const hasTime = replaced.includes('T');
+    const hasTimezone = TZ_PATTERN.test(replaced);
+    let candidate = replaced;
+
+    if (!hasTimezone) {
+      candidate = `${hasTime ? replaced : `${replaced}T00:00:00`}+07:00`;
+    }
+
+    const date = new Date(candidate);
+    if (!Number.isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return null;
+};
+
+const getTimeValue = (input) => {
+  const parsed = normalizeToJakartaDate(input);
+  return parsed ? parsed.getTime() : NaN;
+};
+
 const fetchData = async () => {
   const res = await fetch(buildRequestUrl());
   const json = await res.json();
   const arr = (json?.data ?? [])
     .map((item) => ({
-      time: new Date(item.recorded_at),
+      time: getTimeValue(item.recorded_at),
       lsp: item.lsp,
       status_not_empty: Number(item.status_not_empty ?? 0),
       total_dn: Number(item.total_dn ?? 0),
     }))
+    .filter((item) => Number.isFinite(item.time))
     .sort((a, b) => a.time - b.time);
   raw.value = arr;
 };
@@ -63,7 +105,7 @@ const fetchData = async () => {
 /** 根据当前指标生成绘图数据 */
 const data = computed(() => {
   return raw.value.map((d) => {
-    const timeValue = d.time instanceof Date ? d.time.getTime() : new Date(d.time).getTime();
+    const timeValue = d.time;
     const total = d.total_dn || 0;
     const filled = d.status_not_empty || 0;
     const val =
@@ -80,7 +122,7 @@ const data = computed(() => {
 
 const isRate = computed(() => metric.value === 'rate');
 const yTitle = computed(() =>
-  metric.value === 'total_dn' ? 'total_dn' : metric.value === 'status_not_empty' ? 'status_not_empty' : '更新率',
+  metric.value === 'total_dn' ? '总数' : metric.value === 'status_not_empty' ? '已更新' : '更新率',
 );
 const valueFormatter = (v) => (isRate.value ? `${(v * 100).toFixed(1)}%` : String(v));
 
