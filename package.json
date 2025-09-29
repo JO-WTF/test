@@ -10,6 +10,7 @@
     "start": "serve -s dist -l 8080"
   },
   "dependencies": {
+    "@antv/g2plot": "^2.4.25",
     "ant-design-vue": "^4.2.6",
     "dayjs": "^1.11.18",
     "mapbox-gl": "^2.15.0",
