@@ -406,7 +406,7 @@ body.admin-theme {
     }
 .admin-page tr.detail-row .detail-value.detail-value-input .ant-input {
     width: 100%;
-    background: rgba(217, 125, 85, 0.6);
+    background: #647FBC;
     border: 1px solid #2a3b63;
     border-radius: 6px;
     color: #eaf2ff
