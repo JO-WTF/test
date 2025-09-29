@@ -27,6 +27,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import { Line } from '@antv/g2plot';
+import { getApiBase } from '../utils/env';
 // Ant Design Vue（确保在你的入口里已完成 app.use(Antd) 并引入样式）
 /* import 'ant-design-vue/dist/antd.css' // 如果你还没全局引入样式，可在入口加上 */
 
@@ -36,9 +37,17 @@ const chartRef = ref(null);
 const raw = ref([]);
 const metric = ref('status_not_empty'); // 'status_not_empty' | 'total_dn' | 'rate'
 
+const apiBase = getApiBase();
+const buildRequestUrl = () => {
+  if (apiBase) {
+    return new URL('/api/dn/status-delivery/lsp-summary-records', apiBase).toString();
+  }
+  return '/api/dn/status-delivery/lsp-summary-records';
+};
+
 /** 拉取数据 */
 const fetchData = async () => {
-  const res = await fetch('/api/dn/status-delivery/lsp-summary-records'); // ← 改成你的接口
+  const res = await fetch(buildRequestUrl());
   const json = await res.json();
   const arr = (json?.data ?? [])
     .map((item) => ({
