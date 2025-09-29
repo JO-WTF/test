@@ -83,6 +83,7 @@ export function setupAdminPage(
 
   const statusCardWrapper = el('status-card-wrapper');
   const statusCardContainer = el('status-card-container');
+  const lspSummaryCard = el('lsp-summary-card');
 
   const dnBtn = el('btn-dn-entry');
   const dnModal = el('dn-modal');
@@ -93,6 +94,131 @@ export function setupAdminPage(
   const dnConfirm = el('dn-confirm');
   const archiveExpiredDnBtn = el('btn-archive-expired-dn');
 
+  const LSP_SUMMARY_LABEL_KEYS = [
+    'label',
+    'title',
+    'name',
+    'display',
+    'lsp',
+    'lsp_name',
+    'lspName',
+    'code',
+    'key',
+    'status',
+    'group',
+  ];
+  const LSP_SUMMARY_VALUE_KEYS = [
+    'value',
+    'count',
+    'total',
+    'qty',
+    'quantity',
+    'dn',
+    'dn_count',
+    'dnCount',
+    'total_dn',
+    'totalDn',
+    'totalCount',
+    'total_count',
+    'pod',
+    'on_site',
+    'onSite',
+    'in_progress',
+    'inProgress',
+    'pending',
+    'percentage',
+    'percent',
+    'ratio',
+    'rate',
+    'coverage',
+    'coverage_rate',
+    'coverageRate',
+    'updated',
+    'updated_today',
+    'updatedToday',
+    'updated_this_week',
+    'updatedThisWeek',
+  ];
+  const LSP_SUMMARY_COLLECTION_KEYS = [
+    'items',
+    'list',
+    'values',
+    'rows',
+    'entries',
+    'details',
+  ];
+  const LSP_SUMMARY_LABEL_OVERRIDES = {
+    total: 'lspSummary.labels.total',
+    total_count: 'lspSummary.labels.total',
+    totalCount: 'lspSummary.labels.total',
+    total_dn: 'lspSummary.labels.totalDn',
+    totaldn: 'lspSummary.labels.totalDn',
+    totalDn: 'lspSummary.labels.totalDn',
+    dn_total: 'lspSummary.labels.totalDn',
+    dnTotal: 'lspSummary.labels.totalDn',
+    lsp_count: 'lspSummary.labels.lspCount',
+    lspCount: 'lspSummary.labels.lspCount',
+    active_lsp: 'lspSummary.labels.activeLsp',
+    activeLsp: 'lspSummary.labels.activeLsp',
+    inactive_lsp: 'lspSummary.labels.inactiveLsp',
+    inactiveLsp: 'lspSummary.labels.inactiveLsp',
+    with_status: 'lspSummary.labels.withStatus',
+    withStatus: 'lspSummary.labels.withStatus',
+    without_status: 'lspSummary.labels.withoutStatus',
+    withoutStatus: 'lspSummary.labels.withoutStatus',
+    missing_status: 'lspSummary.labels.missingStatus',
+    missingStatus: 'lspSummary.labels.missingStatus',
+    updated_today: 'lspSummary.labels.updatedToday',
+    updatedToday: 'lspSummary.labels.updatedToday',
+    updated_this_week: 'lspSummary.labels.updatedThisWeek',
+    updatedThisWeek: 'lspSummary.labels.updatedThisWeek',
+    top_lsp: 'lspSummary.labels.topLsp',
+    topLsp: 'lspSummary.labels.topLsp',
+    top_lsp_count: 'lspSummary.labels.topLspCount',
+    topLspCount: 'lspSummary.labels.topLspCount',
+    coverage: 'lspSummary.labels.coverage',
+    coverage_rate: 'lspSummary.labels.coverage',
+    coverageRate: 'lspSummary.labels.coverage',
+    percentage: 'lspSummary.labels.percentage',
+    percent: 'lspSummary.labels.percentage',
+    ratio: 'lspSummary.labels.percentage',
+    rate: 'lspSummary.labels.percentage',
+  };
+  const LSP_SUMMARY_LSP_NAME_KEYS = [
+    'lsp_name',
+    'lspName',
+    'lsp',
+    'name',
+    'label',
+    'title',
+    'display',
+    'code',
+    'key',
+  ];
+  const LSP_SUMMARY_UPDATED_COUNT_KEYS = [
+    'updated',
+    'updated_count',
+    'updatedCount',
+    'updated_dn',
+    'updatedDn',
+    'dn_updated',
+    'dnUpdated',
+    'updated_total',
+    'updatedTotal',
+  ];
+  const LSP_SUMMARY_TOTAL_COUNT_KEYS = [
+    'total',
+    'total_dn',
+    'totalDn',
+    'total_count',
+    'totalCount',
+    'count',
+    'dn_total',
+    'dnTotal',
+    'dn_count',
+    'dnCount',
+  ];
+
   let editingId = 0;
   let editingItem = null;
   let currentRoleKey = null;
@@ -101,6 +227,7 @@ export function setupAdminPage(
   let removeI18nListener = null;
   let viewerInstance = null;
   let statusMismatchTooltips = [];
+  let lastLspSummaryPayload = null;
 
   const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
   const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
@@ -116,6 +243,366 @@ export function setupAdminPage(
   const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';
   const PLAN_MOS_TIMEZONE_OFFSET_MINUTES = 7 * 60;
   const JAKARTA_UTC_OFFSET_MINUTES = 7 * 60;
+
+  function pickFirstString(source, keys) {
+    if (!source || typeof source !== 'object' || !Array.isArray(keys)) return '';
+    for (const key of keys) {
+      if (!key) continue;
+      const value = source[key];
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+    return '';
+  }
+
+  function pickFirstValue(source, keys) {
+    if (!source || typeof source !== 'object' || !Array.isArray(keys)) return undefined;
+    for (const key of keys) {
+      if (!key) continue;
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        const value = source[key];
+        if (value !== null && value !== undefined) return value;
+      }
+    }
+    return undefined;
+  }
+
+  function pickFirstFiniteNumber(source, keys) {
+    const value = pickFirstValue(source, keys);
+    if (value === undefined) return null;
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.replace(/,/g, '').trim();
+      if (!normalized) return null;
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  }
+
+  function formatLspSummaryUpdatedProgress(updatedValue, totalValue) {
+    const hasUpdated = Number.isFinite(updatedValue);
+    const hasTotal = Number.isFinite(totalValue);
+    if (!hasUpdated && !hasTotal) return '';
+
+    if (hasUpdated && hasTotal) {
+      const updatedText = formatLspSummaryNumber(updatedValue);
+      const totalText = formatLspSummaryNumber(totalValue);
+      const fallback = `Updated ${updatedText}/${totalText} total`;
+      return translateInstant('lspSummary.items.updatedOfTotal', fallback, {
+        updated: updatedText,
+        total: totalText,
+      });
+    }
+
+    if (hasUpdated) {
+      const updatedText = formatLspSummaryNumber(updatedValue);
+      const fallback = `Updated ${updatedText}`;
+      return translateInstant('lspSummary.items.updatedOnly', fallback, {
+        updated: updatedText,
+      });
+    }
+
+    const totalText = formatLspSummaryNumber(totalValue);
+    const fallback = `Total ${totalText}`;
+    return translateInstant('lspSummary.items.totalOnly', fallback, { total: totalText });
+  }
+
+  function formatLspSummaryLspEntry(summaryItem) {
+    if (!summaryItem || typeof summaryItem !== 'object' || Array.isArray(summaryItem)) {
+      return null;
+    }
+
+    const labelRaw =
+      pickFirstString(summaryItem, LSP_SUMMARY_LSP_NAME_KEYS) ||
+      pickFirstString(summaryItem, LSP_SUMMARY_LABEL_KEYS);
+    const updatedValue = pickFirstFiniteNumber(summaryItem, LSP_SUMMARY_UPDATED_COUNT_KEYS);
+    const totalValue = pickFirstFiniteNumber(summaryItem, LSP_SUMMARY_TOTAL_COUNT_KEYS);
+
+    if (!labelRaw || (updatedValue === null && totalValue === null)) {
+      return null;
+    }
+
+    const label = formatLspSummaryLabelValue(labelRaw);
+    if (!label) return null;
+
+    const valueText = formatLspSummaryUpdatedProgress(updatedValue, totalValue);
+    if (!valueText) return null;
+
+    return { label, value: valueText };
+  }
+
+  function formatLspSummaryNumber(value) {
+    if (!Number.isFinite(value)) return '';
+    const lang = i18n?.state?.lang;
+    try {
+      const formatter = new Intl.NumberFormat(lang || undefined, { maximumFractionDigits: 2 });
+      return formatter.format(value);
+    } catch (err) {
+      console.error(err);
+    }
+    try {
+      return String(value);
+    } catch (err) {
+      console.error(err);
+    }
+    return '';
+  }
+
+  function formatLspSummaryBoolean(value) {
+    return value
+      ? translateInstant('lspSummary.boolean.true', 'Yes')
+      : translateInstant('lspSummary.boolean.false', 'No');
+  }
+
+  function formatLspSummaryLabelFromKey(rawKey) {
+    const key = String(rawKey || '').trim();
+    if (!key) return '';
+    const normalized = key.toLowerCase();
+    const overrideKey =
+      LSP_SUMMARY_LABEL_OVERRIDES[key] ||
+      LSP_SUMMARY_LABEL_OVERRIDES[normalized] ||
+      LSP_SUMMARY_LABEL_OVERRIDES[key.replace(/[^a-zA-Z0-9]+/g, '')];
+    if (overrideKey) {
+      const translated = translateInstant(overrideKey, '');
+      if (translated) return translated;
+    }
+    const spaced = key
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[_\-]+/g, ' ')
+      .trim();
+    if (!spaced) return '';
+    return spaced
+      .split(/\s+/)
+      .map((part) => {
+        const lower = part.toLowerCase();
+        if (lower === 'dn') return 'DN';
+        if (lower === 'lsp') return 'LSP';
+        if (lower === 'pod') return 'POD';
+        if (lower === 'id') return 'ID';
+        if (!part.length) return part;
+        return part.charAt(0).toUpperCase() + part.slice(1);
+      })
+      .join(' ');
+  }
+
+  function formatLspSummaryLabelValue(value) {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+    if (typeof value === 'boolean') return formatLspSummaryBoolean(value);
+    return formatLspSummaryValue(value);
+  }
+
+  function formatLspSummaryValue(value) {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') {
+      return formatLspSummaryNumber(value);
+    }
+    if (typeof value === 'boolean') {
+      return formatLspSummaryBoolean(value);
+    }
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (Array.isArray(value)) {
+      const parts = [];
+      value.forEach((item) => {
+        if (item === null || item === undefined) return;
+        if (typeof item === 'object' && !Array.isArray(item)) {
+          const labelRaw = pickFirstString(item, LSP_SUMMARY_LABEL_KEYS);
+          const valCandidate = pickFirstValue(item, LSP_SUMMARY_VALUE_KEYS);
+          if (valCandidate !== undefined) {
+            const label = formatLspSummaryLabelValue(labelRaw) || '';
+            const formatted = formatLspSummaryValue(valCandidate);
+            if (formatted) {
+              parts.push(label ? `${label}: ${formatted}` : formatted);
+              return;
+            }
+          }
+        }
+        const formatted = formatLspSummaryValue(item);
+        if (formatted) parts.push(formatted);
+      });
+      return parts.join(' • ');
+    }
+    if (typeof value === 'object') {
+      const keys = Object.keys(value);
+      if (!keys.length) return '';
+      const labelRaw = pickFirstString(value, LSP_SUMMARY_LABEL_KEYS);
+      const valCandidate = pickFirstValue(value, LSP_SUMMARY_VALUE_KEYS);
+      if (valCandidate !== undefined && (keys.length <= 2 || labelRaw)) {
+        const label = formatLspSummaryLabelValue(labelRaw) || '';
+        const formatted = formatLspSummaryValue(valCandidate);
+        if (formatted) {
+          return label ? `${label}: ${formatted}` : formatted;
+        }
+      }
+      const parts = [];
+      keys.forEach((key) => {
+        const val = value[key];
+        if (val === null || val === undefined) return;
+        const label = formatLspSummaryLabelFromKey(key);
+        const formatted = formatLspSummaryValue(val);
+        if (!formatted) return;
+        parts.push(label ? `${label}: ${formatted}` : formatted);
+      });
+      return parts.join(' • ');
+    }
+    try {
+      return String(value).trim();
+    } catch (err) {
+      console.error(err);
+    }
+    return '';
+  }
+
+  function normalizeLspSummary(summary) {
+    const entries = [];
+    const pushEntry = (label, rawValue) => {
+      const valueText = formatLspSummaryValue(rawValue);
+      if (!valueText) return;
+      const labelText = typeof label === 'string' ? label.trim() : '';
+      entries.push({ label: labelText, value: valueText });
+    };
+
+    if (summary === null || summary === undefined) return entries;
+
+    if (typeof summary === 'string' || typeof summary === 'number' || typeof summary === 'boolean') {
+      pushEntry('', summary);
+      return entries;
+    }
+
+    if (Array.isArray(summary)) {
+      summary.forEach((item) => {
+        const lspEntry = formatLspSummaryLspEntry(item);
+        if (lspEntry) {
+          entries.push(lspEntry);
+          return;
+        }
+        const nested = normalizeLspSummary(item);
+        if (nested.length) {
+          nested.forEach((entry) => entries.push(entry));
+        }
+      });
+      return entries;
+    }
+
+    if (typeof summary === 'object') {
+      const lspEntry = formatLspSummaryLspEntry(summary);
+      if (lspEntry) {
+        entries.push(lspEntry);
+        return entries;
+      }
+
+      const labelRaw = pickFirstString(summary, LSP_SUMMARY_LABEL_KEYS);
+      if (labelRaw) {
+        const label = formatLspSummaryLabelValue(labelRaw);
+        const clone = { ...summary };
+        LSP_SUMMARY_LABEL_KEYS.forEach((key) => {
+          if (key) delete clone[key];
+        });
+        const valueText = formatLspSummaryValue(clone);
+        if (valueText) {
+          pushEntry(label, valueText);
+          return entries;
+        }
+        if (label) {
+          pushEntry('', label);
+          return entries;
+        }
+      }
+
+      let handledCollection = false;
+      LSP_SUMMARY_COLLECTION_KEYS.forEach((key) => {
+        if (Array.isArray(summary[key])) {
+          handledCollection = true;
+          const nested = normalizeLspSummary(summary[key]);
+          nested.forEach((entry) => entries.push(entry));
+        }
+      });
+      if (handledCollection) return entries;
+
+      Object.entries(summary).forEach(([key, value]) => {
+        if (LSP_SUMMARY_COLLECTION_KEYS.includes(key)) return;
+        const label = formatLspSummaryLabelFromKey(key);
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const nested = normalizeLspSummary(value);
+          if (nested.length) {
+            const combined = nested
+              .map((entry) => (entry.label ? `${entry.label}: ${entry.value}` : entry.value))
+              .filter(Boolean)
+              .join(' • ');
+            if (combined) {
+              pushEntry(label, combined);
+            }
+            return;
+          }
+        }
+        pushEntry(label, value);
+      });
+    }
+
+    return entries;
+  }
+
+  function updateLspSummaryCard(summary) {
+    lastLspSummaryPayload = summary;
+    if (!lspSummaryCard) return;
+    const entries = normalizeLspSummary(summary);
+    if (!entries.length) {
+      lspSummaryCard.innerHTML = '';
+      lspSummaryCard.classList.remove('is-visible');
+      lspSummaryCard.setAttribute('aria-hidden', 'true');
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    const titleEl = document.createElement('div');
+    titleEl.className = 'lsp-summary-card__title';
+    titleEl.textContent = translateInstant('lspSummary.title', 'LSP Summary');
+    fragment.appendChild(titleEl);
+
+    const itemsEl = document.createElement('div');
+    itemsEl.className = 'lsp-summary-card__items';
+
+    entries.forEach((entry) => {
+      if (!entry || !entry.value) return;
+      const itemEl = document.createElement('div');
+      itemEl.className = 'lsp-summary-card__item';
+
+      if (entry.label) {
+        const labelEl = document.createElement('span');
+        labelEl.className = 'lsp-summary-card__label';
+        labelEl.textContent = entry.label;
+        itemEl.appendChild(labelEl);
+      }
+
+      const valueEl = document.createElement('span');
+      valueEl.className = entry.label
+        ? 'lsp-summary-card__value'
+        : 'lsp-summary-card__value lsp-summary-card__value--solo';
+      valueEl.textContent = entry.value;
+      itemEl.appendChild(valueEl);
+
+      itemsEl.appendChild(itemEl);
+    });
+
+    if (!itemsEl.childNodes.length) {
+      lspSummaryCard.innerHTML = '';
+      lspSummaryCard.classList.remove('is-visible');
+      lspSummaryCard.setAttribute('aria-hidden', 'true');
+      return;
+    }
+
+    fragment.appendChild(itemsEl);
+
+    lspSummaryCard.innerHTML = '';
+    lspSummaryCard.appendChild(fragment);
+    lspSummaryCard.classList.add('is-visible');
+    lspSummaryCard.setAttribute('aria-hidden', 'false');
+  }
 
   function convertDateToJakartaIso(dateString, { endOfDay = false } = {}) {
     if (!dateString) return '';
@@ -578,6 +1065,7 @@ export function setupAdminPage(
     getStatusDeliveryValues: () => getFilterValues('status_delivery'),
     getStatusFilterValue: () => getSingleFilterValue('status'),
     transportManagerCards: TRANSPORT_MANAGER_STATUS_CARDS,
+    onSummaryUpdate: updateLspSummaryCard,
     onApplyFilter(def, canonicalStatus) {
       applyStatusCardFilter(def, canonicalStatus);
       statusCards.updateActiveState();
@@ -712,10 +1200,11 @@ export function setupAdminPage(
     return canonical || value || '';
   }
 
-  function translateInstant(key, fallback = '') {
+  function translateInstant(key, fallback = '', params) {
     if (!i18n) return fallback;
     try {
-      const translated = i18n.t(key);
+      const translated =
+        params === undefined ? i18n.t(key) : i18n.t(key, params);
       if (translated && translated !== key) return translated;
     } catch (err) {
       console.error(err);
@@ -1146,6 +1635,7 @@ ${cellsHtml}
     updateRoleBadge();
     statusCards.updateLabels();
     statusCards.updateActiveState();
+    updateLspSummaryCard(lastLspSummaryPayload);
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
     populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');

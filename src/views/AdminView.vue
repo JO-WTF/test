@@ -272,6 +272,7 @@
 
       <div class="card">
         <div id="hint" class="muted" data-i18n="hint.ready">输入条件后点击查询。</div>
+        <div id="lsp-summary-card" class="lsp-summary-card" aria-hidden="true"></div>
         <table id="tbl" style="display: none">
           <thead>
             <tr>

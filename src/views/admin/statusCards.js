@@ -26,6 +26,7 @@ export function createStatusCardManager({
   getStatusFilterValue,
   onApplyFilter,
   transportManagerCards = DEFAULT_TRANSPORT_MANAGER_STATUS_CARDS,
+  onSummaryUpdate,
 }) {
   let defs = [];
   const refs = new Map();
@@ -44,6 +45,15 @@ export function createStatusCardManager({
     }
     if (def.label) return def.label;
     return i18nStatusDisplay(def.status);
+  }
+
+  function safeNotifySummary(summary) {
+    if (typeof onSummaryUpdate !== 'function') return;
+    try {
+      onSummaryUpdate(summary);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function getRoleStatusHighlights(role) {
@@ -146,6 +156,7 @@ export function createStatusCardManager({
       wrapper.style.display = 'none';
       wrapper.setAttribute('aria-hidden', 'true');
       container.style.removeProperty('--status-card-columns');
+      safeNotifySummary(null);
       if (abortController) {
         try {
           abortController.abort();
@@ -243,6 +254,7 @@ export function createStatusCardManager({
       throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
     }
     const list = Array.isArray(data?.data) ? data.data : [];
+    const lspSummary = data?.lsp_summary ?? data?.lspSummary ?? null;
     const counts = Object.create(null);
     list.forEach((item) => {
       if (!item || typeof item !== 'object') return;
@@ -259,11 +271,12 @@ export function createStatusCardManager({
     });
     const totalRaw = Number(data?.total ?? data?.count);
     const total = Number.isFinite(totalRaw) ? totalRaw : null;
-    return { counts, total };
+    return { counts, total, lspSummary };
   }
 
   async function refreshCounts() {
-    if (!defs.length || !refs.size) return;
+    const shouldUpdateCards = defs.length && refs.size;
+    if (!shouldUpdateCards && typeof onSummaryUpdate !== 'function') return;
     requestId += 1;
     const currentRequestId = requestId;
 
@@ -278,11 +291,13 @@ export function createStatusCardManager({
     abortController = controller;
     const { signal: cardSignal } = controller;
 
-    refs.forEach((ref) => {
-      ref.button.classList.add('loading');
-      ref.button.setAttribute('aria-busy', 'true');
-      ref.countEl.textContent = '…';
-    });
+    if (shouldUpdateCards) {
+      refs.forEach((ref) => {
+        ref.button.classList.add('loading');
+        ref.button.setAttribute('aria-busy', 'true');
+        ref.countEl.textContent = '…';
+      });
+    }
 
     let stats = null;
     try {
@@ -292,12 +307,18 @@ export function createStatusCardManager({
       if (err?.name !== 'AbortError') {
         console.error(err);
       }
+      safeNotifySummary(null);
+      if (!shouldUpdateCards) return;
     }
 
     if (cardSignal.aborted || currentRequestId !== requestId) return;
 
     const counts = stats?.counts || Object.create(null);
     let totalCount = 0;
+
+    safeNotifySummary(stats?.lspSummary ?? null);
+
+    if (!shouldUpdateCards) return;
 
     refs.forEach((ref) => {
       const defItem = ref.def;
