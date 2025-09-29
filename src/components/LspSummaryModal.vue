@@ -145,64 +145,59 @@ const chartData = computed(() =>
   }))
 );
 
-const chartOptions = computed(() => {
-  if (!chartData.value.length) {
-    return null;
-  }
-
-  return {
-    data: chartData.value,
-    xField: 'recordedAt',
-    yField: 'percentage',
-    seriesField: 'lsp',
-    colorField: 'lsp',
-    color: ({ lsp }) => colorForLsp(lsp),
-    scale: {
-      x: { type: 'time' },
-      y: { domain: [0, 100] },
+const buildChartConfig = (data) => ({
+  data,
+  xField: 'recordedAt',
+  yField: 'percentage',
+  seriesField: 'lsp',
+  colorField: 'lsp',
+  color: ({ lsp }) => colorForLsp(lsp),
+  scale: {
+    x: { type: 'time' },
+    y: { domain: [0, 100] },
+  },
+  axis: {
+    x: {
+      labelFormatter: (value) => dayjs(value).tz('Asia/Jakarta').format('DD MMM HH:mm'),
     },
-    axis: {
-      x: {
-        labelFormatter: (value) => dayjs(value).tz('Asia/Jakarta').format('DD MMM HH:mm'),
+    y: {
+      labelFormatter: (value) => `${value}%`,
+    },
+  },
+  legend: {
+    color: {
+      position: 'top',
+      title: false,
+    },
+  },
+  tooltip: {
+    title: (datum) => datum.recordedAtTooltip,
+    items: [
+      {
+        channel: 'y',
+        name: '占比',
+        valueFormatter: (value) => `${Number(value).toFixed(2)}%`,
       },
-      y: {
-        labelFormatter: (value) => `${value}%`,
+      {
+        name: 'Status Not Empty',
+        value: (datum) => `${datum.statusNotEmpty}`,
       },
-    },
-    legend: {
-      color: {
-        position: 'top',
-        title: false,
+      {
+        name: 'Total DN',
+        value: (datum) => `${datum.totalDn}`,
       },
+    ],
+  },
+  line: {
+    style: {
+      lineWidth: 2,
     },
-    tooltip: {
-      title: (datum) => datum.recordedAtTooltip,
-      items: [
-        {
-          channel: 'y',
-          name: '占比',
-          valueFormatter: (value) => `${Number(value).toFixed(2)}%`,
-        },
-        {
-          name: 'Status Not Empty',
-          value: (datum) => `${datum.statusNotEmpty}`,
-        },
-        {
-          name: 'Total DN',
-          value: (datum) => `${datum.totalDn}`,
-        },
-      ],
-    },
-    line: {
-      style: {
-        lineWidth: 2,
-      },
-    },
-    point: {
-      shapeField: 'circle',
-      sizeField: 4,
-    },
-  };
+  },
+  point: {
+    shapeField: 'circle',
+    sizeField: 4,
+  },
+  animate: false,
 });
 
 const destroyChart = () => {
@@ -212,43 +207,58 @@ const destroyChart = () => {
   }
 };
 
-const renderChart = () => {
-  const options = chartOptions.value;
-  if (!props.open || !chartContainer.value || !options) {
-    if (!options) {
+const createChart = (data) => {
+  if (!chartContainer.value || chartInstance.value || !data.length) {
+    if (!data.length) {
       destroyChart();
     }
     return;
   }
 
-  if (!chartInstance.value) {
-    chartInstance.value = new Line(chartContainer.value, options);
-  } else {
-    chartInstance.value.update(options);
-  }
+  chartInstance.value = new Line(chartContainer.value, buildChartConfig(data));
   chartInstance.value.render();
+};
+
+const updateChartData = (data) => {
+  if (!chartInstance.value) {
+    createChart(data);
+    return;
+  }
+  chartInstance.value.changeData(data);
 };
 
 watch(
   () => props.open,
   (open) => {
-    if (open && !hasFetched.value) {
-      fetchLspSummary();
-    }
-    if (!open) {
+    if (open) {
+      if (!hasFetched.value) {
+        fetchLspSummary();
+      }
+      nextTick(() => {
+        if (chartData.value.length) {
+          createChart(chartData.value);
+        }
+      });
+    } else {
       destroyChart();
     }
-  },
-  { immediate: false }
+  }
 );
 
 watch(
-  () => chartOptions.value,
-  () => {
+  chartData,
+  (data) => {
+    if (!props.open) {
+      return;
+    }
+
+    if (!data.length) {
+      destroyChart();
+      return;
+    }
+
     nextTick(() => {
-      if (props.open) {
-        renderChart();
-      }
+      updateChartData(data);
     });
   }
 );
@@ -256,9 +266,9 @@ watch(
 watch(
   () => chartContainer.value,
   (el) => {
-    if (el && props.open) {
+    if (el && props.open && chartData.value.length) {
       nextTick(() => {
-        renderChart();
+        createChart(chartData.value);
       });
     }
   }
