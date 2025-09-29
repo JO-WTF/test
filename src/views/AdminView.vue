@@ -5,6 +5,14 @@
         <LanguageSwitcher v-model="currentLang" @change="changeLang" />
         <div class="auth-area">
           <span id="auth-role-tag" class="role-tag" data-i18n="auth.current"></span>
+          <button
+            v-if="showMapViewButton"
+            type="button"
+            class="btn ghost"
+            @click="openMapView"
+          >
+            地图视图
+          </button>
           <button class="btn ghost accent" id="btn-auth" data-i18n="auth.trigger">
             授权
           </button>
@@ -419,6 +427,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Switch } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { useRouter } from 'vue-router';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
@@ -433,6 +442,12 @@ dayjs.extend(customParseFormat);
 
 const adminRoot = ref(null);
 const currentLang = ref('zh');
+const currentRoleKey = ref('');
+const router = useRouter();
+const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
+const showMapViewButton = computed(
+  () => currentRoleKey.value === TRANSPORT_MANAGER_ROLE_KEY
+);
 let pageCleanup = () => {};
 let i18nInstance = null;
 
@@ -479,6 +494,14 @@ const {
 } = useAdminFilters();
 
 useBodyTheme('admin-theme');
+
+const openMapView = () => {
+  const resolved = router.resolve({ name: 'map' });
+  const href = resolved?.href || resolved?.fullPath || '/map';
+  if (typeof window !== 'undefined') {
+    window.open(href, '_blank', 'noopener');
+  }
+};
 
 const filterSelectOption = (input, option) => {
   const text = `${option?.label ?? option?.value ?? ''}`.toLowerCase();
@@ -593,6 +616,9 @@ onMounted(async () => {
     planMosDateSelect: planMosDateSelectBridge,
     filterSelects: filterSelectBridges,
     filterInputs: filterInputBridges,
+    onRoleChange: (roleKey) => {
+      currentRoleKey.value = roleKey || '';
+    },
   });
 
   i18nInstance.onChange((lang) => {
