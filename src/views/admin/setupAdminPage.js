@@ -24,7 +24,14 @@ const API_BASE = getApiBase();
 
 export function setupAdminPage(
   rootEl,
-  { i18n, applyTranslations, planMosDateSelect, filterSelects, filterInputs } = {}
+  {
+    i18n,
+    applyTranslations,
+    planMosDateSelect,
+    filterSelects,
+    filterInputs,
+    onRoleChange,
+  } = {}
 ) {
   if (!rootEl) return () => {};
 
@@ -110,6 +117,15 @@ export function setupAdminPage(
   const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
   const ARCHIVE_THRESHOLD_DAYS = 55;
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
+
+  const notifyRoleChange = (roleKey, role) => {
+    if (typeof onRoleChange !== 'function') return;
+    try {
+      onRoleChange(roleKey || '', role || null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const STATUS_VALUE_TO_KEY = STATUS_TRANSLATION_KEYS || {};
   const STATUS_ALIAS_LOOKUP = STATUS_ALIAS_MAP || {};
@@ -1252,6 +1268,8 @@ ${cellsHtml}
     statusCards.refreshCounts();
     lspSummaryCards.updateActiveState();
     persistAuthState(currentRoleKey, currentUserInfo);
+    const role = currentRoleKey ? ROLE_MAP.get(currentRoleKey) || null : null;
+    notifyRoleChange(currentRoleKey || '', role);
   }
 
   function getRoleLabel(role) {
@@ -2874,6 +2892,7 @@ ${cellsHtml}
       rerenderTableActions();
       statusCards.render();
       statusCards.refreshCounts();
+      notifyRoleChange('', null);
     }
   }
 
