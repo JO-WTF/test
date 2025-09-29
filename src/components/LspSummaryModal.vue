@@ -5,7 +5,8 @@
     :footer="null"
     :destroy-on-close="false"
     :mask-closable="true"
-    width="840px"
+    width="90%"
+    wrap-class-name="lsp-summary-modal__dialog"
     @cancel="handleClose"
     @update:open="updateVisibility"
   >
@@ -328,5 +329,21 @@ const updateVisibility = (value) => {
 .lsp-summary-chart {
   width: 100%;
   min-height: 360px;
+}
+
+:deep(.lsp-summary-modal__dialog .ant-modal) {
+  width: 90% !important;
+  max-width: none;
+}
+
+:deep(.lsp-summary-modal__dialog .ant-modal-content) {
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.lsp-summary-modal__dialog .ant-modal-body) {
+  flex: 1;
+  overflow: auto;
 }
 </style>
