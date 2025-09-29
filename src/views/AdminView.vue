@@ -5,14 +5,14 @@
         <LanguageSwitcher v-model="currentLang" @change="changeLang" />
         <div class="auth-area">
           <span id="auth-role-tag" class="role-tag" data-i18n="auth.current"></span>
-          <button
-            v-if="showMapViewButton"
-            type="button"
-            class="btn ghost"
-            @click="openMapView"
-          >
-            地图视图
-          </button>
+          <template v-if="showMapViewButton">
+            <button type="button" class="btn ghost" @click="openLspSummaryModal">
+              LSP 统计
+            </button>
+            <button type="button" class="btn ghost" @click="openMapView">
+              地图视图
+            </button>
+          </template>
           <button class="btn ghost accent" id="btn-auth" data-i18n="auth.trigger">
             授权
           </button>
@@ -419,6 +419,8 @@
         </div>
       </div>
     </div>
+
+    <LspSummaryModal v-model:open="isLspSummaryModalVisible" />
   </div>
 </template>
 
@@ -437,6 +439,7 @@ import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
 import 'dayjs/locale/zh-cn';
 import 'dayjs/locale/id';
+import LspSummaryModal from '../components/LspSummaryModal.vue';
 
 dayjs.extend(customParseFormat);
 
@@ -501,6 +504,11 @@ const openMapView = () => {
   if (typeof window !== 'undefined') {
     window.open(href, '_blank', 'noopener');
   }
+};
+
+const isLspSummaryModalVisible = ref(false);
+const openLspSummaryModal = () => {
+  isLspSummaryModalVisible.value = true;
 };
 
 const filterSelectOption = (input, option) => {
