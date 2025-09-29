@@ -26,6 +26,11 @@ const routes = [
     name: 'map',
     component: () => import('../views/MapView.vue'),
   },
+  {
+    path: '/lsp-stats',
+    name: 'lsp-stats',
+    component: () => import('../views/LSPStatsView.vue'),
+  },
 ];
 
 const router = createRouter({
