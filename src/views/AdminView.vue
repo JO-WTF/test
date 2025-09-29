@@ -9,6 +9,14 @@
             v-if="showMapViewButton"
             type="button"
             class="btn ghost"
+            @click="openLspStatsView"
+          >
+            LSP统计
+          </button>
+          <button
+            v-if="showMapViewButton"
+            type="button"
+            class="btn ghost"
             @click="openMapView"
           >
             地图视图
@@ -501,6 +509,10 @@ const openMapView = () => {
   if (typeof window !== 'undefined') {
     window.open(href, '_blank', 'noopener');
   }
+};
+
+const openLspStatsView = () => {
+  router.push({ name: 'lsp-stats' });
 };
 
 const filterSelectOption = (input, option) => {
