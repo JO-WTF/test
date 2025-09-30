@@ -7,17 +7,15 @@
           <p class="eyebrow">LSP performance overview</p>
           <h1 class="stats-title">Last mile delivery statistics</h1>
         </div>
-        <p class="stats-meta">All timestamps in Asia/Jakarta (UTC+7)</p>
-      </header>
-
-      <div class="chart-shell">
         <div class="metric-toggle">
           <a-radio-group v-model:value="metric" button-style="solid">
-            <a-radio-button :value="'rate'">更新率（status_not_empty / total_dn）</a-radio-button>
+            <a-radio-button :value="'rate'">更新率</a-radio-button>
             <a-radio-button :value="'status_not_empty'">已更新</a-radio-button>
             <a-radio-button :value="'total_dn'">总数</a-radio-button>
           </a-radio-group>
         </div>
+      </header>
+      <div class="chart-shell">
         <div ref="containerRef" class="chart"></div>
       </div>
     </section>
@@ -28,8 +26,6 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { Line } from '@antv/g2plot';
 import { getApiBase } from '../utils/env';
-// Ant Design Vue（确保在你的入口里已完成 app.use(Antd) 并引入样式）
-/* import 'ant-design-vue/dist/antd.css' // 如果你还没全局引入样式，可在入口加上 */
 
 const containerRef = ref(null);
 const chartRef = ref(null);
@@ -212,7 +208,8 @@ onMounted(async () => {
 
     legend: {
       // 不显示尺寸图例
-      position: 'top',
+      position: 'bottom',
+      maxRow: 3,
     },
 
     tooltip: {
@@ -347,6 +344,7 @@ watch([data, isRate, yTitle, yDomain], () => {
 .metric-toggle :deep(.ant-radio-button-wrapper) {
   flex: 1;
   text-align: center;
+  line-height: 1.5;
   border-radius: 999px !important;
   border: none;
   background: rgba(30, 41, 59, 0.85);
