@@ -118,10 +118,10 @@ export function setupAdminPage(
   const ARCHIVE_THRESHOLD_DAYS = 55;
   const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
 
-  const notifyRoleChange = (roleKey, role) => {
+  const notifyRoleChange = (roleKey, role, userInfo) => {
     if (typeof onRoleChange !== 'function') return;
     try {
-      onRoleChange(roleKey || '', role || null);
+      onRoleChange(roleKey || '', role || null, userInfo || null);
     } catch (err) {
       console.error(err);
     }
@@ -643,8 +643,20 @@ export function setupAdminPage(
     if (!user || typeof user !== 'object') return null;
     const info = {};
     if (user.id != null) info.id = user.id;
-    if (user.name != null) info.name = user.name;
+    if (typeof user.name === 'string') {
+      const trimmed = user.name.trim();
+      if (trimmed) info.name = trimmed;
+    }
     return Object.keys(info).length ? info : null;
+  }
+
+  function getUserDisplayName(user) {
+    if (!user || typeof user !== 'object') return '';
+    if (typeof user.name === 'string') {
+      const trimmed = user.name.trim();
+      if (trimmed) return trimmed;
+    }
+    return '';
   }
 
   function getLocalStorageSafe() {
@@ -1269,7 +1281,7 @@ ${cellsHtml}
     lspSummaryCards.updateActiveState();
     persistAuthState(currentRoleKey, currentUserInfo);
     const role = currentRoleKey ? ROLE_MAP.get(currentRoleKey) || null : null;
-    notifyRoleChange(currentRoleKey || '', role);
+    notifyRoleChange(currentRoleKey || '', role, currentUserInfo);
   }
 
   function getRoleLabel(role) {
@@ -1289,12 +1301,16 @@ ${cellsHtml}
   function updateAuthButtonLabel() {
     if (!authBtn) return;
     const role = getCurrentRole();
-    const label = role ? getRoleLabel(role) : i18n?.t('auth.trigger') || '授权';
+    const displayName = getUserDisplayName(currentUserInfo);
+    if (displayName) {
+      authBtn.textContent = displayName;
+      authBtn.removeAttribute('data-i18n');
+      return;
+    }
+    const key = role ? 'auth.switch' : 'auth.trigger';
+    const label = role ? getRoleLabel(role) : i18n?.t(key) || '授权';
     authBtn.textContent = label;
-    authBtn.setAttribute(
-      'data-i18n',
-      role ? 'auth.switch' : 'auth.trigger'
-    );
+    authBtn.setAttribute('data-i18n', key);
   }
 
   function updateRoleBadge() {
@@ -2572,10 +2588,12 @@ ${cellsHtml}
       if (authMsg) authMsg.textContent = i18n ? i18n.t('auth.modal.failed') : '密码错误，请重试';
       return;
     }
+    const sanitizedUser = sanitizeUserInfo(matched.user);
     setRole(matched.role.key, matched.user);
     closeAuthModal();
     const roleLabel = getRoleLabel(matched.role);
-    showToast(i18n ? i18n.t('auth.toast.success', { role: roleLabel }) : `已切换至 ${roleLabel}`, 'success');
+    const displayName = getUserDisplayName(sanitizedUser) || roleLabel || 'user';
+    showToast(`You are logged in as ${displayName}.`, 'success');
     fetchList();
   }
 
@@ -2890,7 +2908,7 @@ ${cellsHtml}
       rerenderTableActions();
       statusCards.render();
       statusCards.refreshCounts();
-      notifyRoleChange('', null);
+      notifyRoleChange('', null, null);
     }
   }
 

@@ -31,7 +31,8 @@ body.admin-theme {
     gap: 12px
     }
 .admin-page .role-tag {
-    display: none;
+    display: inline-flex;
+    align-items: center;
     padding: 6px 12px;
     border-radius: 999px;
     background: rgba(105, 168, 255, 0.15);

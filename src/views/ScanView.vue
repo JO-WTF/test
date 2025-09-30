@@ -705,6 +705,16 @@ const setLang = async (lang) => {
 };
 
 onMounted(async () => {
+  const storedUserName = getStoredUserName();
+  if (storedUserName) {
+    Toastify({
+      text: `You are logged in as ${storedUserName}.`,
+      duration: 3000,
+      gravity: 'bottom',
+      position: 'center',
+    }).showToast();
+  }
+
   if (!window?.Dynamsoft?.DBR?.BarcodeScanner) {
     state.submitOk = false;
     state.submitMsg = 'Scanner SDK not loaded';
