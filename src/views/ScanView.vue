@@ -520,6 +520,27 @@ const resolveClientProfile = () => {
   return { isMobile, browserId };
 };
 
+const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
+
+const getStoredUserName = () => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const name = parsed?.userInfo?.name;
+    if (typeof name === 'string') {
+      const trimmed = name.trim();
+      return trimmed ? trimmed : null;
+    }
+  } catch (err) {
+    console.warn('Failed to read stored username:', err);
+  }
+  return null;
+};
+
 const { isMobile: isMobileClient, browserId: browserIdentifier } = resolveClientProfile();
 
 const submitUpdate = async () => {
@@ -575,7 +596,8 @@ const submitUpdate = async () => {
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
-    fd.append('updated_by', isMobileClient ? 'driver' : browserIdentifier);
+    const storedUserName = getStoredUserName();
+    fd.append('updated_by', storedUserName || (isMobileClient ? 'driver' : browserIdentifier));
 
     if (state.photoFile instanceof File) {
       fd.append('photo', state.photoFile, state.photoFile.name || 'photo');
