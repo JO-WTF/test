@@ -1,4 +1,5 @@
 body.admin-theme {
+    min-width: 680px;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     margin: 0;
     background: #0b1020;
@@ -371,16 +372,42 @@ body.admin-theme {
         grid-template-columns: repeat(3, minmax(0, 1fr))
         }
     }
-@media (max-width: 860px) {
-    .admin-page tr.detail-row .detail-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr))
-        }
+/* When the admin page is narrow, allow the first table column to wrap long words */
+@media (max-width: 960px) {
+    .admin-page table th:first-child,
+    .admin-page table td:first-child,
+    /* also apply to the fourth column */
+    .admin-page table th:nth-child(4),
+    .admin-page table td:nth-child(4) {
+        min-width: 80px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
-@media (max-width: 600px) {
-    .admin-page tr.detail-row .detail-grid {
-        grid-template-columns: minmax(0, 1fr)
-        }
+    .admin-page table th:last-child .actions,
+    .admin-page table td:last-child .actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
     }
+    .admin-page th, .admin-page td {
+    padding: 4px;
+    border-bottom: 1px solid #1f2a4d;
+    text-align: left;
+    font-size: 12px;
+    vertical-align: top
+    }
+    /* make icon buttons flow naturally in the column layout */
+    .admin-page table th:last-child .actions .icon-btn,
+    .admin-page table th:last-child .actions .icon-link,
+    .admin-page table td:last-child .actions .icon-btn,
+    .admin-page table td:last-child .actions .icon-link {
+        width: auto;
+        display: inline-flex;
+        justify-content: flex-start;
+    }
+}
+
 .admin-page tr.detail-row .detail-item {
     display: flex;
     flex-direction: column;

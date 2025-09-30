@@ -203,7 +203,7 @@
                 />
               </div>
               <div class="field filter-field">
-                <label data-i18n="date.from">开始日期</label>
+                <label data-i18n="date.from">最近修改于(开始)</label>
                 <a-date-picker
                   id="f-from"
                   v-model:value="fromDateValue"
@@ -215,7 +215,7 @@
                 />
               </div>
               <div class="field filter-field">
-                <label data-i18n="date.to">结束日期</label>
+                <label data-i18n="date.to">最近修改于(结束)</label>
                 <a-date-picker
                   id="f-to"
                   v-model:value="toDateValue"
