@@ -559,11 +559,68 @@ export function setupAdminPage(
     Toastify({
       text,
       duration: 3000,
-      gravity: 'top',
-      position: 'right',
+      gravity: 'bottom',
+      position: 'center',
       stopOnFocus: true,
       style: { background: backgroundColor },
     }).showToast();
+  }
+
+  async function copyTextToClipboard(text) {
+    const value = typeof text === 'string' ? text : String(text || '');
+    if (!value) return false;
+
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function'
+    ) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return true;
+      } catch (err) {
+        console.error('Clipboard API copy failed', err);
+      }
+    }
+
+    if (typeof document === 'undefined' || !document.body) {
+      return false;
+    }
+
+    let textarea = null;
+    try {
+      textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+
+      const selection = document.getSelection();
+      const originalRange =
+        selection && selection.rangeCount > 0
+          ? selection.getRangeAt(0).cloneRange()
+          : null;
+
+      textarea.select();
+      const copied = document.execCommand('copy');
+
+      if (selection) {
+        selection.removeAllRanges();
+        if (originalRange) {
+          selection.addRange(originalRange);
+        }
+      }
+
+      return copied;
+    } catch (err) {
+      console.error('Fallback clipboard copy failed', err);
+      return false;
+    } finally {
+      if (textarea && textarea.parentNode) {
+        textarea.parentNode.removeChild(textarea);
+      }
+    }
   }
 
   function getCurrentRole() {
@@ -1127,7 +1184,9 @@ export function setupAdminPage(
     const classAttr = classes.join(' ');
     const tabAttr = detailAvailable ? ' tabindex="0"' : '';
     const ariaAttr = detailAvailable ? ` aria-expanded="${expanded ? 'true' : 'false'}"` : '';
-    const dnNumber = item?.dn_number ? escapeHtml(String(item.dn_number)) : '<span class="muted">-</span>';
+    const rawDnNumber = item?.dn_number ? String(item.dn_number) : '';
+    const safeDnNumber = rawDnNumber ? escapeHtml(rawDnNumber) : '';
+    const dnNumberDisplay = safeDnNumber || '<span class="muted">-</span>';
     const lsp = getLspDisplay(item);
     const region = getRegionDisplay(item);
     const planMos = getPlanMosDateDisplay(item);
@@ -1164,7 +1223,7 @@ export function setupAdminPage(
     const firstCell = `      <td>
         <div class="summary-cell">
           <span class="row-toggle" aria-hidden="true"></span>
-          <div class="summary-primary">${dnNumber}</div>
+          <div class="summary-primary" data-dn-number="${safeDnNumber}">${dnNumberDisplay}</div>
         </div>
         ${hint}
       </td>`;
@@ -1877,6 +1936,24 @@ ${cellsHtml}
             trigger.blur();
           }
           openViewerWithUrl(url);
+        },
+        { signal }
+      );
+    });
+
+    tbody.querySelectorAll('.summary-primary').forEach((primary) => {
+      primary.addEventListener(
+        'click',
+        async (event) => {
+          event.stopPropagation();
+          const dnValue = (primary.getAttribute('data-dn-number') || '').trim();
+          if (!dnValue) return;
+          const copied = await copyTextToClipboard(dnValue);
+          if (copied) {
+            showToast('已复制DN Number', 'success');
+          } else {
+            showToast('复制 DN Number 失败', 'error');
+          }
         },
         { signal }
       );

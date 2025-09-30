@@ -281,7 +281,8 @@ body.admin-theme {
     }
 .admin-page tr.summary-row .summary-primary {
     font-weight: 600;
-    color: #eaf2ff
+    color: #eaf2ff;
+    cursor: pointer
     }
 .admin-page tr.summary-row .summary-hint {
     font-size: 11px;
