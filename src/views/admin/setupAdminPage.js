@@ -2548,6 +2548,12 @@ ${cellsHtml}
     try {
       hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
       const params = getExportSearchParams();
+      // Request all items for export - ensure backend returns full dataset
+      try {
+        if (params && typeof params.set === 'function') params.set('page_size', 'all');
+      } catch (e) {
+        // ignore
+      }
       const basePath =
         q.mode === 'batch' ? '/api/dn/list/batch' : '/api/dn/list/search';
       const url = buildExportUrl(basePath, params);
