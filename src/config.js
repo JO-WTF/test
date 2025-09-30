@@ -1,189 +1,266 @@
-export const STATUS_VALUES = {
-  NEW_MOS: 'Nwe MOS',
-  PREPARE_VEHICLE: 'Prepare Vehicle',
-  ON_THE_WAY: 'On The Way',
-  ON_SITE: 'On Site',
-  POD: 'POD',
-  REPLAN_MOS_PROJECT: 'RePlan MOS Project',
-  WAITING_PIC_FEEDBACK: 'Waiting PIC Feedback',
-  REPLAN_MOS_LSP_DELAY: 'RePlan MOS Due To LSP Delay',
-  CLOSE_BY_RN: 'Close By RN',
-  CANCEL_MOS: 'Cancel MOS',
-  NO_STATUS: 'No Status',
-};
-
-export const STATUS_ORDERED_LIST = [
-  STATUS_VALUES.NEW_MOS,
-  STATUS_VALUES.PREPARE_VEHICLE,
-  STATUS_VALUES.ON_THE_WAY,
-  STATUS_VALUES.ON_SITE,
-  STATUS_VALUES.POD,
-  STATUS_VALUES.REPLAN_MOS_PROJECT,
-  STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
-  STATUS_VALUES.CLOSE_BY_RN,
-  STATUS_VALUES.CANCEL_MOS,
-  STATUS_VALUES.NO_STATUS,
+const STATUS_DEFINITIONS = [
+  {
+    key: 'NEW_MOS',
+    value: 'Nwe MOS',
+    translationKey: 'status.newMos',
+    fallbackLabel: '新建MOS',
+    aliases: ['NEW MOS', '新建MOS', '新 MOS', 'MOS BARU', 'MOS Baru'],
+  },
+  {
+    key: 'PREPARE_VEHICLE',
+    value: 'Prepare Vehicle',
+    translationKey: 'status.prepareVehicle',
+    fallbackLabel: 'Prepare Vehicle',
+    displayOverride: 'Prepare Vehicle',
+    aliases: ['准备车辆', 'PREPARE VEHICLE', 'SIAPKAN KENDARAAN', 'PREPARE_VEHICLE'],
+  },
+  {
+    key: 'ON_THE_WAY',
+    value: 'On The Way',
+    translationKey: 'status.inTransit',
+    fallbackLabel: 'On The Way',
+    displayOverride: 'On The Way',
+    aliases: [
+      'ON THE WAY',
+      'IN TRANSIT',
+      'START TRANSPORT',
+      '开始运输',
+      '运输中',
+      '在途',
+      'SEDANG DIKIRIM',
+      'MULAI PENGIRIMAN',
+      'Mulai Pengiriman',
+    ],
+  },
+  {
+    key: 'ON_SITE',
+    value: 'On Site',
+    translationKey: 'status.onSite',
+    fallbackLabel: 'On Site',
+    displayOverride: 'On Site',
+    aliases: [
+      'ON SITE',
+      'ARRIVED',
+      '现场',
+      '已到达',
+      '到达',
+      'SUDAH TIBA',
+      'TIBA DI LOKASI',
+      'DI LOKASI',
+    ],
+  },
+  {
+    key: 'POD',
+    value: 'POD',
+    translationKey: 'status.pod',
+    fallbackLabel: 'POD',
+    displayOverride: 'POD',
+    aliases: ['PROOF OF DELIVERY'],
+  },
+  {
+    key: 'REPLAN_MOS_PROJECT',
+    value: 'RePlan MOS Project',
+    translationKey: 'status.projectReschedule',
+    fallbackLabel: '项目重排(Project)',
+    aliases: ['REPLAN MOS PROJECT', '项目重排(Project)', 'PENJADWALAN ULANG PROYEK'],
+  },
+  {
+    key: 'WAITING_PIC_FEEDBACK',
+    value: 'Waiting PIC Feedback',
+    translationKey: 'status.waitingFeedback',
+    fallbackLabel: 'Waiting PIC Feedback',
+    displayOverride: 'Waiting PIC Feedback',
+    aliases: [
+      'WAITING PIC FEEDBACK',
+      'WAITING PHOTO FEEDBACK',
+      '等待 PIC 反馈',
+      '等待PIC反馈',
+      '等待图片反馈',
+      'MENUNGGU UMPAN BALIK PIC',
+      'MENUNGGU UMPAN BALIK FOTO',
+    ],
+  },
+  {
+    key: 'REPLAN_MOS_LSP_DELAY',
+    value: 'RePlan MOS Due To LSP Delay',
+    translationKey: 'status.rescheduleLsp',
+    fallbackLabel: '重新排期(LSP)',
+    aliases: [
+      'REPLAN MOS DUE TO LSP DELAY',
+      '重新排期(LSP)',
+      'PENJADWALAN ULANG (LSP)',
+    ],
+  },
+  {
+    key: 'CLOSE_BY_RN',
+    value: 'Close By RN',
+    translationKey: 'status.rnClosed',
+    fallbackLabel: 'RN关闭',
+    aliases: ['CLOSE BY RN', 'RN关闭', 'RN DITUTUP'],
+  },
+  {
+    key: 'CANCEL_MOS',
+    value: 'Cancel MOS',
+    translationKey: 'status.cancelMos',
+    fallbackLabel: '取消MOS',
+    aliases: ['CANCEL MOS', '取消MOS', 'BATALKAN MOS'],
+  },
+  {
+    key: 'NO_STATUS',
+    value: 'No Status',
+    translationKey: 'status.noStatus',
+    fallbackLabel: '无状态',
+    aliases: [
+      'NO STATUS',
+      'No Status',
+      'no status',
+      'NO_STATUS',
+      '无状态',
+      '無狀態',
+      '沒有狀態',
+      '没有状态',
+      'TANPA STATUS',
+    ],
+  },
 ];
 
-export const DN_SCAN_STATUS_VALUES = {
-  ARRIVED_AT_WH: 'ARRIVED AT WH',
-  TRANSPORTING_FROM_WH: 'TRANSPORTING FROM WH',
-  ARRIVED_AT_XD_PM: 'ARRIVED AT XD/PM',
-  TRANSPORTING_FROM_XD_PM: 'TRANSPORTING FROM XD/PM',
-  ARRIVED_AT_SITE: 'ARRIVED AT SITE',
-};
-
-export const DN_SCAN_STATUS_ORDERED_LIST = [
-  DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH,
-  DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH,
-  DN_SCAN_STATUS_VALUES.ARRIVED_AT_XD_PM,
-  DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM,
-  DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE,
+const DN_SCAN_STATUS_DEFINITIONS = [
+  {
+    key: 'ARRIVED_AT_WH',
+    value: 'ARRIVED AT WH',
+    translationKey: 'status.arrivedAtWh',
+    fallbackLabel: '到达仓库',
+    aliases: ['Arrived at WH', '到达仓库'],
+  },
+  {
+    key: 'TRANSPORTING_FROM_WH',
+    value: 'TRANSPORTING FROM WH',
+    translationKey: 'status.transportingFromWh',
+    fallbackLabel: '从仓库发出',
+    aliases: ['Transporting from WH', '从仓库发出'],
+  },
+  {
+    key: 'ARRIVED_AT_XD_PM',
+    value: 'ARRIVED AT XD/PM',
+    translationKey: 'status.arrivedAtXdPm',
+    fallbackLabel: '到达XD/PM',
+    aliases: ['Arrived at XD/PM', '到达XD/PM'],
+  },
+  {
+    key: 'TRANSPORTING_FROM_XD_PM',
+    value: 'TRANSPORTING FROM XD/PM',
+    translationKey: 'status.transportingFromXdPm',
+    fallbackLabel: '从XD/PM发出',
+    aliases: ['Transporting from XD/PM', '从XD/PM发出'],
+  },
+  {
+    key: 'ARRIVED_AT_SITE',
+    value: 'ARRIVED AT SITE',
+    translationKey: 'status.arrivedAtSite',
+    fallbackLabel: '到达站点',
+    aliases: ['Arrived at Site', '到达站点'],
+  },
 ];
 
-export const STATUS_TRANSLATION_KEYS = {
-  [STATUS_VALUES.NEW_MOS]: 'status.newMos',
-  [STATUS_VALUES.PREPARE_VEHICLE]: 'status.prepareVehicle',
-  [STATUS_VALUES.ON_THE_WAY]: 'status.inTransit',
-  [STATUS_VALUES.ON_SITE]: 'status.onSite',
-  [STATUS_VALUES.POD]: 'status.pod',
-  [STATUS_VALUES.REPLAN_MOS_PROJECT]: 'status.projectReschedule',
-  [STATUS_VALUES.WAITING_PIC_FEEDBACK]: 'status.waitingFeedback',
-  [STATUS_VALUES.REPLAN_MOS_LSP_DELAY]: 'status.rescheduleLsp',
-  [STATUS_VALUES.CLOSE_BY_RN]: 'status.rnClosed',
-  [STATUS_VALUES.CANCEL_MOS]: 'status.cancelMos',
-  [STATUS_VALUES.NO_STATUS]: 'status.noStatus',
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH]: 'status.arrivedAtWh',
-  [DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH]: 'status.transportingFromWh',
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_XD_PM]: 'status.arrivedAtXdPm',
-  [DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM]:
-    'status.transportingFromXdPm',
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE]: 'status.arrivedAtSite',
+const buildValueMap = (definitions) =>
+  Object.freeze(
+    definitions.reduce((acc, { key, value }) => {
+      acc[key] = value;
+      return acc;
+    }, {})
+  );
+
+const buildList = (definitions) => Object.freeze(definitions.map(({ value }) => value));
+
+const buildDefinitionMap = (definitions, property) =>
+  definitions.reduce((acc, definition) => {
+    if (definition[property]) {
+      acc[definition.value] = definition[property];
+    }
+    return acc;
+  }, {});
+
+const createAliasMap = (...definitionGroups) => {
+  const map = {};
+  definitionGroups.forEach((definitions) => {
+    definitions.forEach(({ value, aliases = [] }) => {
+      map[value] = value;
+      aliases.forEach((alias) => {
+        map[alias] = value;
+      });
+    });
+  });
+  return Object.freeze(map);
 };
 
-export const STATUS_FALLBACK_LABELS = {
-  [STATUS_VALUES.NEW_MOS]: '新建MOS',
-  [STATUS_VALUES.PREPARE_VEHICLE]: 'Prepare Vehicle',
-  [STATUS_VALUES.ON_THE_WAY]: 'On The Way',
-  [STATUS_VALUES.ON_SITE]: 'On Site',
-  [STATUS_VALUES.POD]: 'POD',
-  [STATUS_VALUES.REPLAN_MOS_PROJECT]: '项目重排(Project)',
-  [STATUS_VALUES.WAITING_PIC_FEEDBACK]: 'Waiting PIC Feedback',
-  [STATUS_VALUES.REPLAN_MOS_LSP_DELAY]: '重新排期(LSP)',
-  [STATUS_VALUES.CLOSE_BY_RN]: 'RN关闭',
-  [STATUS_VALUES.CANCEL_MOS]: '取消MOS',
-  [STATUS_VALUES.NO_STATUS]: '无状态',
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH]: '到达仓库',
-  [DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH]: '从仓库发出',
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_XD_PM]: '到达XD/PM',
-  [DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM]: '从XD/PM发出',
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE]: '到达站点',
+const runtimeEnv =
+  (typeof import.meta !== 'undefined' && import.meta.env) ||
+  (typeof process !== 'undefined' && process.env) ||
+  {};
+
+const parseUserLine = (rawValue) => {
+  if (!rawValue) {
+    return null;
+  }
+
+  const [id, name, password] = rawValue
+    .split('|')
+    .map((segment) => segment?.trim());
+
+  if (!id || !name || !password) {
+    return null;
+  }
+
+  return { id, name, password };
 };
 
-export const STATUS_DISPLAY_OVERRIDES = {
-  [STATUS_VALUES.PREPARE_VEHICLE]: 'Prepare Vehicle',
-  [STATUS_VALUES.ON_THE_WAY]: 'On The Way',
-  [STATUS_VALUES.ON_SITE]: 'On Site',
-  [STATUS_VALUES.POD]: 'POD',
-  [STATUS_VALUES.WAITING_PIC_FEEDBACK]: 'Waiting PIC Feedback',
+const loadRoleUsers = (prefix, fallback = []) => {
+  const envKeys = Object.keys(runtimeEnv).filter((key) => key.startsWith(prefix));
+
+  if (!envKeys.length) {
+    return fallback;
+  }
+
+  return envKeys
+    .sort((a, b) => a.localeCompare(b))
+    .map((key) => parseUserLine(runtimeEnv[key]))
+    .filter(Boolean);
 };
 
-export const STATUS_ALIAS_MAP = {
-  [STATUS_VALUES.NEW_MOS]: STATUS_VALUES.NEW_MOS,
-  'NEW MOS': STATUS_VALUES.NEW_MOS,
-  '新建MOS': STATUS_VALUES.NEW_MOS,
-  '新 MOS': STATUS_VALUES.NEW_MOS,
-  'MOS BARU': STATUS_VALUES.NEW_MOS,
-  'MOS Baru': STATUS_VALUES.NEW_MOS,
-
-  [STATUS_VALUES.PREPARE_VEHICLE]: STATUS_VALUES.PREPARE_VEHICLE,
-  '准备车辆': STATUS_VALUES.PREPARE_VEHICLE,
-  'PREPARE VEHICLE': STATUS_VALUES.PREPARE_VEHICLE,
-  'SIAPKAN KENDARAAN': STATUS_VALUES.PREPARE_VEHICLE,
-  'PREPARE_VEHICLE': STATUS_VALUES.PREPARE_VEHICLE,
-
-  [STATUS_VALUES.ON_THE_WAY]: STATUS_VALUES.ON_THE_WAY,
-  'ON THE WAY': STATUS_VALUES.ON_THE_WAY,
-  'IN TRANSIT': STATUS_VALUES.ON_THE_WAY,
-  'START TRANSPORT': STATUS_VALUES.ON_THE_WAY,
-  '开始运输': STATUS_VALUES.ON_THE_WAY,
-  '运输中': STATUS_VALUES.ON_THE_WAY,
-  '在途': STATUS_VALUES.ON_THE_WAY,
-  'SEDANG DIKIRIM': STATUS_VALUES.ON_THE_WAY,
-  'MULAI PENGIRIMAN': STATUS_VALUES.ON_THE_WAY,
-  'Mulai Pengiriman': STATUS_VALUES.ON_THE_WAY,
-
-  [STATUS_VALUES.ON_SITE]: STATUS_VALUES.ON_SITE,
-  'ON SITE': STATUS_VALUES.ON_SITE,
-  'ARRIVED': STATUS_VALUES.ON_SITE,
-  '现场': STATUS_VALUES.ON_SITE,
-  '已到达': STATUS_VALUES.ON_SITE,
-  '到达': STATUS_VALUES.ON_SITE,
-  'SUDAH TIBA': STATUS_VALUES.ON_SITE,
-  'TIBA DI LOKASI': STATUS_VALUES.ON_SITE,
-  'DI LOKASI': STATUS_VALUES.ON_SITE,
-
-  [STATUS_VALUES.POD]: STATUS_VALUES.POD,
-  'PROOF OF DELIVERY': STATUS_VALUES.POD,
-
-  [STATUS_VALUES.REPLAN_MOS_PROJECT]: STATUS_VALUES.REPLAN_MOS_PROJECT,
-  'REPLAN MOS PROJECT': STATUS_VALUES.REPLAN_MOS_PROJECT,
-  '项目重排(Project)': STATUS_VALUES.REPLAN_MOS_PROJECT,
-  'PENJADWALAN ULANG PROYEK': STATUS_VALUES.REPLAN_MOS_PROJECT,
-
-  [STATUS_VALUES.WAITING_PIC_FEEDBACK]: STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  'WAITING PIC FEEDBACK': STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  'WAITING PHOTO FEEDBACK': STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  '等待 PIC 反馈': STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  '等待PIC反馈': STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  '等待图片反馈': STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  'MENUNGGU UMPAN BALIK PIC': STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  'MENUNGGU UMPAN BALIK FOTO': STATUS_VALUES.WAITING_PIC_FEEDBACK,
-
-  [STATUS_VALUES.REPLAN_MOS_LSP_DELAY]: STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
-  'REPLAN MOS DUE TO LSP DELAY': STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
-  '重新排期(LSP)': STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
-  'PENJADWALAN ULANG (LSP)': STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
-
-  [STATUS_VALUES.CLOSE_BY_RN]: STATUS_VALUES.CLOSE_BY_RN,
-  'CLOSE BY RN': STATUS_VALUES.CLOSE_BY_RN,
-  'RN关闭': STATUS_VALUES.CLOSE_BY_RN,
-  'RN DITUTUP': STATUS_VALUES.CLOSE_BY_RN,
-
-  [STATUS_VALUES.CANCEL_MOS]: STATUS_VALUES.CANCEL_MOS,
-  'CANCEL MOS': STATUS_VALUES.CANCEL_MOS,
-  '取消MOS': STATUS_VALUES.CANCEL_MOS,
-  'BATALKAN MOS': STATUS_VALUES.CANCEL_MOS,
-  [STATUS_VALUES.NO_STATUS]: STATUS_VALUES.NO_STATUS,
-  'NO STATUS': STATUS_VALUES.NO_STATUS,
-  'No Status': STATUS_VALUES.NO_STATUS,
-  'no status': STATUS_VALUES.NO_STATUS,
-  'NO_STATUS': STATUS_VALUES.NO_STATUS,
-  '无状态': STATUS_VALUES.NO_STATUS,
-  '無狀態': STATUS_VALUES.NO_STATUS,
-  '沒有狀態': STATUS_VALUES.NO_STATUS,
-  '没有状态': STATUS_VALUES.NO_STATUS,
-  'TANPA STATUS': STATUS_VALUES.NO_STATUS,
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH]: DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH,
-  'Arrived at WH': DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH,
-  '到达仓库': DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH,
-  [DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH]:
-    DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH,
-  'Transporting from WH': DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH,
-  '从仓库发出': DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH,
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_XD_PM]:
-    DN_SCAN_STATUS_VALUES.ARRIVED_AT_XD_PM,
-  'Arrived at XD/PM': DN_SCAN_STATUS_VALUES.ARRIVED_AT_XD_PM,
-  '到达XD/PM': DN_SCAN_STATUS_VALUES.ARRIVED_AT_XD_PM,
-  [DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM]:
-    DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM,
-  'Transporting from XD/PM': DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM,
-  '从XD/PM发出': DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM,
-  [DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE]: DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE,
-  'Arrived at Site': DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE,
-  '到达站点': DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE,
+const ROLE_USER_PREFIXES = {
+  lsp: 'VITE_ROLE_LSP_USER_',
+  customer: 'VITE_ROLE_CUSTOMER_USER_',
+  transportManager: 'VITE_ROLE_TRANSPORT_MANAGER_USER_',
 };
+
+export const STATUS_VALUES = buildValueMap(STATUS_DEFINITIONS);
+export const STATUS_ORDERED_LIST = buildList(STATUS_DEFINITIONS);
+export const DN_SCAN_STATUS_VALUES = buildValueMap(DN_SCAN_STATUS_DEFINITIONS);
+export const DN_SCAN_STATUS_ORDERED_LIST = buildList(DN_SCAN_STATUS_DEFINITIONS);
+
+export const STATUS_TRANSLATION_KEYS = Object.freeze({
+  ...buildDefinitionMap(STATUS_DEFINITIONS, 'translationKey'),
+  ...buildDefinitionMap(DN_SCAN_STATUS_DEFINITIONS, 'translationKey'),
+});
+
+export const STATUS_FALLBACK_LABELS = Object.freeze({
+  ...buildDefinitionMap(STATUS_DEFINITIONS, 'fallbackLabel'),
+  ...buildDefinitionMap(DN_SCAN_STATUS_DEFINITIONS, 'fallbackLabel'),
+});
+
+export const STATUS_DISPLAY_OVERRIDES = Object.freeze(
+  STATUS_DEFINITIONS.reduce((acc, { value, displayOverride }) => {
+    if (displayOverride) {
+      acc[value] = displayOverride;
+    }
+    return acc;
+  }, {})
+);
+
+export const STATUS_ALIAS_MAP = createAliasMap(
+  STATUS_DEFINITIONS,
+  DN_SCAN_STATUS_DEFINITIONS
+);
 
 export const ROLE_DEFINITIONS = {
   lsp: {
@@ -204,18 +281,7 @@ export const ROLE_DEFINITIONS = {
       { status: STATUS_VALUES.CLOSE_BY_RN },
       { status: STATUS_VALUES.WAITING_PIC_FEEDBACK },
     ],
-    users: [
-      { id: 'lsp-operator-01', name: 'LSP Operator 01', password: 'LSP-123456' },
-      { id: 'lsp-operator-02', name: 'LSP Operator 02', password: 'LSP-234567' },
-      { id: 'lsp-operator-03', name: 'LSP Operator 03', password: 'LSP-345678' },
-      { id: 'lsp-operator-04', name: 'LSP Operator 04', password: 'LSP-456789' },
-      { id: 'lsp-operator-05', name: 'LSP Operator 05', password: 'LSP-567890' },
-      { id: 'lsp-operator-06', name: 'LSP Operator 06', password: 'LSP-678901' },
-      { id: 'lsp-operator-07', name: 'LSP Operator 07', password: 'LSP-789012' },
-      { id: 'lsp-operator-08', name: 'LSP Operator 08', password: 'LSP-890123' },
-      { id: 'lsp-operator-09', name: 'LSP Operator 09', password: 'LSP-901234' },
-      { id: 'lsp-operator-10', name: 'LSP Operator 10', password: 'LSP-012345' },
-    ],
+    users: loadRoleUsers(ROLE_USER_PREFIXES.lsp),
   },
   customer: {
     key: 'customer',
@@ -233,18 +299,7 @@ export const ROLE_DEFINITIONS = {
       { status: STATUS_VALUES.NEW_MOS },
       { status: STATUS_VALUES.POD },
     ],
-    users: [
-      { id: 'project-team-01', name: 'Project Team 01', password: 'HW-PROJ-888888' },
-      { id: 'project-team-02', name: 'Project Team 02', password: 'HW-PROJ-777777' },
-      { id: 'project-team-03', name: 'Project Team 03', password: 'HW-PROJ-666666' },
-      { id: 'project-team-04', name: 'Project Team 04', password: 'HW-PROJ-555555' },
-      { id: 'project-team-05', name: 'Project Team 05', password: 'HW-PROJ-444444' },
-      { id: 'project-team-06', name: 'Project Team 06', password: 'HW-PROJ-333333' },
-      { id: 'project-team-07', name: 'Project Team 07', password: 'HW-PROJ-222222' },
-      { id: 'project-team-08', name: 'Project Team 08', password: 'HW-PROJ-111111' },
-      { id: 'project-team-09', name: 'Project Team 09', password: 'HW-PROJ-999999' },
-      { id: 'project-team-10', name: 'Project Team 10', password: 'HW-PROJ-135791' },
-    ],
+    users: loadRoleUsers(ROLE_USER_PREFIXES.customer),
   },
   transportManager: {
     key: 'transportManager',
@@ -267,28 +322,7 @@ export const ROLE_DEFINITIONS = {
       { status: STATUS_VALUES.PREPARE_VEHICLE },
       { status: STATUS_VALUES.ON_THE_WAY },
     ],
-    users: [
-      { id: 'tm-lead-01', name: 'Transport Manager 01', password: 'HW-LSM-888888' },
-      { id: 'tm-lead-02', name: 'Transport Manager 02', password: 'HW-LSM-777234' },
-      { id: 'tm-lead-03', name: 'Transport Manager 03', password: 'HW-LSM-666345' },
-      { id: 'tm-lead-04', name: 'Transport Manager 04', password: 'HW-LSM-555456' },
-      { id: 'tm-lead-05', name: 'Transport Manager 05', password: 'HW-LSM-444567' },
-      { id: 'tm-lead-06', name: 'Transport Manager 06', password: 'HW-LSM-333678' },
-      { id: 'tm-lead-07', name: 'Transport Manager 07', password: 'HW-LSM-222789' },
-      { id: 'tm-lead-08', name: 'Transport Manager 08', password: 'HW-LSM-111890' },
-      { id: 'tm-lead-09', name: 'Transport Manager 09', password: 'HW-LSM-999012' },
-      { id: 'tm-lead-10', name: 'Transport Manager 10', password: 'HW-LSM-246801' },
-      { id: 'tm-lead-11', name: 'Transport Manager 11', password: 'HW-LSM-357902' },
-      { id: 'tm-lead-12', name: 'Transport Manager 12', password: 'HW-LSM-468013' },
-      { id: 'tm-lead-13', name: 'Transport Manager 13', password: 'HW-LSM-579124' },
-      { id: 'tm-lead-14', name: 'Transport Manager 14', password: 'HW-LSM-680235' },
-      { id: 'tm-lead-15', name: 'Transport Manager 15', password: 'HW-LSM-791346' },
-      { id: 'tm-lead-16', name: 'Transport Manager 16', password: 'HW-LSM-802457' },
-      { id: 'tm-lead-17', name: 'Transport Manager 17', password: 'HW-LSM-913568' },
-      { id: 'tm-lead-18', name: 'Transport Manager 18', password: 'HW-LSM-024679' },
-      { id: 'tm-lead-19', name: 'Transport Manager 19', password: 'HW-LSM-135680' },
-      { id: 'tm-lead-20', name: 'Transport Manager 20', password: 'HW-LSM-246791' },
-    ],
+    users: loadRoleUsers(ROLE_USER_PREFIXES.transportManager),
   },
 };
 
