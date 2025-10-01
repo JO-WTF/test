@@ -183,7 +183,7 @@ export function setupAdminPage(
   }
   const TRANSPORT_MANAGER_STATUS_CARDS = [
     { status: STATUS_VALUES.PREPARE_VEHICLE, label: 'Prepare Vehicle' },
-    { status: STATUS_VALUES.ON_THE_WAY, label: 'On The Way' },
+    { status: STATUS_VALUES.ON_THE_WAY, label: 'On the way' },
     { status: STATUS_VALUES.ON_SITE, label: 'On Site' },
     { status: STATUS_VALUES.POD, label: 'POD' },
     { status: STATUS_VALUES.WAITING_PIC_FEEDBACK, label: 'Waiting PIC Feedback' },

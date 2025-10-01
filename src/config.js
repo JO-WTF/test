@@ -16,10 +16,10 @@ const STATUS_DEFINITIONS = [
   },
   {
     key: 'ON_THE_WAY',
-    value: 'On The Way',
+    value: 'On the way',
     translationKey: 'status.inTransit',
-    fallbackLabel: 'On The Way',
-    displayOverride: 'On The Way',
+    fallbackLabel: 'On the way',
+    displayOverride: 'On the way',
     aliases: [
       'ON THE WAY',
       'IN TRANSIT',
