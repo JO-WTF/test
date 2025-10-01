@@ -141,7 +141,6 @@ export function createStatusCardManager({
       container.innerHTML = '';
       wrapper.style.display = 'none';
       wrapper.setAttribute('aria-hidden', 'true');
-      container.style.removeProperty('--status-card-columns');
       if (abortController) {
         try {
           abortController.abort();
@@ -157,7 +156,6 @@ export function createStatusCardManager({
     wrapper.setAttribute('aria-hidden', 'false');
     container.innerHTML = '';
     const columns = Math.max(1, Math.min(list.length, STATUS_CARD_MAX_COLUMNS));
-    container.style.setProperty('--status-card-columns', String(columns + 1));
 
     list.forEach((defItem) => {
       const btn = document.createElement('button');

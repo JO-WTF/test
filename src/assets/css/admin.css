@@ -76,11 +76,11 @@ body.admin-theme {
     border-radius: 999px;
     background: rgba(11, 19, 40, 0.92);
     color: #eaf2ff;
-    padding: 6px 12px;
+    padding: 6px 8px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.4;
     white-space: nowrap;
     cursor: pointer;
@@ -119,9 +119,9 @@ body.admin-theme {
     }
 .admin-page .status-card-grid {
     --status-card-columns: 13;
-    --status-card-min-width: 80px;
+    --status-card-min-width: 60px;
     display: grid;
-    gap: 12px;
+    gap: 6px;
     grid-template-columns: repeat(
         auto-fit,
         minmax(
@@ -175,7 +175,7 @@ body.admin-theme {
     cursor: progress
     }
 .admin-page .status-card__count {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
     color: #9cc6ff;
     line-height: 1.1
@@ -184,7 +184,7 @@ body.admin-theme {
     color: #7fa7e6
     }
 .admin-page .status-card__label {
-    font-size: 13px;
+    font-size: 12px;
     color: #c8d8f8;
     line-height: 1.4
     }
@@ -197,7 +197,6 @@ body.admin-theme {
     color: #eaf2ff;
     border: 1px solid #2a3a66;
     border-radius: 10px;
-    padding: 8px 10px
     }
 .admin-page input[type="date"] {
     min-width: 180px
@@ -210,6 +209,7 @@ body.admin-theme {
 .admin-page .btn {
     appearance: none;
     border: 0;
+    font-size:14px;
     border-radius: 999px;
     padding: 10px 16px;
     font-weight: 700;
@@ -259,7 +259,7 @@ body.admin-theme {
     padding: 8px;
     border-bottom: 1px solid #1f2a4d;
     text-align: left;
-    font-size: 14px;
+    font-size: 12px;
     vertical-align: top
     }
 .admin-page tr.summary-row.expandable {
@@ -379,7 +379,6 @@ body.admin-theme {
     /* also apply to the fourth column */
     .admin-page table th:nth-child(4),
     .admin-page table td:nth-child(4) {
-        min-width: 80px;
         white-space: normal;
         overflow-wrap: anywhere;
         word-break: break-word;
@@ -427,6 +426,23 @@ body.admin-theme {
     color: #eaf2ff;
     word-break: break-word
     }
+.admin-page tr.detail-row .detail-content {
+    padding: 8px
+    }
+.admin-page tr.detail-row .detail-grid {
+    gap: 4px 6px
+    }
+.admin-page tr.detail-row .detail-item {
+    padding: 4px 6px;
+    gap: 4px
+    }
+.admin-page tr.detail-row .detail-key {
+    font-size: 11px
+    }
+.admin-page tr.detail-row .detail-value {
+    font-size: 11px;
+    line-height: 1.2
+    }
 .admin-page tr.detail-row .detail-item.detail-item-input {
     background: rgba(10, 18, 42, 0.75)
     }
@@ -435,6 +451,7 @@ body.admin-theme {
     }
 .admin-page tr.detail-row .detail-value.detail-value-input .ant-input {
     width: 100%;
+    font-size:10px;
     background: #647FBC;
     border: 1px solid #2a3b63;
     border-radius: 6px;
@@ -742,7 +759,7 @@ body.admin-theme {
     background: transparent;
     color: #8aa2c8;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1
     }
 .admin-page .dn-modal__body {
@@ -772,7 +789,7 @@ body.admin-theme {
     }
 .admin-page .dn-preview .placeholder {
     color: #8aa2c8;
-    font-size: 13px
+    font-size: 12px
     }
 .admin-page .dn-token {
     display: inline-flex;
@@ -780,7 +797,7 @@ body.admin-theme {
     justify-content: center;
     padding: 4px 10px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 12px;
     background: rgba(148, 163, 184, 0.16);
     color: #eaf2ff;
     border: 1px solid rgba(148, 163, 184, 0.3)
