@@ -1,11 +1,11 @@
 import { escapeHtml } from './utils.js';
+import { TRANSPORT_MANAGER_ROLE_KEY } from './constants.js';
+import { normalizeDnSoft, DN_VALID_RE } from '../../utils/dn.js';
 
 const DN_SEPARATOR_SOURCE = '[\\s,，；;、\\u3001]+';
 const DN_SEP_RE = new RegExp(DN_SEPARATOR_SOURCE, 'gu');
 const DN_SEP_CAPTURE_RE = new RegExp(`(${DN_SEPARATOR_SOURCE})`, 'gu');
 const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
-const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
-const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\u2060\uFEFF]/g;
 
 export function createDnEntryManager({
   dnInput,
@@ -25,8 +25,6 @@ export function createDnEntryManager({
   getCurrentRoleKey,
   fetchList,
 }) {
-  const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
-
   function isTransportManager() {
     if (typeof getCurrentRoleKey === 'function') {
       return getCurrentRoleKey() === TRANSPORT_MANAGER_ROLE_KEY;
@@ -43,7 +41,7 @@ export function createDnEntryManager({
   }
 
   function normalizeRawSoft(raw) {
-    return (raw || '').replace(ZERO_WIDTH_RE, '').toUpperCase();
+    return normalizeDnSoft(raw);
   }
 
   function splitTokens(raw) {

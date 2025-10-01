@@ -227,10 +227,12 @@ const loadRoleUsers = (prefix, fallback = []) => {
     .filter(Boolean);
 };
 
+export const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
+
 const ROLE_USER_PREFIXES = {
   lsp: 'VITE_ROLE_LSP_USER_',
   customer: 'VITE_ROLE_CUSTOMER_USER_',
-  transportManager: 'VITE_ROLE_TRANSPORT_MANAGER_USER_',
+  [TRANSPORT_MANAGER_ROLE_KEY]: 'VITE_ROLE_TRANSPORT_MANAGER_USER_',
 };
 
 export const STATUS_VALUES = buildValueMap(STATUS_DEFINITIONS);
@@ -301,8 +303,8 @@ export const ROLE_DEFINITIONS = {
     ],
     users: loadRoleUsers(ROLE_USER_PREFIXES.customer),
   },
-  transportManager: {
-    key: 'transportManager',
+  [TRANSPORT_MANAGER_ROLE_KEY]: {
+    key: TRANSPORT_MANAGER_ROLE_KEY,
     label: '运输经理',
     description: 'Transport Manager',
     permissions: {
@@ -322,7 +324,7 @@ export const ROLE_DEFINITIONS = {
       { status: STATUS_VALUES.PREPARE_VEHICLE },
       { status: STATUS_VALUES.ON_THE_WAY },
     ],
-    users: loadRoleUsers(ROLE_USER_PREFIXES.transportManager),
+    users: loadRoleUsers(ROLE_USER_PREFIXES[TRANSPORT_MANAGER_ROLE_KEY]),
   },
 };
 

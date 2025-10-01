@@ -440,6 +440,7 @@ import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
 import { useAdminFilters, STATUS_NOT_EMPTY_VALUE } from './admin/useAdminFilters';
+import { TRANSPORT_MANAGER_ROLE_KEY } from './admin/constants';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
@@ -452,7 +453,6 @@ const adminRoot = ref(null);
 const currentLang = ref('zh');
 const currentRoleKey = ref('');
 const router = useRouter();
-const TRANSPORT_MANAGER_ROLE_KEY = 'transportManager';
 const showMapViewButton = computed(
   () => currentRoleKey.value === TRANSPORT_MANAGER_ROLE_KEY
 );

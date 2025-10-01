@@ -1,5 +1,6 @@
 import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
+import { STATUS_NOT_EMPTY_VALUE } from './constants.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
 const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
@@ -14,7 +15,8 @@ const DATE_PRESET_FALLBACK_LABELS = {
   tomorrow: 'Tomorrow',
 };
 
-export const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+// Re-export for backward compatibility
+export { STATUS_NOT_EMPTY_VALUE };
 
 const HAS_COORDINATE_OPTION_DEFS = [
   { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
@@ -634,4 +636,3 @@ export function useAdminFilters() {
     setDefaultStatusFilter,
   };
 }
-

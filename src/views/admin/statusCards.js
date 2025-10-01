@@ -1,19 +1,11 @@
 import { STATUS_VALUES } from '../../config.js';
+import {
+  TRANSPORT_MANAGER_STATUS_CARDS,
+  TRANSPORT_MANAGER_ROLE_KEY,
+} from './constants.js';
 
 const STATUS_CARD_MAX_COLUMNS = 13;
 const STATUS_CARD_TOTAL_KEY = '__TOTAL__';
-const DEFAULT_TRANSPORT_MANAGER_STATUS_CARDS = [
-  { status: STATUS_VALUES.PREPARE_VEHICLE, label: STATUS_VALUES.PREPARE_VEHICLE },
-  { status: STATUS_VALUES.ON_THE_WAY, label: STATUS_VALUES.ON_THE_WAY },
-  { status: STATUS_VALUES.ON_SITE, label: STATUS_VALUES.ON_SITE },
-  { status: STATUS_VALUES.POD, label: STATUS_VALUES.POD },
-  { status: STATUS_VALUES.WAITING_PIC_FEEDBACK, label: STATUS_VALUES.WAITING_PIC_FEEDBACK },
-  { status: STATUS_VALUES.REPLAN_MOS_LSP_DELAY, label: STATUS_VALUES.REPLAN_MOS_LSP_DELAY },
-  { status: STATUS_VALUES.REPLAN_MOS_PROJECT, label: STATUS_VALUES.REPLAN_MOS_PROJECT },
-  { status: STATUS_VALUES.CANCEL_MOS, label: STATUS_VALUES.CANCEL_MOS },
-  { status: STATUS_VALUES.CLOSE_BY_RN, label: STATUS_VALUES.CLOSE_BY_RN },
-  { status: STATUS_VALUES.NO_STATUS, label: STATUS_VALUES.NO_STATUS },
-];
 
 export function createStatusCardManager({
   container,
@@ -27,7 +19,7 @@ export function createStatusCardManager({
   getStatusDeliveryValues,
   getStatusFilterValue,
   onApplyFilter,
-  transportManagerCards = DEFAULT_TRANSPORT_MANAGER_STATUS_CARDS,
+  transportManagerCards = TRANSPORT_MANAGER_STATUS_CARDS,
   onStatsFetched,
   onLoadingChange,
 }) {
@@ -102,7 +94,7 @@ export function createStatusCardManager({
     if (role?.key === 'lsp') {
       list = [];
     } else {
-      if (role?.key === 'transportManager') {
+      if (role?.key === TRANSPORT_MANAGER_ROLE_KEY) {
         list = transportManagerCards.map((card) => ({
           status: card.status,
           label: card.label,
@@ -129,7 +121,7 @@ export function createStatusCardManager({
 
       list = list.filter((defItem) => defItem.type !== 'status' || defItem.status);
 
-      if (role?.key === 'transportManager' && list.length) {
+      if (role?.key === TRANSPORT_MANAGER_ROLE_KEY && list.length) {
         list = [
           {
             status: '',

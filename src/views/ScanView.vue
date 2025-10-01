@@ -194,6 +194,7 @@ import { useAuth } from '../composables/useAuth';
 import { useDeviceDetection } from '../composables/useDeviceDetection';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
+import { isValidDn } from '../utils/dn.js';
 
 const LICENSE_KEY = getDynamsoftLicenseKey();
 
@@ -287,8 +288,7 @@ const submitSummaryRows = computed(() => {
   ];
 });
 
-const DN_VALID_RE = /^[A-Z]{2}[A-Z0-9]{3}\d{9,13}$/;
-const validateDN = (text) => DN_VALID_RE.test(String(text || '').toUpperCase());
+const validateDN = (text) => isValidDn(text);
 
 const getLocation = async () =>
   new Promise((resolve, reject) => {
