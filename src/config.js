@@ -1,10 +1,10 @@
 const STATUS_DEFINITIONS = [
   {
     key: 'NEW_MOS',
-    value: 'Nwe MOS',
+    value: 'New MOS',
     translationKey: 'status.newMos',
     fallbackLabel: '新建MOS',
-    aliases: ['NEW MOS', '新建MOS', '新 MOS', 'MOS BARU', 'MOS Baru'],
+    aliases: ['NEW MOS', '新建MOS', '新 MOS', 'MOS BARU', 'MOS Baru', 'Nwe MOS'],
   },
   {
     key: 'PREPARE_VEHICLE',

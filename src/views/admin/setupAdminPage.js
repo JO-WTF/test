@@ -181,20 +181,22 @@ export function setupAdminPage(
     if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
     return value.toISOString();
   }
+  // 使用 STATUS_VALUES 作为 status 值，label 也使用同样的值以保持一致性
+  // 实际显示文本会通过 i18n 系统翻译
   const TRANSPORT_MANAGER_STATUS_CARDS = [
-    { status: STATUS_VALUES.PREPARE_VEHICLE, label: 'Prepare Vehicle' },
-    { status: STATUS_VALUES.ON_THE_WAY, label: 'On the way' },
-    { status: STATUS_VALUES.ON_SITE, label: 'On Site' },
-    { status: STATUS_VALUES.POD, label: 'POD' },
-    { status: STATUS_VALUES.WAITING_PIC_FEEDBACK, label: 'Waiting PIC Feedback' },
+    { status: STATUS_VALUES.PREPARE_VEHICLE, label: STATUS_VALUES.PREPARE_VEHICLE },
+    { status: STATUS_VALUES.ON_THE_WAY, label: STATUS_VALUES.ON_THE_WAY },
+    { status: STATUS_VALUES.ON_SITE, label: STATUS_VALUES.ON_SITE },
+    { status: STATUS_VALUES.POD, label: STATUS_VALUES.POD },
+    { status: STATUS_VALUES.WAITING_PIC_FEEDBACK, label: STATUS_VALUES.WAITING_PIC_FEEDBACK },
     {
       status: STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
-      label: 'RePlan MOS due to LSP Delay',
+      label: STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
     },
-    { status: STATUS_VALUES.REPLAN_MOS_PROJECT, label: 'RePlan MOS Project' },
-    { status: STATUS_VALUES.CANCEL_MOS, label: 'Cancel MOS' },
-    { status: STATUS_VALUES.CLOSE_BY_RN, label: 'Close by RN' },
-    { status: STATUS_VALUES.NO_STATUS, label: 'No Status' },
+    { status: STATUS_VALUES.REPLAN_MOS_PROJECT, label: STATUS_VALUES.REPLAN_MOS_PROJECT },
+    { status: STATUS_VALUES.CANCEL_MOS, label: STATUS_VALUES.CANCEL_MOS },
+    { status: STATUS_VALUES.CLOSE_BY_RN, label: STATUS_VALUES.CLOSE_BY_RN },
+    { status: STATUS_VALUES.NO_STATUS, label: STATUS_VALUES.NO_STATUS },
   ];
   const STATUS_DELIVERY_OPTIONS = [
     STATUS_VALUES.PREPARE_VEHICLE,
