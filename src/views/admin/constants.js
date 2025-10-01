@@ -79,8 +79,9 @@ export const DEFAULT_MODAL_STATUS_ORDER =
         'ARRIVED AT SITE',
       ];
 
-// 字段候选列表
-export const DETAIL_KEY_PRIORITY = [
+// DN详情展开时显示的字段及其顺序
+// 只有在此列表中的字段才会在展开详情时显示
+export const DN_DETAIL_KEYS = [
   'du_id',
   'lsp',
   'region',

@@ -37,7 +37,7 @@ import {
   TRANSPORT_MANAGER_STATUS_CARDS,
   STATUS_DELIVERY_OPTIONS,
   DEFAULT_MODAL_STATUS_ORDER,
-  DETAIL_KEY_PRIORITY,
+  DN_DETAIL_KEYS,
   DETAIL_INPUT_FIELD_SET,
   REGION_FIELD_CANDIDATES,
   PLAN_MOS_DATE_FIELD_CANDIDATES,
@@ -796,13 +796,8 @@ export function setupAdminPage(
 
   function collectDetailEntries(item) {
     if (!item || typeof item !== 'object') return [];
-    const entries = Object.entries(item).filter(([key]) => {
-      const normalizedKey = String(key).trim().toLowerCase();
-      return !HIDDEN_DETAIL_FIELDS.has(normalizedKey);
-    });
-    const hasLonlatEntry = entries.some(
-      ([key]) => String(key).trim().toLowerCase() === 'lonlat'
-    );
+    
+    // 处理坐标字段
     const latValue = item?.lat ?? item?.latitude;
     const lngValue = item?.lng ?? item?.longitude;
     const hasCoordinates =
@@ -810,25 +805,28 @@ export function setupAdminPage(
       latValue !== null &&
       lngValue !== undefined &&
       lngValue !== null;
-    if (!entries.length && !hasCoordinates) {
-      return [];
+    
+    // 只收集 DN_DETAIL_KEYS 中配置的字段
+    const entries = [];
+    const itemWithLonlat = { ...item };
+    
+    // 如果有坐标但没有 lonlat 字段，添加一个虚拟的 lonlat 字段
+    if (hasCoordinates && !item.lonlat) {
+      itemWithLonlat.lonlat = `${lngValue},${latValue}`;
     }
-    if (!hasLonlatEntry && hasCoordinates) {
-      entries.push(['lonlat', `${lngValue},${latValue}`]);
-    }
-    if (!entries.length) return [];
-    const priority = new Map();
-    DETAIL_KEY_PRIORITY.forEach((key, index) => {
-      if (!priority.has(key)) priority.set(key, index);
+    
+    // 按照 DN_DETAIL_KEYS 的顺序收集存在的字段
+    DN_DETAIL_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(itemWithLonlat, key)) {
+        const value = itemWithLonlat[key];
+        // 跳过 undefined、null 或空字符串
+        if (value !== undefined && value !== null && value !== '') {
+          entries.push([key, value]);
+        }
+      }
     });
-    return entries.sort(([a], [b]) => {
-      const keyA = String(a);
-      const keyB = String(b);
-      const pa = priority.has(keyA) ? priority.get(keyA) : Infinity;
-      const pb = priority.has(keyB) ? priority.get(keyB) : Infinity;
-      if (pa !== pb) return pa - pb;
-      return keyA.localeCompare(keyB);
-    });
+    
+    return entries;
   }
 
   function formatDetailValue(key, value, item) {
@@ -2175,7 +2173,7 @@ ${cellsHtml}
     };
 
     const preferredKeys = [
-      ...DETAIL_KEY_PRIORITY,
+      ...DN_DETAIL_KEYS,
       'du_id',
       'status',
       'remark',
