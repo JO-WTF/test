@@ -52,8 +52,6 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import { getApiBase, getMapboxAccessToken } from '../utils/env';
 
 const mapboxToken = getMapboxAccessToken();
@@ -65,6 +63,7 @@ const error = ref('');
 const mapContainer = ref(null);
 const mapInstance = shallowRef(null);
 const mapLoaded = ref(false);
+const mapboxgl = shallowRef(null);
 const activeMarkers = [];
 const activeRoutes = [];
 let pendingMarkerData = null;
@@ -269,7 +268,7 @@ const addRouteToMap = (point, geojson) => {
 };
 
 const updateMarkers = async (points) => {
-  if (!mapInstance.value || !mapLoaded.value) return;
+  if (!mapInstance.value || !mapLoaded.value || !mapboxgl.value) return;
   clearMarkers();
   clearRoutes();
   if (!Array.isArray(points) || !points.length) return;
@@ -280,15 +279,15 @@ const updateMarkers = async (points) => {
   }
   activeController = new AbortController();
 
-  const bounds = new mapboxgl.LngLatBounds();
+  const bounds = new mapboxgl.value.LngLatBounds();
 
   points.forEach((point) => {
-    const marker = new mapboxgl.Marker({
+    const marker = new mapboxgl.value.Marker({
       color: point.isOnSite ? '#22c55e' : '#2563eb',
     })
       .setLngLat([point.longitude, point.latitude])
       .setPopup(
-        new mapboxgl.Popup({ offset: 24 }).setHTML(
+        new mapboxgl.value.Popup({ offset: 24 }).setHTML(
           `
             <div class="marker-popup">
               <strong>${formatForPopup(point.dnNumber, 'DN 未命名')}</strong>
@@ -382,29 +381,40 @@ const scheduleMarkerUpdate = (points) => {
   });
 };
 
-const initializeMap = () => {
+const initializeMap = async () => {
   if (!mapboxToken || !mapContainer.value) return;
 
-  mapboxgl.accessToken = mapboxToken;
+  try {
+    // 动态导入 Mapbox GL
+    const mapboxModule = await import('mapbox-gl');
+    await import('mapbox-gl/dist/mapbox-gl.css');
+    
+    const mapboxglInstance = mapboxModule.default;
+    mapboxgl.value = mapboxglInstance;
+    mapboxglInstance.accessToken = mapboxToken;
 
-  const map = new mapboxgl.Map({
-    container: mapContainer.value,
-    style: 'mapbox://styles/mapbox/streets-v11',
-    center: [106.8456, -6.2088],
-    zoom: 5,
-  });
-
-  map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }));
-
-  map.on('load', () => {
-    mapLoaded.value = true;
-    updateMarkers(pendingMarkerData || mapPoints.value).catch((err) => {
-      console.error(err);
+    const map = new mapboxglInstance.Map({
+      container: mapContainer.value,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [106.8456, -6.2088],
+      zoom: 5,
     });
-    pendingMarkerData = null;
-  });
 
-  mapInstance.value = map;
+    map.addControl(new mapboxglInstance.NavigationControl({ visualizePitch: true }));
+
+    map.on('load', () => {
+      mapLoaded.value = true;
+      updateMarkers(pendingMarkerData || mapPoints.value).catch((err) => {
+        console.error(err);
+      });
+      pendingMarkerData = null;
+    });
+
+    mapInstance.value = map;
+  } catch (err) {
+    console.error('Failed to load Mapbox GL:', err);
+    error.value = '地图加载失败';
+  }
 };
 
 const fetchAllDnItems = async () => {

@@ -10,21 +10,21 @@
     "start": "serve -s dist -l 8080"
   },
   "dependencies": {
-    "@antv/g2plot": "^2.4.25",
+    "@antv/g2plot": "^2.4.35",
     "ant-design-vue": "^4.2.6",
     "dayjs": "^1.11.18",
     "echarts": "^6.0.0",
-    "mapbox-gl": "^2.15.0",
+    "mapbox-gl": "^3.15.0",
     "toastify-js": "1.12.0",
-    "v-viewer": "3.0.11",
-    "viewerjs": "1.11.6",
-    "vue": "3.4.38",
-    "vue-router": "4.3.2",
+    "v-viewer": "^3.0.22",
+    "viewerjs": "^1.11.7",
+    "vue": "^3.5.22",
+    "vue-router": "^4.5.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "5.0.4",
+    "@vitejs/plugin-vue": "^6.0.1",
     "serve": "^14.2.5",
-    "vite": "5.2.13"
+    "vite": "^7.1.7"
   }
 }

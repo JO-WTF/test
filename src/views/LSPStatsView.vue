@@ -23,11 +23,12 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
-import * as echarts from 'echarts';
 import { getApiBase } from '../utils/env';
 
 const chartContainer = ref(null);
 let chartInstance = null;
+let echarts = null;
+let isEChartsLoaded = false;
 
 // 数据源
 const raw = ref([]);
@@ -193,7 +194,7 @@ const prepareChartData = () => {
 
 // 更新图表
 const updateChart = () => {
-  if (!chartInstance) return;
+  if (!chartInstance || !echarts) return;
 
   const { xAxisData, series } = prepareChartData();
 
@@ -248,23 +249,40 @@ const updateChart = () => {
 onMounted(async () => {
   await fetchData();
 
-  chartInstance = echarts.init(chartContainer.value);
-  updateChart();
+  // 动态导入 ECharts (只在客户端)
+  if (typeof window !== 'undefined') {
+    try {
+      const echartsModule = await import('echarts');
+      echarts = echartsModule.default || echartsModule;
+      isEChartsLoaded = true;
 
-  // 窗口大小改变时自动调整图表
-  window.addEventListener('resize', () => {
-    chartInstance?.resize();
-  });
+      if (!echarts || typeof echarts.init !== 'function') {
+        throw new Error('ECharts init function not available');
+      }
+
+      chartInstance = echarts.init(chartContainer.value);
+      updateChart();
+
+      // 窗口大小改变时自动调整图表
+      window.addEventListener('resize', () => {
+        chartInstance?.resize();
+      });
+    } catch (error) {
+      console.error('Failed to load ECharts:', error);
+    }
+  }
 });
 
 // 监听指标变化，更新图表
 watch(metric, () => {
-  updateChart();
+  if (isEChartsLoaded) {
+    updateChart();
+  }
 });
 
 // 监听数据变化
 watch(raw, () => {
-  if (chartInstance && raw.value.length > 0) {
+  if (chartInstance && raw.value.length > 0 && isEChartsLoaded) {
     console.log('Data loaded:', raw.value);
     updateChart();
   }
