@@ -13,6 +13,7 @@
     "@antv/g2plot": "^2.4.25",
     "ant-design-vue": "^4.2.6",
     "dayjs": "^1.11.18",
+    "echarts": "^6.0.0",
     "mapbox-gl": "^2.15.0",
     "toastify-js": "1.12.0",
     "v-viewer": "3.0.11",

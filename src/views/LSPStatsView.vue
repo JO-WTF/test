@@ -1,37 +1,37 @@
-<!-- DemoLine.vue -->
 <template>
   <div class="stats-view">
-    <section class="stats-card">
-      <header class="stats-header">
-        <div>
-          <p class="eyebrow">LSP performance overview</p>
-          <h1 class="stats-title">Last mile delivery statistics</h1>
+    <div class="stats-container">
+      <div class="stats-header">
+        <div class="header-content">
+          <h1 class="stats-title">LSP 统计分析</h1>
+          <p class="stats-subtitle">Last Mile Delivery Performance Overview</p>
         </div>
         <div class="metric-toggle">
           <a-radio-group v-model:value="metric" button-style="solid">
-            <a-radio-button :value="'rate'">更新率</a-radio-button>
-            <a-radio-button :value="'status_not_empty'">已更新</a-radio-button>
-            <a-radio-button :value="'total_dn'">总数</a-radio-button>
+            <a-radio-button value="rate">完成率</a-radio-button>
+            <a-radio-button value="status_not_empty">更新数</a-radio-button>
+            <a-radio-button value="total_dn">总数</a-radio-button>
           </a-radio-group>
         </div>
-      </header>
-      <div class="chart-shell">
-        <div ref="containerRef" class="chart"></div>
       </div>
-    </section>
+      <div class="chart-wrapper">
+        <div ref="chartContainer" class="chart-container"></div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
-import { Line } from '@antv/g2plot';
+import * as echarts from 'echarts';
 import { getApiBase } from '../utils/env';
 
-const containerRef = ref(null);
-const chartRef = ref(null);
+const chartContainer = ref(null);
+let chartInstance = null;
 
+// 数据源
 const raw = ref([]);
-const metric = ref('rate'); // 'status_not_empty' | 'total_dn' | 'rate'
+const metric = ref('rate'); // 'rate' | 'status_not_empty' | 'total_dn'
 
 const apiBase = getApiBase();
 const buildRequestUrl = () => {
@@ -41,7 +41,6 @@ const buildRequestUrl = () => {
   return '/api/dn/status-delivery/lsp-summary-records';
 };
 
-/** 拉取数据 */
 const TZ_PATTERN = /([zZ])|([+-]\d{2}:?\d{2})$/;
 
 const normalizeToJakartaDate = (value) => {
@@ -84,24 +83,27 @@ const getTimeValue = (input) => {
 };
 
 const fetchData = async () => {
-  const res = await fetch(buildRequestUrl());
-  const json = await res.json();
-  const arr = (json?.data ?? [])
-    .map((item) => ({
-      time: getTimeValue(item.recorded_at),
-      lsp: item.lsp,
-      status_not_empty: Number(item.status_not_empty ?? 0),
-      total_dn: Number(item.total_dn ?? 0),
-    }))
-    .filter((item) => Number.isFinite(item.time))
-    .sort((a, b) => a.time - b.time);
-  raw.value = arr;
+  try {
+    const res = await fetch(buildRequestUrl());
+    const json = await res.json();
+    const arr = (json?.data ?? [])
+      .map((item) => ({
+        time: getTimeValue(item.recorded_at),
+        lsp: item.lsp,
+        status_not_empty: Number(item.status_not_empty ?? 0),
+        total_dn: Number(item.total_dn ?? 0),
+      }))
+      .filter((item) => Number.isFinite(item.time))
+      .sort((a, b) => a.time - b.time);
+    raw.value = arr;
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+  }
 };
 
-/** 根据当前指标生成绘图数据 */
-const data = computed(() => {
+// 计算属性：根据指标处理数据
+const processedData = computed(() => {
   return raw.value.map((d) => {
-    const timeValue = d.time;
     const total = d.total_dn || 0;
     const filled = d.status_not_empty || 0;
     const val =
@@ -112,39 +114,27 @@ const data = computed(() => {
         : total > 0
         ? filled / total
         : 0; // rate
-    return { time: timeValue, value: val, category: d.lsp };
+    return { time: d.time, value: val, lsp: d.lsp };
   });
 });
 
-const isRate = computed(() => metric.value === 'rate');
-const yTitle = computed(() =>
-  metric.value === 'total_dn' ? '总数' : metric.value === 'status_not_empty' ? '已更新' : '更新率',
-);
-const valueFormatter = (v) => (isRate.value ? `${(v * 100).toFixed(1)}%` : String(v));
-
-/** y 轴范围（自动适配） */
-const yDomain = computed(() => {
-  const vals = data.value.map((d) => d.value).filter((v) => Number.isFinite(v));
-  if (!vals.length) return undefined;
-  let min = Math.min(...vals);
-  let max = Math.max(...vals);
-  if (min === max) {
-    const pad = min === 0 ? 1 : Math.abs(min) * 0.1;
-    min -= pad;
-    max += pad;
-  } else {
-    const padMax = Math.abs(max) * 0.1 || 1;
-    max += padMax;
-  }
-  return [min, max];
+// 计算属性：图表配置标题和格式化
+const chartTitle = computed(() => {
+  return metric.value === 'total_dn' ? 'LSP 总数统计' 
+    : metric.value === 'status_not_empty' ? 'LSP 更新数统计' 
+    : 'LSP 完成率统计';
 });
 
-const TIME_ZONE = 'Asia/Jakarta';
+const isRate = computed(() => metric.value === 'rate');
 
-/** 统一的时间格式化 */
+const valueFormatter = computed(() => {
+  return isRate.value ? '{value}%' : '{value}';
+});
+
+// 时间格式化
+const TIME_ZONE = 'Asia/Jakarta';
 const fmtTime = (input) => {
   let millis;
-
   if (input instanceof Date) {
     millis = input.getTime();
   } else if (typeof input === 'number') {
@@ -170,204 +160,252 @@ const fmtTime = (input) => {
   });
 };
 
-/** 初始化图表 */
+// 准备图表数据
+const prepareChartData = () => {
+  const lspMap = new Map();
+  processedData.value.forEach((d) => {
+    if (!lspMap.has(d.lsp)) {
+      lspMap.set(d.lsp, []);
+    }
+    lspMap.get(d.lsp).push(d);
+  });
+
+  const timePoints = [...new Set(processedData.value.map((d) => d.time))].sort((a, b) => a - b);
+  const xAxisData = timePoints.map((t) => fmtTime(t));
+
+  const series = [];
+  lspMap.forEach((items, lsp) => {
+    const seriesData = timePoints.map((time) => {
+      const item = items.find((d) => d.time === time);
+      if (!item) return null;
+      return isRate.value ? (item.value * 100).toFixed(2) : item.value;
+    });
+
+    series.push({
+      name: lsp,
+      type: 'line',
+      data: seriesData
+    });
+  });
+
+  return { xAxisData, series };
+};
+
+// 更新图表
+const updateChart = () => {
+  if (!chartInstance) return;
+
+  const { xAxisData, series } = prepareChartData();
+
+  const option = {
+    title: {
+      text: chartTitle.value
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params) => {
+        let result = `${params[0].axisValue}<br/>`;
+        params.forEach((param) => {
+          const value = param.value;
+          const formattedValue = value !== null && value !== undefined
+            ? (isRate.value ? `${value}%` : value)
+            : '-';
+          result += `${param.marker}${param.seriesName}: ${formattedValue}<br/>`;
+        });
+        return result;
+      }
+    },
+    legend: {},
+    toolbox: {
+      show: true,
+      feature: {
+        dataZoom: {
+          yAxisIndex: 'none'
+        },
+        dataView: { readOnly: false },
+        magicType: { type: ['line', 'bar'] },
+        restore: {},
+        saveAsImage: {}
+      }
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: xAxisData
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        formatter: valueFormatter.value
+      }
+    },
+    series: series
+  };
+
+  chartInstance.setOption(option, true);
+};
+
 onMounted(async () => {
   await fetchData();
 
-  chartRef.value = new Line(containerRef.value, {
-    data: data.value,
-    xField: 'time',
-    yField: 'value',
-    seriesField: 'category',
-    autoFit: true,
+  chartInstance = echarts.init(chartContainer.value);
+  updateChart();
 
-    // 散点样式
-    point: {
-      size: 4,
-      shape: 'circle',
-      style: { lineWidth: 1, opacity: 0.9 },
-    },
-
-    xAxis: {
-      type: 'time',
-      title: { text: '时间' },
-      label: {
-        formatter: (v) => fmtTime(v),
-      },
-    },
-    yAxis: {
-      title: { text: yTitle.value },
-      label: {
-        formatter: (v) => (isRate.value ? `${(Number(v) * 100).toFixed(0)}%` : `${v}`),
-      },
-      // 动态范围
-      min: yDomain.value?.[0],
-      max: yDomain.value?.[1],
-      nice: true,
-    },
-
-    legend: {
-      // 不显示尺寸图例
-      position: 'bottom',
-      maxRow: 3,
-    },
-
-    tooltip: {
-      // 自定义提示：将 y 值格式化
-      formatter: (datum) => ({
-        name: yTitle.value,
-        value: valueFormatter(datum.value),
-      }),
-      title: (title, datum) => fmtTime(datum?.time ?? title),
-    },
+  // 窗口大小改变时自动调整图表
+  window.addEventListener('resize', () => {
+    chartInstance?.resize();
   });
-
-  chartRef.value.render();
 });
 
-/** 数据或配置变化时更新图表 */
-watch([data, isRate, yTitle, yDomain], () => {
-  if (!chartRef.value) return;
-  chartRef.value.update({
-    data: data.value,
-    yAxis: {
-      title: { text: yTitle.value },
-      label: {
-        formatter: (v) => (isRate.value ? `${(Number(v) * 100).toFixed(0)}%` : `${v}`),
-      },
-      min: yDomain.value?.[0],
-      max: yDomain.value?.[1],
-      nice: true,
-    },
-    tooltip: {
-      formatter: (datum) => ({
-        name: yTitle.value,
-        value: valueFormatter(datum.value),
-      }),
-      title: (title, datum) => fmtTime(datum?.time ?? title),
-    },
-  });
+// 监听指标变化，更新图表
+watch(metric, () => {
+  updateChart();
+});
+
+// 监听数据变化
+watch(raw, () => {
+  if (chartInstance && raw.value.length > 0) {
+    console.log('Data loaded:', raw.value);
+    updateChart();
+  }
 });
 </script>
 
 <style scoped>
 .stats-view {
   min-height: 100vh;
-  padding: clamp(16px, 4vw, 48px);
-  background: radial-gradient(circle at top, rgba(30, 64, 175, 0.25), transparent 55%),
-    linear-gradient(180deg, #0f172a 0%, #111827 40%, #0f172a 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #f8fafc;
+  padding: clamp(20px, 4vw, 48px);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
 }
 
-.stats-card {
-  width: min(1200px, 100%);
-  background: rgba(15, 23, 42, 0.72);
-  border-radius: 20px;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.4);
-  padding: clamp(20px, 3vw, 32px);
-  display: flex;
-  flex-direction: column;
-  gap: clamp(16px, 2vw, 28px);
+.stats-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stats-header {
+  padding: clamp(24px, 4vw, 40px);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-bottom: 2px solid rgba(102, 126, 234, 0.15);
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px clamp(12px, 2vw, 48px);
+  align-items: center;
   justify-content: space-between;
+  gap: 20px;
 }
 
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.32em;
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: rgba(148, 163, 184, 0.8);
-  margin-bottom: 6px;
+.header-content {
+  flex: 1;
+  min-width: 250px;
 }
 
 .stats-title {
-  font-size: clamp(1.5rem, 4vw, 2.4rem);
-  line-height: 1.1;
-  margin: 0;
+  margin: 0 0 8px 0;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
 }
 
-.stats-meta {
-  font-size: 0.85rem;
-  color: rgba(226, 232, 240, 0.72);
+.stats-subtitle {
   margin: 0;
-  max-width: 220px;
-  text-align: right;
-}
-
-.chart-shell {
-  position: relative;
-  min-height: clamp(420px, 55vh, 560px);
-  border-radius: 16px;
-  background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.28), transparent 55%),
-    rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  padding: clamp(20px, 3vw, 32px);
-  overflow: hidden;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .metric-toggle {
-  position: absolute;
-  top: clamp(16px, 3vw, 24px);
-  right: clamp(16px, 3vw, 24px);
   display: flex;
-  justify-content: flex-end;
-  width: min(420px, 100%);
-  z-index: 2;
-}
-
-.chart {
-  height: 100%;
-}
-
-.chart :deep(canvas) {
-  border-radius: 12px;
+  align-items: center;
 }
 
 .metric-toggle :deep(.ant-radio-group-solid) {
   display: flex;
-  gap: 12px;
-  width: 100%;
+  gap: 8px;
+  background: rgba(241, 245, 249, 0.8);
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .metric-toggle :deep(.ant-radio-button-wrapper) {
-  flex: 1;
+  min-width: 90px;
   text-align: center;
-  line-height: 1.5;
-  border-radius: 999px !important;
   border: none;
-  background: rgba(30, 41, 59, 0.85);
-  color: rgba(226, 232, 240, 0.9);
-  padding: 6px 12px;
-  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 8px !important;
+  padding: 8px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.5;
 }
 
 .metric-toggle :deep(.ant-radio-button-wrapper:not(:first-child)) {
   margin-left: 0;
 }
 
-.metric-toggle :deep(.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)) {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(99, 102, 241, 0.95));
-  color: #0f172a;
-  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.35);
-  transform: translateY(-2px);
+.metric-toggle :deep(.ant-radio-button-wrapper:hover) {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
 }
 
-.metric-toggle :deep(.ant-radio-button-wrapper:hover) {
+.metric-toggle :deep(.ant-radio-button-wrapper-checked) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
   transform: translateY(-1px);
-  color: #e0f2fe;
+}
+
+.metric-toggle :deep(.ant-radio-button-wrapper-checked:hover) {
+  color: #ffffff !important;
+}
+
+.chart-wrapper {
+  padding: clamp(24px, 4vw, 40px);
+  background: #ffffff;
+}
+
+.chart-container {
+  width: 100%;
+  height: clamp(450px, 60vh, 650px);
+  border-radius: 16px;
+  background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.chart-container:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 @media (max-width: 768px) {
@@ -375,23 +413,45 @@ watch([data, isRate, yTitle, yDomain], () => {
     padding: 16px;
   }
 
-  .stats-meta {
-    text-align: left;
-    max-width: none;
+  .stats-header {
+    padding: 20px;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .metric-toggle {
-    position: static;
-    margin-bottom: 16px;
+  .header-content {
     width: 100%;
   }
 
-  .chart-shell {
-    padding-top: clamp(24px, 8vw, 40px);
+  .metric-toggle {
+    width: 100%;
   }
 
   .metric-toggle :deep(.ant-radio-group-solid) {
+    width: 100%;
     flex-direction: column;
+  }
+
+  .metric-toggle :deep(.ant-radio-button-wrapper) {
+    width: 100%;
+  }
+
+  .chart-wrapper {
+    padding: 20px;
+  }
+
+  .chart-container {
+    height: 400px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-container {
+    animation: none;
+  }
+
+  .metric-toggle :deep(.ant-radio-button-wrapper) {
+    transition: none;
   }
 }
 </style>
