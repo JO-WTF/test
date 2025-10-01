@@ -23,6 +23,22 @@ function safeSetLocalStorage(key, value) {
   }
 }
 
+/**
+ * 更新 document.documentElement 的 lang 属性
+ * 自动处理语言代码格式（如 zh -> zh-CN）
+ */
+function updateDocumentLang(lang) {
+  if (typeof document === 'undefined') return;
+  
+  try {
+    // 将 'zh' 转换为 'zh-CN'，其他保持不变
+    const htmlLang = lang === 'zh' ? 'zh-CN' : lang;
+    document.documentElement.setAttribute('lang', htmlLang);
+  } catch (err) {
+    console.warn('Failed to update document lang attribute:', err);
+  }
+}
+
 export function detectLang(defaultLang = 'zh', storageKey = 'lang') {
   if (typeof window === 'undefined') return defaultLang;
   const urlLang = new URLSearchParams(window.location.search).get('lang');
@@ -112,6 +128,10 @@ export function createI18n(opts = {}) {
     state.lang = newLang;
     await loadDict(state.lang);
     if (state.storageKey) safeSetLocalStorage(state.storageKey, state.lang);
+    
+    // 自动同步 document.documentElement.lang 属性
+    updateDocumentLang(state.lang);
+    
     state.listeners.forEach((fn) => {
       try {
         fn(state.lang);
@@ -128,6 +148,8 @@ export function createI18n(opts = {}) {
 
   async function init() {
     await loadDict(state.lang);
+    // 初始化时也设置 document lang
+    updateDocumentLang(state.lang);
     return api;
   }
 

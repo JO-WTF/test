@@ -74,6 +74,13 @@ const ORIGIN_COORDINATES = [107.08, -6.29];
 const ROUTE_SOURCE_PREFIX = 'dn-route-source-';
 const ROUTE_LAYER_PREFIX = 'dn-route-layer-';
 
+// 路线缓存和并发控制
+const routeCache = new Map(); // key: "fromLng,fromLat;toLng,toLat" -> geojson
+const MAX_CONCURRENT_REQUESTS = 5;
+const DEBOUNCE_DELAY = 300; // ms
+let updateMarkersTimer = null;
+let activeController = null;
+
 const apiBase = getApiBase();
 
 const buildRequestUrl = (page) => {
@@ -185,11 +192,18 @@ const clearRoutes = () => {
   }
 };
 
-const fetchRouteGeoJson = async (from, to) => {
+const fetchRouteGeoJson = async (from, to, signal) => {
   const coordinates = `${from[0]},${from[1]};${to[0]},${to[1]}`;
+  const cacheKey = coordinates;
+
+  // 检查缓存
+  if (routeCache.has(cacheKey)) {
+    return routeCache.get(cacheKey);
+  }
+
   const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?geometries=geojson&overview=full&access_token=${mapboxToken}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     throw new Error(`路线获取失败（${response.status}）`);
   }
@@ -200,11 +214,15 @@ const fetchRouteGeoJson = async (from, to) => {
     throw new Error('未获取到路线数据');
   }
 
-  return {
+  const geojson = {
     type: 'Feature',
     geometry: route,
     properties: {},
   };
+
+  // 缓存结果
+  routeCache.set(cacheKey, geojson);
+  return geojson;
 };
 
 const addRouteToMap = (point, geojson) => {
@@ -256,6 +274,12 @@ const updateMarkers = async (points) => {
   clearRoutes();
   if (!Array.isArray(points) || !points.length) return;
 
+  // 取消之前的请求
+  if (activeController) {
+    activeController.abort();
+  }
+  activeController = new AbortController();
+
   const bounds = new mapboxgl.LngLatBounds();
 
   points.forEach((point) => {
@@ -297,24 +321,40 @@ const updateMarkers = async (points) => {
 
   const routeGeneration = ++currentRouteGeneration;
 
-  await Promise.allSettled(
-    points.map(async (point) => {
-      try {
-        const geojson = await fetchRouteGeoJson(ORIGIN_COORDINATES, [
-          point.longitude,
-          point.latitude,
-        ]);
+  // 批量并发处理路线请求
+  await processBatchedRoutes(points, routeGeneration, activeController.signal);
+};
 
-        if (routeGeneration !== currentRouteGeneration) {
-          return;
+// 批量并发处理路线，限制并发数
+const processBatchedRoutes = async (points, generation, signal) => {
+  for (let i = 0; i < points.length; i += MAX_CONCURRENT_REQUESTS) {
+    if (signal.aborted || generation !== currentRouteGeneration) {
+      return;
+    }
+
+    const batch = points.slice(i, i + MAX_CONCURRENT_REQUESTS);
+    await Promise.allSettled(
+      batch.map(async (point) => {
+        try {
+          const geojson = await fetchRouteGeoJson(
+            ORIGIN_COORDINATES,
+            [point.longitude, point.latitude],
+            signal
+          );
+
+          if (signal.aborted || generation !== currentRouteGeneration) {
+            return;
+          }
+
+          addRouteToMap(point, geojson);
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('Route fetch error:', err);
+          }
         }
-
-        addRouteToMap(point, geojson);
-      } catch (err) {
-        console.error(err);
-      }
-    })
-  );
+      })
+    );
+  }
 };
 
 const scheduleMarkerUpdate = (points) => {
@@ -327,6 +367,15 @@ const scheduleMarkerUpdate = (points) => {
     pendingMarkerData = points;
     return;
   }
+
+  // 防抖：延迟执行，避免频繁更新
+  if (updateMarkersTimer) {
+    clearTimeout(updateMarkersTimer);
+  }
+  updateMarkersTimer = setTimeout(() => {
+    updateMarkers(points);
+    updateMarkersTimer = null;
+  }, DEBOUNCE_DELAY);
 
   updateMarkers(points).catch((err) => {
     console.error(err);
@@ -428,6 +477,15 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  // 清理定时器
+  if (updateMarkersTimer) {
+    clearTimeout(updateMarkersTimer);
+  }
+  // 取消进行中的请求
+  if (activeController) {
+    activeController.abort();
+  }
+  // 清理地图资源
   clearMarkers();
   clearRoutes();
   if (mapInstance.value) {

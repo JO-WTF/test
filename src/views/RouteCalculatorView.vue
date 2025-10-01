@@ -73,7 +73,7 @@
 
 <script setup>
 import { computed, nextTick, ref } from 'vue';
-import * as XLSX from 'xlsx';
+// 延迟加载 XLSX，只在需要时导入
 import { useBodyTheme } from '../composables/useBodyTheme';
 import { getMapboxAccessToken } from '../utils/env.js';
 
@@ -90,6 +90,10 @@ const rows = ref([]);
 const uploadError = ref('');
 const isProcessing = ref(false);
 const currentIndex = ref(-1);
+
+// 并发控制
+const BATCH_SIZE = 5; // 每批处理 5 个请求
+let abortController = null;
 
 const completedCount = computed(() =>
   rows.value.filter((row) => row.status === 'done').length
@@ -136,6 +140,11 @@ const onFileChange = async (event) => {
 };
 
 const reset = () => {
+  // 取消正在进行的请求
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
   rows.value = [];
   uploadError.value = '';
   isProcessing.value = false;
@@ -146,28 +155,35 @@ const reset = () => {
 };
 
 const readExcelFile = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        if (!workbook.SheetNames.length) {
-          resolve([]);
-          return;
+  new Promise(async (resolve, reject) => {
+    try {
+      // 动态导入 XLSX，只在实际使用时加载
+      const XLSX = await import('xlsx');
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          if (!workbook.SheetNames.length) {
+            resolve([]);
+            return;
+          }
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
+          const parsed = rawRows
+            .map((cells, index) => parseRow(cells, index))
+            .filter((row) => row !== null);
+          resolve(parsed);
+        } catch (err) {
+          reject(err);
         }
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
-        const parsed = rawRows
-          .map((cells, index) => parseRow(cells, index))
-          .filter((row) => row !== null);
-        resolve(parsed);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = () => reject(new Error('Unable to read the selected file.'));
-    reader.readAsArrayBuffer(file);
+      };
+      reader.onerror = () => reject(new Error('Unable to read the selected file.'));
+      reader.readAsArrayBuffer(file);
+    } catch (err) {
+      reject(new Error('Failed to load XLSX library'));
+    }
   });
 
 const parseRow = (cells = [], index) => {
@@ -220,35 +236,67 @@ const processRowsSequentially = async () => {
   isProcessing.value = true;
   currentIndex.value = -1;
 
-  for (let i = 0; i < rows.value.length; i += 1) {
-    currentIndex.value = i;
-    const row = rows.value[i];
-
-    if (!row.origin || !row.destination) {
-      row.status = 'error';
-      row.error = 'Invalid coordinate pair';
-      continue;
-    }
-
-    row.status = 'processing';
-    row.error = '';
-
-    try {
-      const result = await fetchRoute(row.origin, row.destination);
-      row.distanceKm = formatDecimal(result.distance / 1000);
-      row.durationHours = formatDecimal(result.duration / 3600);
-      row.status = 'done';
-    } catch (error) {
-      row.status = 'error';
-      row.error = error?.message || 'Failed to fetch route';
-    }
+  // 创建新的取消控制器
+  if (abortController) {
+    abortController.abort();
   }
+  abortController = new AbortController();
 
-  currentIndex.value = -1;
-  isProcessing.value = false;
+  try {
+    await processInBatches(rows.value, abortController.signal);
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error('Processing error:', error);
+    }
+  } finally {
+    currentIndex.value = -1;
+    isProcessing.value = false;
+  }
 };
 
-const fetchRoute = async (origin, destination) => {
+// 批量并行处理
+const processInBatches = async (rowsArray, signal) => {
+  for (let i = 0; i < rowsArray.length; i += BATCH_SIZE) {
+    if (signal.aborted) {
+      throw new DOMException('Processing cancelled', 'AbortError');
+    }
+
+    const batch = rowsArray.slice(i, i + BATCH_SIZE);
+    
+    // 并行处理当前批次
+    await Promise.allSettled(
+      batch.map(async (row) => {
+        if (signal.aborted) return;
+
+        if (!row.origin || !row.destination) {
+          row.status = 'error';
+          row.error = 'Invalid coordinate pair';
+          return;
+        }
+
+        row.status = 'processing';
+        row.error = '';
+
+        try {
+          const result = await fetchRoute(row.origin, row.destination, signal);
+          row.distanceKm = formatDecimal(result.distance / 1000);
+          row.durationHours = formatDecimal(result.duration / 3600);
+          row.status = 'done';
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            row.status = 'pending';
+            row.error = '';
+          } else {
+            row.status = 'error';
+            row.error = error?.message || 'Failed to fetch route';
+          }
+        }
+      })
+    );
+  }
+};
+
+const fetchRoute = async (origin, destination, signal) => {
   if (!MAPBOX_ACCESS_TOKEN) {
     throw new Error('Mapbox access token is not configured');
   }
@@ -262,7 +310,7 @@ const fetchRoute = async (origin, destination) => {
     geometries: 'geojson',
   }).toString();
 
-  const response = await fetch(url.toString());
+  const response = await fetch(url.toString(), { signal });
   let data;
   try {
     data = await response.json();

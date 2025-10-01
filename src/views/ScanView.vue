@@ -189,6 +189,9 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Toastify from 'toastify-js';
 import { createI18n } from '../i18n/core';
 import { useBodyTheme } from '../composables/useBodyTheme';
+import { useUpload } from '../composables/useUpload';
+import { useAuth } from '../composables/useAuth';
+import { useDeviceDetection } from '../composables/useDeviceDetection';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
 
@@ -205,10 +208,14 @@ const i18n = createI18n({
   fallbackLang: 'id',
   defaultLang: 'id',
 });
-await i18n.init();
-document.documentElement.setAttribute('lang', i18n.state.lang === 'zh' ? 'zh-CN' : i18n.state.lang);
+await i18n.init(); // 自动设置 document.documentElement.lang
 
 useBodyTheme('scan-theme');
+
+// 初始化 composables
+const { uploadWithProgress } = useUpload();
+const { getStoredUserName } = useAuth();
+const { isMobile: isMobileClient, browserId: browserIdentifier } = useDeviceDetection();
 
 const state = reactive({
   lang: i18n.state.lang,
@@ -235,7 +242,7 @@ const state = reactive({
 
 i18n.onChange((lang) => {
   state.lang = lang;
-  document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : lang);
+  // document.documentElement.lang 现在由 i18n 核心模块自动更新
 });
 
 const dnInput = ref(null);
@@ -434,114 +441,7 @@ const formatCoordinate = (val) => {
   return formatResultText(val);
 };
 
-function uploadWithProgress({ url, formData, onProgress, timeoutMs = 15000 }) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', url);
-
-    xhr.upload.onprogress = (evt) => {
-      if (typeof onProgress === 'function') {
-        const pct = evt && evt.lengthComputable && evt.total > 0
-          ? Math.round((evt.loaded / evt.total) * 100)
-          : 0;
-        onProgress(pct);
-      }
-    };
-
-    xhr.timeout = timeoutMs;
-    xhr.ontimeout = () => reject(new Error('Request timeout'));
-
-    xhr.onload = () => {
-      const ok = xhr.status >= 200 && xhr.status < 300;
-      if (!ok) {
-        reject(new Error(`HTTP ${xhr.status} - ${xhr.responseText || ''}`));
-        return;
-      }
-      resolve(xhr.responseText);
-    };
-
-    xhr.onerror = () => reject(new Error('Network error'));
-
-    xhr.send(formData);
-  });
-}
-
-const resolveClientProfile = () => {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-    return { isMobile: false, browserId: 'unknown' };
-  }
-
-  let score = 0;
-  const ua = navigator.userAgent || '';
-  const uaData = navigator.userAgentData;
-
-  if (uaData && typeof uaData.mobile === 'boolean' && uaData.mobile) {
-    score += 0.3;
-  }
-
-  if (typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 0) {
-    score += 0.2;
-  }
-
-  if (typeof window.matchMedia === 'function') {
-    try {
-      if (window.matchMedia('(pointer: coarse)').matches) {
-        score += 0.15;
-      }
-    } catch (err) {
-      console.warn('matchMedia pointer coarse check failed', err);
-    }
-  }
-
-  if (typeof window.innerWidth === 'number' && window.innerWidth > 0 && window.innerWidth <= 820) {
-    score += 0.15;
-  }
-
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) {
-    score += 0.1;
-  }
-
-  if (
-    'ontouchstart' in window ||
-    (window.DocumentTouch && typeof document !== 'undefined' && document instanceof window.DocumentTouch)
-  ) {
-    score += 0.1;
-  }
-
-  const isMobile = score > 0.6;
-
-  let browserId = 'unknown';
-  if (uaData?.brands?.length) {
-    browserId = uaData.brands.map((item) => `${item.brand}/${item.version}`).join(' ');
-  } else if (ua) {
-    browserId = ua;
-  }
-
-  return { isMobile, browserId };
-};
-
-const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
-
-const getStoredUserName = () => {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const name = parsed?.userInfo?.name;
-    if (typeof name === 'string') {
-      const trimmed = name.trim();
-      return trimmed ? trimmed : null;
-    }
-  } catch (err) {
-    console.warn('Failed to read stored username:', err);
-  }
-  return null;
-};
-
-const { isMobile: isMobileClient, browserId: browserIdentifier } = resolveClientProfile();
+// resolveClientProfile, getStoredUserName, uploadWithProgress 现在来自 composables
 
 const submitUpdate = async () => {
   if (!state.isValid) return;

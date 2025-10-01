@@ -139,7 +139,7 @@ onMounted(async () => {
   i18nInstance.onChange((lang) => {
     currentLang.value = lang;
     applyTranslations();
-    document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : lang);
+    // document.documentElement.lang 现在由 i18n 核心模块自动更新
     pageController?.updateI18n?.({ t: translator });
   });
 });
