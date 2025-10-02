@@ -87,7 +87,7 @@ const fetchData = async () => {
   try {
     const res = await fetch(buildRequestUrl());
     const json = await res.json();
-    const arr = (json?.data ?? [])
+    const arr = (json?.data.by_plan_mos_date ?? [])
       .map((item) => ({
         time: getTimeValue(item.recorded_at),
         lsp: item.lsp,
