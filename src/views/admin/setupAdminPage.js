@@ -1380,12 +1380,21 @@ ${cellsHtml}
       setFormControlValue(mStatusDelivery, '');
       return;
     }
-    const nextValue =
-      canonicalStatus === DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE
-        ? STATUS_VALUES.ON_SITE
-        : canonicalStatus === (DN_SCAN_STATUS_VALUES.POD || 'POD')
-        ? STATUS_VALUES.POD || (DN_SCAN_STATUS_VALUES.POD || 'POD')
-        : STATUS_VALUES.ON_THE_WAY;
+    if (canonicalStatus === DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH) {
+      setFormControlValue(mStatusDelivery, '');
+      return;
+    }
+
+    const ARRIVED_AT_SITE = DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
+    const POD_STATUS = DN_SCAN_STATUS_VALUES.POD || 'POD';
+    const podDeliveryValue = STATUS_VALUES.POD || POD_STATUS;
+
+    const statusDeliveryMap = {
+      [ARRIVED_AT_SITE]: STATUS_VALUES.ON_SITE,
+      [POD_STATUS]: podDeliveryValue,
+    };
+
+    const nextValue = statusDeliveryMap[canonicalStatus] || STATUS_VALUES.ON_THE_WAY;
     setFormControlValue(mStatusDelivery, nextValue);
   }
 
