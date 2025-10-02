@@ -1,7 +1,6 @@
 {
-    "title": "DN Submission Records Management",
+    "title": "Local Transport Management System (Indonesia)",
     "dn.label": "DN Number (supports multiple lines/commas/spaces; multiple means batch query)",
-    "dn.placeholder": "Example:\nDN123...\nDN456...",
     "dn.tip": "Hint: DN numbers are 14-18 chars. The first two must be uppercase letters, positions 3-5 are uppercase letters or digits, and the rest are digits.",
     "status.label": "Status",
     "status.all": "(All)",
