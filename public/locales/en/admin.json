@@ -69,6 +69,7 @@
     "actions.showAll": "Show all DN",
     "actions.statusSwitch.checked": "Only DN with status",
     "actions.statusSwitch.unchecked": "Show all DN",
+    "actions.showMissingInGs": "Show DN not in GS",
     "actions.exportAll": "Export DN",
     "actions.exportRecords": "Export DN Update Records",
     "actions.trustBackend": "Trust Backend",

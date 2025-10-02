@@ -293,7 +293,13 @@ export function setupAdminPage(
   hideHasAttachmentFilter();
   hideUpdatedAtColumn();
 
-  const q = { page: 1, page_size: 20, mode: 'single', lastParams: '' };
+  const q = {
+    page: 1,
+    page_size: 20,
+    mode: 'single',
+    lastParams: '',
+    show_deleted: false,
+  };
 
   function getNormalizedPageSize() {
     const fallback = 20;
@@ -1884,6 +1890,10 @@ ${cellsHtml}
       }
     }
 
+    if (q.mode === 'single') {
+      params.set('show_deleted', q.show_deleted ? 'true' : 'false');
+    }
+
     params.set('page', q.page);
     params.set('page_size', q.page_size);
     q.lastParams = params.toString();
@@ -2550,6 +2560,19 @@ ${cellsHtml}
       const detail = event?.detail || {};
       const targetValue = detail.showOnlyNonEmpty ? DEFAULT_STATUS_VALUE : STATUS_ANY_VALUE;
       setFilterValue('status', targetValue);
+      q.page = 1;
+      fetchList();
+    },
+    { signal }
+  );
+
+  rootEl.addEventListener(
+    'admin:show-deleted-switch-change',
+    (event) => {
+      const detail = event?.detail || {};
+      const nextValue = Boolean(detail.showDeleted);
+      if (q.show_deleted === nextValue) return;
+      q.show_deleted = nextValue;
       q.page = 1;
       fetchList();
     },

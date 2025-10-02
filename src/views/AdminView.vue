@@ -233,17 +233,14 @@
                 <label style="visibility: hidden" data-i18n="actions.label">操作</label>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap">
                   <button class="btn" id="btn-search" data-i18n="actions.query">查询</button>
-                  <button class="btn" id="btn-reset" data-i18n="actions.reset">重置</button>
-                  <div class="status-switch">
-                    <Switch
-                      id="status-visibility-switch"
-                      v-model:checked="showOnlyNonEmptyStatus"
-                      size="small"
-                      :checked-children="statusSwitchCheckedLabel"
-                      :un-checked-children="statusSwitchUncheckedLabel"
-                      :default-checked="true"
-                    />
-                  </div>
+                  <button
+                    class="btn"
+                    id="btn-reset"
+                    data-i18n="actions.reset"
+                    @click="handleResetClick"
+                  >
+                    重置
+                  </button>
                   <button class="btn" id="btn-export-all" data-i18n="actions.exportAll">
                     导出DN
                   </button>
@@ -295,6 +292,29 @@
           aria-hidden="true"
         >
           <div id="lsp-summary-card-container" class="lsp-summary-card-container"></div>
+        </div>
+        <div class="table-toggle-row">
+          <div class="status-switch">
+            <label class="status-switch__label" for="status-visibility-switch">
+              <span>{{ statusSwitchLabel }}</span>
+              <Switch
+                id="status-visibility-switch"
+                v-model:checked="showOnlyNonEmptyStatus"
+                size="small"
+                :default-checked="true"
+              />
+            </label>
+          </div>
+          <div class="status-switch">
+            <label class="status-switch__label" for="show-missing-dn-switch">
+              <span>{{ showMissingInGsLabel }}</span>
+              <Switch
+                id="show-missing-dn-switch"
+                v-model:checked="showMissingInGs"
+                size="small"
+              />
+            </label>
+          </div>
         </div>
         <div id="hint" class="muted" data-i18n="hint.ready">输入条件后点击查询。</div>
         <table id="tbl" style="display: none">
@@ -521,6 +541,7 @@ const filterSelectOption = (input, option) => {
 };
 
 const showOnlyNonEmptyStatus = ref(true);
+const showMissingInGs = ref(false);
 let syncingFromStatusSelect = false;
 let syncingFromSwitch = false;
 
@@ -533,6 +554,17 @@ const statusSwitchCheckedLabel = computed(() => {
 const statusSwitchUncheckedLabel = computed(() => {
   currentLang.value;
   return translate('actions.statusSwitch.unchecked') ?? '显示所有DN';
+});
+
+const statusSwitchLabel = computed(() =>
+  showOnlyNonEmptyStatus.value
+    ? statusSwitchCheckedLabel.value
+    : statusSwitchUncheckedLabel.value
+);
+
+const showMissingInGsLabel = computed(() => {
+  currentLang.value;
+  return translate('actions.showMissingInGs') ?? '显示 GS 中不存在的 DN';
 });
 
 const translate = (key, vars) => {
@@ -596,6 +628,19 @@ watch(showOnlyNonEmptyStatus, (checked) => {
   });
   adminRoot.value?.dispatchEvent(event);
 });
+
+watch(showMissingInGs, (checked) => {
+  const event = new CustomEvent('admin:show-deleted-switch-change', {
+    detail: { showDeleted: checked },
+  });
+  adminRoot.value?.dispatchEvent(event);
+});
+
+const handleResetClick = () => {
+  if (showMissingInGs.value) {
+    showMissingInGs.value = false;
+  }
+};
 
 const updateDayjsLocale = (lang) => {
   const map = { zh: 'zh-cn', id: 'id', en: 'en' };

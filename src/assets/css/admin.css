@@ -702,6 +702,13 @@ body.admin-theme {
     flex: 1 1 100%;
     max-width: 100%
     }
+.admin-page .table-toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 12px
+    }
 .admin-page .status-switch {
     display: inline-flex;
     align-items: center;
