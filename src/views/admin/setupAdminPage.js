@@ -7,6 +7,7 @@ import {
   STATUS_VALUES,
   DN_SCAN_STATUS_VALUES,
   STATUS_DISPLAY_OVERRIDES,
+  DN_SCAN_STATUS_ITEMS,
 } from '../../config.js';
 import { getApiBase } from '../../utils/env.js';
 
@@ -57,6 +58,10 @@ import {
   ICON_MARKUP,
   HIDDEN_DETAIL_FIELDS,
 } from './constants.js';
+
+const SCAN_STATUS_META = new Map(
+  (DN_SCAN_STATUS_ITEMS || []).map((item) => [item.value, item])
+);
 
 const API_BASE = getApiBase();
 
@@ -594,14 +599,18 @@ export function setupAdminPage(
     const delivery = normalizeStatusValue(statusDeliveryRaw);
     const status = normalizeStatusValue(statusRaw);
     if (!delivery) return false;
+
+    const arrivedStatus = DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
+    const podStatus = DN_SCAN_STATUS_VALUES.POD || 'POD';
+
     if (delivery === STATUS_VALUES.ON_THE_WAY) {
-      return status === DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
+      return status === arrivedStatus || status === podStatus;
     }
-    if (
-      delivery === STATUS_VALUES.ON_SITE ||
-      delivery === STATUS_VALUES.POD
-    ) {
-      return status !== DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
+    if (delivery === STATUS_VALUES.ON_SITE) {
+      return status !== arrivedStatus && status !== podStatus;
+    }
+    if (delivery === STATUS_VALUES.POD) {
+      return status !== podStatus && status !== arrivedStatus;
     }
     return false;
   }
@@ -1232,6 +1241,11 @@ ${cellsHtml}
   function getModalStatusLabel(value) {
     const canonical = normalizeStatusValue(value);
     if (!canonical) return '';
+    const meta = SCAN_STATUS_META.get(canonical);
+    if (meta) {
+      const translated = translateInstant(meta.filterLabelKey, meta.fallbackLabel || canonical);
+      if (translated) return translated;
+    }
     const label = i18nStatusDisplay(canonical);
     if (label) return label;
     return canonical;
@@ -1369,6 +1383,8 @@ ${cellsHtml}
     const nextValue =
       canonicalStatus === DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE
         ? STATUS_VALUES.ON_SITE
+        : canonicalStatus === (DN_SCAN_STATUS_VALUES.POD || 'POD')
+        ? STATUS_VALUES.POD || (DN_SCAN_STATUS_VALUES.POD || 'POD')
         : STATUS_VALUES.ON_THE_WAY;
     setFormControlValue(mStatusDelivery, nextValue);
   }
@@ -2504,7 +2520,15 @@ ${cellsHtml}
     { signal }
   );
 
-  subscribeToFilterChange('status', () => {
+  subscribeToFilterChange('status', (values) => {
+    const first = Array.isArray(values) && values.length ? values[0] : '';
+    const podValue = DN_SCAN_STATUS_VALUES?.POD || 'POD';
+    if (first === podValue) {
+      const currentDelivery = getFilterValues('status_delivery');
+      if (!currentDelivery.includes(podValue)) {
+        setFilterValue('status_delivery', podValue);
+      }
+    }
     statusCards.updateActiveState();
   });
 

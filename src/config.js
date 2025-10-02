@@ -160,7 +160,24 @@ const DN_SCAN_STATUS_DEFINITIONS = [
     fallbackLabel: '到达站点',
     aliases: ['Arrived at Site', '到达站点'],
   },
+  {
+    key: 'POD',
+    value: 'POD',
+    translationKey: 'status.pod',
+    fallbackLabel: 'POD',
+    aliases: ['Proof of Delivery', 'PROOF OF DELIVERY'],
+  },
 ];
+
+const toCamelCaseKey = (raw) =>
+  String(raw || '')
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((segment, index) =>
+      index === 0 ? segment : segment.charAt(0).toUpperCase() + segment.slice(1)
+    )
+    .join('');
 
 const buildValueMap = (definitions) =>
   Object.freeze(
@@ -239,6 +256,19 @@ export const STATUS_VALUES = buildValueMap(STATUS_DEFINITIONS);
 export const STATUS_ORDERED_LIST = buildList(STATUS_DEFINITIONS);
 export const DN_SCAN_STATUS_VALUES = buildValueMap(DN_SCAN_STATUS_DEFINITIONS);
 export const DN_SCAN_STATUS_ORDERED_LIST = buildList(DN_SCAN_STATUS_DEFINITIONS);
+export const DN_SCAN_STATUS_ITEMS = Object.freeze(
+  DN_SCAN_STATUS_DEFINITIONS.map(({ key, value, translationKey, fallbackLabel }) => {
+    const camelKey = toCamelCaseKey(key);
+    return {
+      key,
+      value,
+      translationKey,
+      fallbackLabel,
+      camelKey,
+      filterLabelKey: `status.filter.${camelKey}`,
+    };
+  })
+);
 
 export const STATUS_TRANSLATION_KEYS = Object.freeze({
   ...buildDefinitionMap(STATUS_DEFINITIONS, 'translationKey'),

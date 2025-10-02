@@ -12,6 +12,7 @@
     "status.filter.arrivedAtXdPm": "Arrived at XD/PM",
     "status.filter.transportingFromXdPm": "Transporting from XD/PM",
     "status.filter.arrivedAtSite": "Arrived at Site",
+    "status.filter.pod": "POD",
     "status.arrivedAtWh": "Arrived at WH",
     "status.transportingFromWh": "Transporting from WH",
     "status.arrivedAtXdPm": "Arrived at XD/PM",

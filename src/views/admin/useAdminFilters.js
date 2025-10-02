@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
 import { STATUS_NOT_EMPTY_VALUE } from './constants.js';
+import { DN_SCAN_STATUS_ITEMS } from '../../config.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
 const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
@@ -31,31 +32,11 @@ const STATUS_FILTER_DEFS = [
     translationKey: 'status.filter.notEmpty',
     fallback: '任意非空',
   },
-  {
-    value: 'ARRIVED AT WH',
-    translationKey: 'status.filter.arrivedAtWh',
-    fallback: '到达仓库',
-  },
-  {
-    value: 'TRANSPORTING FROM WH',
-    translationKey: 'status.filter.transportingFromWh',
-    fallback: '从仓库发出',
-  },
-  {
-    value: 'ARRIVED AT XD/PM',
-    translationKey: 'status.filter.arrivedAtXdPm',
-    fallback: '到达XD/PM',
-  },
-  {
-    value: 'TRANSPORTING FROM XD/PM',
-    translationKey: 'status.filter.transportingFromXdPm',
-    fallback: '从XD/PM发出',
-  },
-  {
-    value: 'ARRIVED AT SITE',
-    translationKey: 'status.filter.arrivedAtSite',
-    fallback: '到达站点',
-  },
+  ...DN_SCAN_STATUS_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
+    value,
+    translationKey: filterLabelKey,
+    fallback: fallbackLabel,
+  })),
 ];
 
 const translateWithFallback = (translator, key, fallback) => {

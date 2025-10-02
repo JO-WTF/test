@@ -89,11 +89,13 @@
               @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }"
             >
               <option value="" disabled>{{ t('choose') }}</option>
-              <option value="ARRIVED AT WH">{{ t('statusArrivedWh') }}</option>
-              <option value="TRANSPORTING FROM WH">{{ t('statusDepartWh') }}</option>
-              <option value="ARRIVED AT XD/PM">{{ t('statusArrivedXdPm') }}</option>
-              <option value="TRANSPORTING FROM XD/PM">{{ t('statusDepartXdPm') }}</option>
-              <option value="ARRIVED AT SITE">{{ t('statusArrivedSite') }}</option>
+              <option
+                v-for="option in scanStatusOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ t(option.filterLabelKey) }}
+              </option>
             </select>
           </div>
           <div class="hint" v-if="state.needsStatusHint">
@@ -195,6 +197,7 @@ import { useDeviceDetection } from '../composables/useDeviceDetection';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
 import { isValidDn } from '../utils/dn.js';
+import { DN_SCAN_STATUS_ITEMS } from '../config.js';
 
 const LICENSE_KEY = getDynamsoftLicenseKey();
 
@@ -406,21 +409,39 @@ const clearPhoto = () => {
   state.photoPreview = null;
 };
 
-const STATUS_TRANSLATION_MAP = {
-  'ARRIVED AT WH': 'statusArrivedWh',
-  'TRANSPORTING FROM WH': 'statusDepartWh',
-  'ARRIVED AT XD/PM': 'statusArrivedXdPm',
-  'TRANSPORTING FROM XD/PM': 'statusDepartXdPm',
-  'ARRIVED AT SITE': 'statusArrivedSite',
-  '运输中': 'inTransit',
-  '过夜': 'overnight',
-  '已到达': 'arrived',
-};
+const scanStatusOptions = DN_SCAN_STATUS_ITEMS || [];
+const scanStatusMetaMap = new Map(scanStatusOptions.map((item) => [item.value, item]));
+
+const STATUS_TRANSLATION_MAP = scanStatusOptions.reduce(
+  (acc, item) => {
+    acc[item.value] = item.filterLabelKey;
+    return acc;
+  },
+  {
+    '运输中': 'inTransit',
+    '过夜': 'overnight',
+    '已到达': 'arrived',
+  }
+);
 
 const statusLabel = (v) => {
   if (!v) return '-';
-  const key = STATUS_TRANSLATION_MAP[v];
-  return key ? t(key) : v;
+  const meta = scanStatusMetaMap.get(v);
+  if (meta) {
+    const key = STATUS_TRANSLATION_MAP[v];
+    if (key) {
+      const translated = t(key);
+      if (translated && translated !== key) return translated;
+    }
+    if (meta.fallbackLabel) return meta.fallbackLabel;
+  } else {
+    const key = STATUS_TRANSLATION_MAP[v];
+    if (key) {
+      const translated = t(key);
+      if (translated && translated !== key) return translated;
+    }
+  }
+  return v;
 };
 
 const formatResultText = (val, allowTrim = false) => {

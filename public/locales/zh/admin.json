@@ -12,6 +12,7 @@
     "status.filter.arrivedAtXdPm": "到达XD/PM",
     "status.filter.transportingFromXdPm": "从XD/PM发出",
     "status.filter.arrivedAtSite": "到达站点",
+    "status.filter.pod": "POD",
     "status.arrivedAtWh": "到达仓库",
     "status.transportingFromWh": "从仓库发出",
     "status.arrivedAtXdPm": "到达XD/PM",
