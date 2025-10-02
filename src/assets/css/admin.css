@@ -2,8 +2,46 @@ body.admin-theme {
     min-width: 680px;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     margin: 0;
-    background: #0b1020;
-    color: #eaf2ff
+    --ant-background: #f5f5f5;
+    --ant-surface: #ffffff;
+    --ant-surface-alt: #f9fafc;
+    --ant-surface-muted: #f0f5ff;
+    --ant-surface-overlay: rgba(255, 255, 255, 0.96);
+    --ant-border-subtle: #d9d9d9;
+    --ant-border-strong: #bfbfbf;
+    --ant-border-heavy: #69b1ff;
+    --ant-divider: #f0f0f0;
+    --ant-disabled-surface: #f0f0f0;
+    --ant-primary: #1677ff;
+    --ant-primary-strong: #0958d9;
+    --ant-primary-hover: #4096ff;
+    --ant-primary-soft: #91caff;
+    --ant-primary-muted: #69b1ff;
+    --ant-primary-pale: #e6f4ff;
+    --ant-primary-tint-faint: rgba(22, 119, 255, 0.08);
+    --ant-primary-tint-soft: rgba(22, 119, 255, 0.12);
+    --ant-primary-tint: rgba(22, 119, 255, 0.18);
+    --ant-primary-tint-mid: rgba(22, 119, 255, 0.26);
+    --ant-primary-tint-strong: rgba(22, 119, 255, 0.32);
+    --ant-primary-tint-bold: rgba(22, 119, 255, 0.42);
+    --ant-text-primary: rgba(0, 0, 0, 0.88);
+    --ant-text-secondary: rgba(0, 0, 0, 0.65);
+    --ant-text-muted: rgba(0, 0, 0, 0.45);
+    --ant-text-inverse: #ffffff;
+    --ant-danger: #ff4d4f;
+    --ant-danger-light: #ff7875;
+    --ant-danger-soft: rgba(255, 77, 79, 0.16);
+    --ant-danger-softer: rgba(255, 77, 79, 0.1);
+    --ant-success: #52c41a;
+    --ant-success-soft: rgba(82, 196, 26, 0.18);
+    --ant-success-softer: rgba(82, 196, 26, 0.12);
+    --ant-success-strong: rgba(82, 196, 26, 0.3);
+    --ant-shadow-primary: rgba(22, 119, 255, 0.18);
+    --ant-shadow-strong: rgba(22, 119, 255, 0.26);
+    --ant-shadow-intense: rgba(22, 119, 255, 0.38);
+    --ant-focus-ring: rgba(22, 119, 255, 0.45);
+    background: var(--ant-background);
+    color: var(--ant-text-primary);
     }
 .admin-page * {
     box-sizing: border-box
@@ -36,9 +74,9 @@ body.admin-theme {
     align-items: center;
     padding: 6px 12px;
     border-radius: 999px;
-    background: rgba(105, 168, 255, 0.15);
-    border: 1px solid rgba(105, 168, 255, 0.45);
-    color: #9cc6ff;
+    background: var(--ant-primary-tint);
+    border: 1px solid var(--ant-border-heavy);
+    color: var(--ant-primary);
     font-size: 12px;
     line-height: 1;
     white-space: nowrap
@@ -49,8 +87,8 @@ body.admin-theme {
     gap: 6px
     }
 .admin-page .card {
-    background: #101831;
-    border: 1px solid #1f2a4d;
+    background: var(--ant-surface);
+    border: 1px solid var(--ant-border-subtle);
     border-radius: 14px;
     padding: 14px;
     margin-top: 14px
@@ -59,8 +97,8 @@ body.admin-theme {
     margin-bottom: 12px;
     padding: 8px 12px;
     border-radius: 12px;
-    background: rgba(105, 168, 255, 0.08);
-    border: 1px solid rgba(105, 168, 255, 0.25);
+    background: var(--ant-primary-tint-faint);
+    border: 1px solid rgba(22, 119, 255, 0.25);
     overflow-x: auto;
     scrollbar-width: thin
     }
@@ -72,10 +110,10 @@ body.admin-theme {
     }
 .admin-page .lsp-summary-card {
     appearance: none;
-    border: 1px solid #24345c;
+    border: 1px solid var(--ant-border-subtle);
     border-radius: 999px;
-    background: rgba(11, 19, 40, 0.92);
-    color: #eaf2ff;
+    background: var(--ant-surface-overlay);
+    color: var(--ant-text-primary);
     padding: 6px 8px;
     display: inline-flex;
     align-items: center;
@@ -87,17 +125,17 @@ body.admin-theme {
     transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease
     }
 .admin-page .lsp-summary-card:hover {
-    border-color: #69a8ff;
-    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.35)
+    border-color: var(--ant-primary);
+    box-shadow: 0 0 0 1px var(--ant-shadow-primary)
     }
 .admin-page .lsp-summary-card:focus-visible {
-    outline: 2px solid rgba(105, 168, 255, 0.75);
+    outline: 2px solid var(--ant-focus-ring);
     outline-offset: 2px
     }
 .admin-page .lsp-summary-card.active {
-    border-color: #69a8ff;
-    background: rgba(105, 168, 255, 0.22);
-    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.45)
+    border-color: var(--ant-primary);
+    background: var(--ant-primary-tint-mid);
+    box-shadow: 0 0 0 1px var(--ant-border-heavy)
     }
 .admin-page .lsp-summary-card.loading {
     cursor: progress;
@@ -105,10 +143,10 @@ body.admin-theme {
     }
 .admin-page .lsp-summary-card__label {
     font-weight: 600;
-    color: #cfe2ff
+    color: var(--ant-primary-strong)
     }
 .admin-page .lsp-summary-card__stats {
-    color: #9cc6ff
+    color: var(--ant-text-secondary)
     }
 .admin-page .lsp-summary-card--placeholder {
     cursor: progress;
@@ -140,10 +178,11 @@ body.admin-theme {
     }
 .admin-page .status-card {
     appearance: none;
-    border: 1px solid #24345c;
+    border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
-    background: #121c3a;
-    color: #eaf2ff;
+    background: var(--ant-surface);
+    color: var(--ant-text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
     padding: 12px 14px;
     display: flex;
     flex-direction: column;
@@ -157,18 +196,18 @@ body.admin-theme {
     position: relative
     }
 .admin-page .status-card:hover {
-    border-color: #69a8ff;
-    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.45);
+    border-color: var(--ant-primary);
+    box-shadow: 0 4px 10px rgba(22, 119, 255, 0.12);
     transform: translateY(-1px)
     }
 .admin-page .status-card:focus-visible {
-    outline: 2px solid rgba(105, 168, 255, 0.75);
+    outline: 2px solid var(--ant-focus-ring);
     outline-offset: 2px
     }
 .admin-page .status-card.active {
-    border-color: #69a8ff;
-    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.6);
-    background: rgba(105, 168, 255, 0.08)
+    border-color: var(--ant-primary);
+    box-shadow: 0 0 0 1px var(--ant-shadow-strong);
+    background: var(--ant-primary-tint-soft)
     }
 .admin-page .status-card.loading {
     opacity: 0.7;
@@ -177,25 +216,25 @@ body.admin-theme {
 .admin-page .status-card__count {
     font-size: 24px;
     font-weight: 700;
-    color: #9cc6ff;
+    color: var(--ant-text-primary);
     line-height: 1.1
     }
 .admin-page .status-card.loading .status-card__count {
-    color: #7fa7e6
+    color: var(--ant-text-muted)
     }
 .admin-page .status-card__label {
     font-size: 12px;
-    color: #c8d8f8;
+    color: var(--ant-text-secondary);
     line-height: 1.4
     }
 .admin-page label {
     font-size: 12px;
-    color: #8aa2c8
+    color: var(--ant-text-muted)
     }
 .admin-page input, .admin-page select, .admin-page textarea {
-    background: #0e1631;
-    color: #eaf2ff;
-    border: 1px solid #2a3a66;
+    background: var(--ant-surface-muted);
+    color: var(--ant-text-primary);
+    border: 1px solid var(--ant-border-subtle);
     border-radius: 10px;
     }
 .admin-page input[type="date"] {
@@ -213,42 +252,42 @@ body.admin-theme {
     border-radius: 999px;
     padding: 10px 16px;
     font-weight: 700;
-    background: #69a8ff;
-    color: #07122b;
+    background: var(--ant-primary);
+    color: var(--ant-text-inverse);
     cursor: pointer
     }
 .admin-page .btn:disabled, .admin-page .btn[disabled] {
     cursor: not-allowed;
-    background: #2b3352;
-    color: #8aa2c8;
+    background: var(--ant-disabled-surface);
+    color: var(--ant-text-muted);
     box-shadow: none;
     opacity: 0.85
     }
 .admin-page .btn.accent {
-    background: linear-gradient(135deg, #8bbdff, #69a8ff);
-    color: #07122b;
-    box-shadow: 0 0 0 1px rgba(105, 168, 255, 0.6);
+    background: linear-gradient(135deg, var(--ant-primary-soft), var(--ant-primary));
+    color: var(--ant-text-inverse);
+    box-shadow: 0 0 0 1px var(--ant-shadow-strong);
     transition: box-shadow 0.2s ease, transform 0.2s ease
     }
 .admin-page .btn.accent:hover {
-    box-shadow: 0 0 0 2px rgba(105, 168, 255, 0.8);
+    box-shadow: 0 0 0 2px var(--ant-shadow-intense);
     transform: translateY(-1px)
     }
 .admin-page .ghost {
-    background: #12182b;
-    color: #eaf2ff
+    background: var(--ant-surface-alt);
+    color: var(--ant-text-primary)
     }
 .admin-page .btn.ghost.accent {
-    background: rgba(105, 168, 255, 0.18);
-    color: #9cc6ff;
-    border: 1px solid rgba(105, 168, 255, 0.45)
+    background: var(--ant-primary-tint);
+    color: var(--ant-primary);
+    border: 1px solid var(--ant-border-heavy)
     }
 .admin-page .btn.ghost.accent:hover {
-    background: rgba(105, 168, 255, 0.28)
+    background: var(--ant-primary-tint-strong)
     }
 .admin-page .danger {
-    background: #ff6b6b;
-    color: #07122b
+    background: var(--ant-danger);
+    color: var(--ant-text-inverse)
     }
 .admin-page table {
     width: 100%;
@@ -257,7 +296,7 @@ body.admin-theme {
     }
 .admin-page th, .admin-page td {
     padding: 8px;
-    border-bottom: 1px solid #1f2a4d;
+    border-bottom: 1px solid var(--ant-border-subtle);
     text-align: left;
     font-size: 12px;
     vertical-align: top
@@ -266,13 +305,13 @@ body.admin-theme {
     cursor: pointer
     }
 .admin-page tr.summary-row.expandable:hover {
-    background: rgba(105, 168, 255, 0.08)
+    background: var(--ant-primary-tint-faint)
     }
 .admin-page tr.summary-row.expanded {
-    background: rgba(105, 168, 255, 0.06)
+    background: var(--ant-primary-tint-faint)
     }
 .admin-page tr.summary-row.expandable:focus-visible {
-    outline: 2px solid rgba(105, 168, 255, 0.6);
+    outline: 2px solid var(--ant-focus-ring);
     outline-offset: -2px
     }
 .admin-page tr.summary-row .summary-cell {
@@ -282,12 +321,12 @@ body.admin-theme {
     }
 .admin-page tr.summary-row .summary-primary {
     font-weight: 600;
-    color: #eaf2ff;
+    color: var(--ant-text-primary);
     cursor: pointer
     }
 .admin-page tr.summary-row .summary-hint {
     font-size: 11px;
-    color: #7f96c2;
+    color: var(--ant-text-muted);
     margin-top: 4px
     }
 .admin-page .status-text {
@@ -299,7 +338,7 @@ body.admin-theme {
     margin-left: 6px
     }
 .admin-page .status-mismatch-icon {
-    color: #ff4d4f;
+    color: var(--ant-danger);
     font-size: 12px;
     line-height: 1;
     display: inline-flex;
@@ -311,22 +350,22 @@ body.admin-theme {
     border-radius: 50%;
     background: #fff;
     font-weight: 700;
-    box-shadow: 0 0 0 1px rgba(255, 77, 79, 0.2);
+    box-shadow: 0 0 0 1px rgba(255, 77, 79, 0.22);
     flex-shrink: 0
     }
 .admin-page tr.summary-row.status-mismatch-row {
-    background: rgba(255, 77, 79, 0.12)
+    background: var(--ant-danger-softer)
     }
 .admin-page tr.summary-row.status-mismatch-row.expandable:hover {
-    background: rgba(255, 77, 79, 0.18)
+    background: var(--ant-danger-soft)
     }
 .admin-page tr.summary-row.status-mismatch-row.expanded {
-    background: rgba(255, 77, 79, 0.18)
+    background: var(--ant-danger-soft)
     }
 .admin-page tr.summary-row .row-toggle::before {
     content: '▸';
     display: inline-block;
-    color: #69a8ff;
+    color: var(--ant-primary);
     transition: transform 0.2s ease
     }
 .admin-page tr.summary-row.expanded .row-toggle::before {
@@ -340,20 +379,20 @@ body.admin-theme {
     padding: 0
     }
 .admin-page tr.detail-row .detail-content {
-    background: #0e162f;
+    background: var(--ant-surface-muted);
     padding: 16px;
-    border-top: 1px solid #1f2a4d
+    border-top: 1px solid var(--ant-border-subtle)
     }
 .admin-page tr.detail-row .detail-title {
     font-size: 12px;
-    color: #9cc6ff;
+    color: var(--ant-primary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-bottom: 6px
     }
 .admin-page tr.detail-row .detail-meta {
     font-size: 12px;
-    color: #8aa2c8;
+    color: var(--ant-text-muted);
     margin-bottom: 12px;
     word-break: break-all
     }
@@ -391,7 +430,7 @@ body.admin-theme {
     }
     .admin-page th, .admin-page td {
     padding: 4px;
-    border-bottom: 1px solid #1f2a4d;
+    border-bottom: 1px solid var(--ant-border-subtle);
     text-align: left;
     font-size: 12px;
     vertical-align: top
@@ -412,18 +451,18 @@ body.admin-theme {
     flex-direction: column;
     gap: 6px;
     padding: 12px;
-    border: 1px solid #1f2a4d;
+    border: 1px solid var(--ant-border-subtle);
     border-radius: 10px;
-    background: rgba(10, 18, 42, 0.6)
+    background: var(--ant-primary-pale)
     }
 .admin-page tr.detail-row .detail-key {
     font-size: 12px;
-    color: #8aa2c8;
+    color: var(--ant-text-muted);
     word-break: break-all
     }
 .admin-page tr.detail-row .detail-value {
     font-size: 13px;
-    color: #eaf2ff;
+    color: var(--ant-text-primary);
     word-break: break-word
     }
 .admin-page tr.detail-row .detail-content {
@@ -444,7 +483,7 @@ body.admin-theme {
     line-height: 1.2
     }
 .admin-page tr.detail-row .detail-item.detail-item-input {
-    background: rgba(10, 18, 42, 0.75)
+    background: var(--ant-primary-tint-soft)
     }
 .admin-page tr.detail-row .detail-value.detail-value-input {
     display: flex
@@ -452,13 +491,13 @@ body.admin-theme {
 .admin-page tr.detail-row .detail-value.detail-value-input .ant-input {
     width: 100%;
     font-size:10px;
-    background: #647FBC;
-    border: 1px solid #2a3b63;
+    background: var(--ant-primary-tint-strong);
+    border: 1px solid var(--ant-border-strong);
     border-radius: 6px;
-    color: #ffffff
+    color: var(--ant-text-primary)
     }
 .admin-page tr.detail-row .detail-value.detail-value-input .ant-input:focus {
-    border-color: #69a8ff;
+    border-color: var(--ant-primary);
     box-shadow: none
     }
 .admin-page tr.detail-row .detail-actions {
@@ -484,7 +523,7 @@ body.admin-theme {
     background: transparent;
     border: none;
     padding: 0;
-    color: #69a8ff;
+    color: var(--ant-primary);
     cursor: pointer;
     font: inherit;
     text-decoration: underline;
@@ -493,14 +532,14 @@ body.admin-theme {
     gap: 4px
     }
 .admin-page tr.detail-row .detail-links .view-link:hover {
-    color: #9cc6ff
+    color: var(--ant-primary-hover)
     }
 .admin-page tr.detail-row .detail-links .view-link:focus-visible {
-    outline: 2px solid rgba(105, 168, 255, 0.6);
+    outline: 2px solid var(--ant-focus-ring);
     outline-offset: 2px
     }
 .admin-page tr.detail-row .detail-json {
-    background: rgba(15, 23, 42, 0.6);
+    background: var(--ant-surface-muted);
     border-radius: 8px;
     padding: 8px 10px;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
@@ -524,7 +563,7 @@ body.admin-theme {
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    color: #9cc6ff;
+    color: var(--ant-text-muted);
     background: transparent;
     border: none;
     padding: 0;
@@ -535,18 +574,18 @@ body.admin-theme {
     text-decoration: none
     }
 .admin-page .icon-link:hover, .admin-page .icon-btn:hover {
-    background: rgba(105, 168, 255, 0.16);
-    color: #69a8ff
+    background: var(--ant-primary-tint);
+    color: var(--ant-primary)
     }
 .admin-page .icon-btn.danger {
-    color: #ff8c8c
+    color: var(--ant-danger)
     }
 .admin-page .icon-btn.danger:hover {
-    background: rgba(255, 107, 107, 0.18);
-    color: #ffb3b3
+    background: rgba(255, 77, 79, 0.24);
+    color: var(--ant-danger-light)
     }
 .admin-page .icon-link:focus-visible, .admin-page .icon-btn:focus-visible {
-    outline: 2px solid rgba(105, 168, 255, 0.6);
+    outline: 2px solid var(--ant-focus-ring);
     outline-offset: 2px
     }
 .admin-page .icon-btn {
@@ -557,10 +596,10 @@ body.admin-theme {
     height: 18px
     }
 .admin-page a {
-    color: #69a8ff
+    color: var(--ant-primary)
     }
 .admin-page .muted {
-    color: #8aa2c8;
+    color: var(--ant-text-muted);
     font-size: 12px
     }
 .admin-page .pager {
@@ -569,6 +608,40 @@ body.admin-theme {
     align-items: center;
     justify-content: flex-end;
     margin-top: 8px
+    }
+.admin-page .pager button {
+    appearance: none;
+    border: 1px solid var(--ant-border-subtle);
+    background: var(--ant-surface);
+    color: var(--ant-text-secondary);
+    padding: 6px 14px;
+    line-height: 1.2;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease
+    }
+.admin-page .pager button:hover {
+    border-color: var(--ant-primary);
+    background: var(--ant-primary-tint-faint);
+    color: var(--ant-primary)
+    }
+.admin-page .pager button:focus-visible {
+    outline: 2px solid var(--ant-focus-ring);
+    outline-offset: 2px
+    }
+.admin-page .pager button:disabled,
+.admin-page .pager button[disabled] {
+    cursor: not-allowed;
+    color: var(--ant-text-muted);
+    border-color: var(--ant-border-subtle);
+    background: var(--ant-disabled-surface);
+    box-shadow: none;
+    opacity: 0.9
     }
 
 .admin-page .pager__page-size {
@@ -614,8 +687,8 @@ body.admin-theme {
     }
 .admin-page .filters-grid .field input, .admin-page .filters-grid .field select {
     width: 100%;
-    background-color: #fff;
-    color: #333;
+    background-color: var(--ant-surface);
+    color: var(--ant-text-primary);
     }
 .admin-page .filters-grid .field datalist {
     width: 100%
@@ -668,8 +741,8 @@ body.admin-theme {
     z-index: 999
     }
 .admin-page .modal {
-    background: #0f1730;
-    border: 1px solid #283760;
+    background: var(--ant-surface-muted);
+    border: 1px solid var(--ant-border-strong);
     border-radius: 14px;
     max-width: 520px;
     width: 92%;
@@ -699,7 +772,7 @@ body.admin-theme {
     inset: 0;
     color: transparent;
     background: transparent;
-    border: 1px solid #2a3a66;
+    border: 1px solid var(--ant-border-subtle);
     pointer-events: none;
     z-index: 0;
     overflow: hidden
@@ -707,19 +780,19 @@ body.admin-theme {
 .admin-page .du-wrap textarea {
     position: relative;
     background: transparent;
-    border: 1px solid #2a3a66;
+    border: 1px solid var(--ant-border-subtle);
     z-index: 1;
     height: 100%;
     width: 100%;
     resize: none
     }
 .admin-page .hl-ok {
-    background: rgba(34, 197, 94, 0.25);
+    background: var(--ant-success-soft);
     border-radius: 4px;
     padding: 0 2px
     }
 .admin-page .hl-bad {
-    background: rgba(239, 68, 68, 0.28);
+    background: var(--ant-danger-soft);
     border-radius: 4px;
     padding: 0 2px
     }
@@ -728,18 +801,18 @@ body.admin-theme {
     color: transparent
     }
 .admin-page .hl-did-act {
-    background: rgba(148, 163, 184, 0.22);
+    background: rgba(0, 0, 0, 0.08);
     border-radius: 4px;
     padding: 0
     }
 .admin-page .hl-did-inact {
-    background: rgba(100, 116, 139, 0.12);
+    background: rgba(0, 0, 0, 0.04);
     border-radius: 4px;
     padding: 0 2px
     }
 .admin-page .dn-modal {
-    background: #0f1730;
-    border: 1px solid #283760;
+    background: var(--ant-surface-muted);
+    border: 1px solid var(--ant-border-strong);
     border-radius: 16px;
     width: min(720px, 90vw);
     height: 50vh;
@@ -757,7 +830,7 @@ body.admin-theme {
 .admin-page .dn-modal__header button {
     border: 0;
     background: transparent;
-    color: #8aa2c8;
+    color: var(--ant-text-muted);
     cursor: pointer;
     font-size: 16px;
     line-height: 1
@@ -776,11 +849,11 @@ body.admin-theme {
     overflow: auto
     }
 .admin-page .dn-preview {
-    border: 1px dashed #2a3a66;
+    border: 1px dashed var(--ant-border-subtle);
     border-radius: 12px;
     padding: 10px;
     overflow: auto;
-    background: #0b132b;
+    background: var(--ant-surface-alt);
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -788,7 +861,7 @@ body.admin-theme {
     min-height: 0
     }
 .admin-page .dn-preview .placeholder {
-    color: #8aa2c8;
+    color: var(--ant-text-muted);
     font-size: 12px
     }
 .admin-page .dn-token {
@@ -798,17 +871,17 @@ body.admin-theme {
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 12px;
-    background: rgba(148, 163, 184, 0.16);
-    color: #eaf2ff;
-    border: 1px solid rgba(148, 163, 184, 0.3)
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--ant-text-primary);
+    border: 1px solid rgba(0, 0, 0, 0.1)
     }
 .admin-page .dn-token.ok {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.5)
+    background: var(--ant-success-softer);
+    border-color: rgba(82, 196, 26, 0.4)
     }
 .admin-page .dn-token.bad {
-    background: rgba(239, 68, 68, 0.18);
-    border-color: rgba(239, 68, 68, 0.45)
+    background: var(--ant-danger-soft);
+    border-color: rgba(255, 77, 79, 0.45)
     }
 .admin-page .dn-modal__foot {
     justify-content: flex-end;
@@ -824,9 +897,9 @@ body.admin-theme {
     margin: 14px 0 10px
     }
 .admin-page .lang-switch button {
-    border: 1px solid #2a3a66;
-    background: #0e1631;
-    color: #eaf2ff;
+    border: 1px solid var(--ant-border-subtle);
+    background: var(--ant-surface-muted);
+    color: var(--ant-text-primary);
     border-radius: 10px;
     padding: 6px 10px;
     cursor: pointer;
@@ -835,7 +908,7 @@ body.admin-theme {
     gap: 6px
     }
 .admin-page .lang-switch button.active {
-    outline: 2px solid #5b8cff
+    outline: 2px solid var(--ant-primary-hover)
     }
 .admin-page .lang-switch img {
     width: 18px;
