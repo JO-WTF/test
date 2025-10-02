@@ -204,6 +204,36 @@ export function setupAdminPage(
     if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
     return value.toISOString();
   }
+
+  function formatTimestampToJakarta(timestamp) {
+    if (!timestamp) return '';
+    
+    let date;
+    if (timestamp instanceof Date) {
+      date = timestamp;
+    } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    } else {
+      return '';
+    }
+    
+    if (Number.isNaN(date.getTime())) return '';
+    
+    // 转换为雅加达时间 (UTC+7)
+    const jakartaOffset = JAKARTA_UTC_OFFSET_MINUTES || 420; // 默认 420 分钟 = 7 小时
+    const utcTime = date.getTime();
+    const jakartaTime = new Date(utcTime + jakartaOffset * 60 * 1000);
+    
+    const year = jakartaTime.getUTCFullYear();
+    const month = String(jakartaTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jakartaTime.getUTCDate()).padStart(2, '0');
+    const hours = String(jakartaTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
+    
+    return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
+  }
+
   // 使用 STATUS_VALUES 作为 status 值，label 也使用同样的值以保持一致性
   // 实际显示文本会通过 i18n 系统翻译
   setFilterValue('status', DEFAULT_STATUS_VALUE);
@@ -844,6 +874,18 @@ export function setupAdminPage(
     const text = normalizeTextValue(value);
     if (!text) return '<span class="muted">-</span>';
     const lowerKey = key.toLowerCase();
+    
+    // 检查是否为时间戳字段
+    if (
+      /timestamp|_at$|date|time/.test(lowerKey) &&
+      !/photo|image|picture|attachment|url/.test(lowerKey)
+    ) {
+      const formattedTime = formatTimestampToJakarta(value);
+      if (formattedTime) {
+        return escapeHtml(formattedTime);
+      }
+    }
+    
     if (lowerKey === 'lonlat') {
       const deriveCoordinate = (source) => {
         if (source === null || source === undefined) return null;
@@ -2040,6 +2082,7 @@ ${cellsHtml}
 
     if (
       payload.statusVal &&
+
       allowedOptions.length &&
       !allowedOptions.includes(payload.statusVal)
     ) {
