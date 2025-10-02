@@ -3,10 +3,16 @@
     <div class="stats-container">
       <div class="stats-header">
         <div class="header-content">
+          <div class="mode-toggle">
+            <a-radio-group v-model:value="dateMode" button-style="solid">
+              <a-radio-button value="plan">按上站日期</a-radio-button>
+              <a-radio-button value="update">按更新日期</a-radio-button>
+            </a-radio-group>
+          </div>
           <h1 class="stats-title">LSP 统计分析</h1>
           <p class="stats-subtitle">Last Mile Delivery Performance Overview</p>
         </div>
-        <div class="metric-toggle">
+        <div class="metric-toggle" v-if="isPlanMode">
           <a-radio-group v-model:value="metric" button-style="solid">
             <a-radio-button value="rate">完成率</a-radio-button>
             <a-radio-button value="status_not_empty">更新数</a-radio-button>
@@ -32,7 +38,9 @@ let isEChartsLoaded = false;
 
 // 数据源
 const raw = ref([]);
+const rawUpdate = ref([]);
 const metric = ref('rate'); // 'rate' | 'status_not_empty' | 'total_dn'
+const dateMode = ref('plan'); // 'plan' | 'update'
 
 const apiBase = getApiBase();
 const buildRequestUrl = () => {
@@ -97,12 +105,24 @@ const fetchData = async () => {
       .filter((item) => Number.isFinite(item.time))
       .sort((a, b) => a.time - b.time);
     raw.value = arr;
+
+    const updateArr = (json?.data.by_update_date ?? [])
+      .map((item) => ({
+        time: getTimeValue(item.recorded_at),
+        lsp: item.lsp,
+        updated_dn: Number(item.updated_dn ?? 0),
+      }))
+      .filter((item) => Number.isFinite(item.time))
+      .sort((a, b) => a.time - b.time);
+    rawUpdate.value = updateArr;
   } catch (error) {
     console.error('Failed to fetch data:', error);
   }
 };
 
 // 计算属性：根据指标处理数据
+const isPlanMode = computed(() => dateMode.value === 'plan');
+
 const processedData = computed(() => {
   return raw.value.map((d) => {
     const total = d.total_dn || 0;
@@ -119,14 +139,27 @@ const processedData = computed(() => {
   });
 });
 
+const processedUpdateData = computed(() => {
+  return rawUpdate.value.map((d) => ({
+    time: d.time,
+    value: d.updated_dn,
+    lsp: d.lsp,
+  }));
+});
+
 // 计算属性：图表配置标题和格式化
 const chartTitle = computed(() => {
-  return metric.value === 'total_dn' ? 'LSP 总数统计' 
-    : metric.value === 'status_not_empty' ? 'LSP 更新数统计' 
+  if (!isPlanMode.value) {
+    return 'LSP 更新量统计';
+  }
+  return metric.value === 'total_dn'
+    ? 'LSP 总数统计'
+    : metric.value === 'status_not_empty'
+    ? 'LSP 更新数统计'
     : 'LSP 完成率统计';
 });
 
-const isRate = computed(() => metric.value === 'rate');
+const isRate = computed(() => isPlanMode.value && metric.value === 'rate');
 
 const valueFormatter = computed(() => {
   return isRate.value ? '{value}%' : '{value}';
@@ -163,23 +196,32 @@ const fmtTime = (input) => {
 
 // 准备图表数据
 const prepareChartData = () => {
+  const source = isPlanMode.value ? processedData.value : processedUpdateData.value;
+  if (!source.length) {
+    return { xAxisData: [], series: [] };
+  }
+
   const lspMap = new Map();
-  processedData.value.forEach((d) => {
+  source.forEach((d) => {
     if (!lspMap.has(d.lsp)) {
       lspMap.set(d.lsp, []);
     }
     lspMap.get(d.lsp).push(d);
   });
 
-  const timePoints = [...new Set(processedData.value.map((d) => d.time))].sort((a, b) => a - b);
+  const timePoints = [...new Set(source.map((d) => d.time))].sort((a, b) => a - b);
   const xAxisData = timePoints.map((t) => fmtTime(t));
 
   const series = [];
   lspMap.forEach((items, lsp) => {
+    const itemMap = new Map(items.map((item) => [item.time, item]));
     const seriesData = timePoints.map((time) => {
-      const item = items.find((d) => d.time === time);
+      const item = itemMap.get(time);
       if (!item) return null;
-      return isRate.value ? (item.value * 100).toFixed(2) : item.value;
+      if (isPlanMode.value && isRate.value) {
+        return Number((item.value * 100).toFixed(2));
+      }
+      return item.value;
     });
 
     series.push({
@@ -205,11 +247,12 @@ const updateChart = () => {
     tooltip: {
       trigger: 'axis',
       formatter: (params) => {
+        if (!params?.length) return '';
         let result = `${params[0].axisValue}<br/>`;
         params.forEach((param) => {
           const value = param.value;
           const formattedValue = value !== null && value !== undefined
-            ? (isRate.value ? `${value}%` : value)
+            ? (isPlanMode.value && isRate.value ? `${value}%` : value)
             : '-';
           result += `${param.marker}${param.seriesName}: ${formattedValue}<br/>`;
         });
@@ -280,10 +323,21 @@ watch(metric, () => {
   }
 });
 
+watch(dateMode, () => {
+  if (isEChartsLoaded) {
+    updateChart();
+  }
+});
+
 // 监听数据变化
 watch(raw, () => {
-  if (chartInstance && raw.value.length > 0 && isEChartsLoaded) {
-    console.log('Data loaded:', raw.value);
+  if (chartInstance && isEChartsLoaded) {
+    updateChart();
+  }
+});
+
+watch(rawUpdate, () => {
+  if (chartInstance && isEChartsLoaded) {
     updateChart();
   }
 });
@@ -353,6 +407,50 @@ watch(raw, () => {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.mode-toggle {
+  margin-bottom: 12px;
+}
+
+.mode-toggle :deep(.ant-radio-group-solid) {
+  display: inline-flex;
+  gap: 8px;
+  background: rgba(241, 245, 249, 0.8);
+  padding: 4px;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.mode-toggle :deep(.ant-radio-button-wrapper) {
+  min-width: 110px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 8px !important;
+  padding: 6px 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.5;
+}
+
+.mode-toggle :deep(.ant-radio-button-wrapper::before) {
+  display: none;
+}
+
+.mode-toggle :deep(.ant-radio-button-wrapper:hover) {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.mode-toggle :deep(.ant-radio-button-wrapper-checked) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 .metric-toggle {
