@@ -604,7 +604,14 @@ export function setupAdminPage(
     const podStatus = DN_SCAN_STATUS_VALUES.POD || 'POD';
 
     if (delivery === STATUS_VALUES.ON_THE_WAY) {
-      return status === arrivedStatus || status === podStatus;
+      const allowedTransportStatuses = [
+        DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH,
+        DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM,
+      ]
+        .map((value) => normalizeStatusValue(value))
+        .filter(Boolean);
+      const isAllowedTransportStatus = allowedTransportStatuses.includes(status);
+      return !isAllowedTransportStatus;
     }
     if (delivery === STATUS_VALUES.ON_SITE) {
       return status !== arrivedStatus && status !== podStatus;
