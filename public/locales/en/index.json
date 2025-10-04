@@ -53,5 +53,12 @@
     "lng": "Longitude",
     "lat": "Latitude",
     "torchFailed": "Unable to toggle torch",
-    "onlyOneCamera": "Only one camera available"
+    "onlyOneCamera": "Only one camera available",
+    "phoneTitle": "Enter your phone number",
+    "phoneDescription": "We use this number to link your scans. Please provide a reachable mobile number.",
+    "phonePlaceholder": "e.g. 0812 3456 7890",
+    "phoneConfirm": "Confirm",
+    "phoneInvalid": "Please enter a valid number, e.g. 0812-3456-7890",
+    "phoneNumberLabel": "Phone Number",
+    "phoneMissingToast": "Phone number missing. Please enter it again."
 }

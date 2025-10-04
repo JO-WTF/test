@@ -188,6 +188,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import Toastify from 'toastify-js';
 import { createI18n } from '../i18n/core';
 import { useBodyTheme } from '../composables/useBodyTheme';
@@ -198,8 +199,10 @@ import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
 import { isValidDn } from '../utils/dn.js';
 import { DN_SCAN_STATUS_ITEMS } from '../config.js';
+import { getCookie } from '../utils/cookie.js';
 
 const LICENSE_KEY = getDynamsoftLicenseKey();
+const PHONE_COOKIE_KEY = 'phone_number';
 
 if (LICENSE_KEY && window?.Dynamsoft?.DBR?.BarcodeScanner) {
   window.Dynamsoft.DBR.BarcodeScanner.license = LICENSE_KEY;
@@ -220,6 +223,14 @@ useBodyTheme('scan-theme');
 const { uploadWithProgress } = useUpload();
 const { getStoredUserName } = useAuth();
 const { isMobile: isMobileClient, browserId: browserIdentifier } = useDeviceDetection();
+const router = useRouter();
+const phoneNumber = ref(getCookie(PHONE_COOKIE_KEY) || '');
+
+const refreshPhoneNumber = () => {
+  const stored = getCookie(PHONE_COOKIE_KEY);
+  phoneNumber.value = stored || '';
+  return phoneNumber.value;
+};
 
 const state = reactive({
   lang: i18n.state.lang,
@@ -244,15 +255,23 @@ const state = reactive({
   uploadPct: 0,
 });
 
+// 使用版本号强制响应式更新
+const i18nVersion = ref(0);
+
 i18n.onChange((lang) => {
   state.lang = lang;
+  i18nVersion.value++; // 触发所有使用 t() 的地方重新渲染
   // document.documentElement.lang 现在由 i18n 核心模块自动更新
 });
 
 const dnInput = ref(null);
 let scanner = null;
 
-const t = (key, vars) => i18n.t(key, vars);
+const t = (key, vars) => {
+  // 依赖 i18nVersion 确保语言切换时模板重新渲染
+  i18nVersion.value;
+  return i18n.t(key, vars);
+};
 
 const showScanControls = computed(() => !state.isValid);
 const torchTagVisible = computed(() => state.running && !state.isValid);
@@ -262,6 +281,12 @@ const submitSummaryRows = computed(() => {
   const view = state.submitView || {};
 
   return [
+    {
+      key: 'phoneNumber',
+      label: t('phoneNumberLabel'),
+      value: formatResultText(view.phoneNumber ?? phoneNumber.value),
+      mono: true,
+    },
     {
       key: 'dnNumber',
       label: t('dnNumberLabel'),
@@ -487,6 +512,20 @@ const submitUpdate = async () => {
   state.submitMsg = '';
   state.submitOk = false;
 
+  const currentPhone = refreshPhoneNumber();
+
+  if (!currentPhone) {
+    state.submitting = false;
+    Toastify({
+      text: t('phoneMissingToast'),
+      duration: 2500,
+      gravity: 'bottom',
+      position: 'center',
+    }).showToast();
+    await router.replace({ name: 'phone', query: { redirect: '/' } });
+    return;
+  }
+
   try {
     const API_BASE = getApiBase();
 
@@ -497,6 +536,7 @@ const submitUpdate = async () => {
       state.submitMsg = t('submitSuccess') || 'Submitted';
 
       state.submitView = {
+        phoneNumber: currentPhone,
         dnNumber: state.dnNumber,
         status: state.dnStatus,
         remark: state.remark,
@@ -517,6 +557,7 @@ const submitUpdate = async () => {
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
+  fd.append('phone_number', currentPhone);
     const storedUserName = getStoredUserName();
     fd.append('updated_by', storedUserName || (isMobileClient ? 'driver' : browserIdentifier));
 
@@ -542,6 +583,7 @@ const submitUpdate = async () => {
     state.submitMsg = t('submitSuccess') || 'Submitted';
 
     state.submitView = {
+      phoneNumber: currentPhone,
       dnNumber: state.dnNumber,
       status: state.dnStatus,
       remark: state.remark,
@@ -626,6 +668,13 @@ const setLang = async (lang) => {
 };
 
 onMounted(async () => {
+  const currentPhone = refreshPhoneNumber();
+  if (!currentPhone) {
+    const redirectTo = router.currentRoute?.value?.fullPath || '/';
+    await router.replace({ name: 'phone', query: { redirect: redirectTo } });
+    return;
+  }
+
   const storedUserName = getStoredUserName();
   if (storedUserName) {
     Toastify({

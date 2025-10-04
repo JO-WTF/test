@@ -53,5 +53,12 @@
     "lng": "经度",
     "lat": "纬度",
     "torchFailed": "无法切换闪光灯",
-    "onlyOneCamera": "仅有一个摄像头可用"
+    "onlyOneCamera": "仅有一个摄像头可用",
+    "phoneTitle": "请输入手机号",
+    "phoneDescription": "我们会使用该号码关联扫描记录，请填写可联系到您的手机号码。",
+    "phonePlaceholder": "例如：0812 3456 7890",
+    "phoneConfirm": "确认",
+    "phoneInvalid": "请输入正确的号码，示例：0812-3456-7890",
+    "phoneNumberLabel": "手机号",
+    "phoneMissingToast": "未找到手机号，请重新填写。"
 }

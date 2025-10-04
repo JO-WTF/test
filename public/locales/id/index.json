@@ -53,5 +53,12 @@
     "lng": "Garis bujur",
     "lat": "Garis lintang",
     "torchFailed": "Lampu tidak dapat diubah",
-    "onlyOneCamera": "Hanya satu kamera tersedia"
+    "onlyOneCamera": "Hanya satu kamera tersedia",
+    "phoneTitle": "Masukkan nomor ponsel Anda",
+    "phoneDescription": "Nomor ini digunakan untuk mengaitkan hasil pemindaian. Mohon isi nomor ponsel yang aktif.",
+    "phonePlaceholder": "mis. 0812 3456 7890",
+    "phoneConfirm": "Konfirmasi",
+    "phoneInvalid": "Harap masukkan nomor yang valid, mis. 0812-3456-7890",
+    "phoneNumberLabel": "Nomor Ponsel",
+    "phoneMissingToast": "Nomor ponsel tidak ditemukan. Silakan isi kembali."
 }
