@@ -99,9 +99,16 @@
   }
 
   /* Filter actions */
+  .admin-page .filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   .admin-page .filter-actions > div,
   .admin-page .filter-actions .btn {
-    width: 100%;
+    flex: 1 1 180px;
+    min-width: 180px;
   }
 
   .admin-page .filter-actions .btn {
@@ -110,9 +117,10 @@
 
   /* Status and LSP cards */
   .admin-page .status-card-grid {
-    --status-card-columns: 3;
-    --status-card-min-width: 90px;
+    --status-card-min-width: 80px;
     gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   }
 
   .admin-page .status-card {

@@ -1069,7 +1069,7 @@ export function setupAdminPage(
     const updatedAt = getUpdatedAtDisplay(item);
     const remarkText = normalizeTextValue(item?.remark);
     const remarkDisplay = remarkText
-      ? escapeHtml(remarkText).replace(/\n/g, '<br>')
+      ? escapeHtml(remarkText).replace(/\n/g, '。')
       : '<span class="muted">-</span>';
     const statusValue = normalizeStatusValue(item?.status);
     const statusRaw = statusValue || item?.status || '';
