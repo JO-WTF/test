@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import { Table, RadioGroup, RadioButton } from 'ant-design-vue';
 import { getApiBase } from '../utils/env';
 
@@ -350,9 +350,14 @@ const prepareChartData = () => {
 
 // 更新图表
 const updateChart = () => {
-  if (!chartInstance || !echarts) return;
+  console.log('updateChart called, chartInstance:', !!chartInstance, 'echarts:', !!echarts);
+  if (!chartInstance || !echarts) {
+    console.warn('Cannot update chart: chartInstance or echarts not available');
+    return;
+  }
 
   const { xAxisData, series } = prepareChartData();
+  console.log('Chart data prepared, xAxisData length:', xAxisData.length, 'series count:', series.length);
 
   const option = {
     title: {
@@ -437,11 +442,42 @@ watch(metric, () => {
   }
 });
 
-watch(dateMode, (newMode) => {
+watch(dateMode, async (newMode, oldMode) => {
+  console.log('dateMode changed from', oldMode, 'to', newMode);
+  
   if (newMode === 'driver') {
+    // 切换到司机模式时，销毁图表实例释放资源
+    if (chartInstance) {
+      console.log('Disposing chart instance');
+      chartInstance.dispose();
+      chartInstance = null;
+    }
     fetchDriverData();
   } else if (isEChartsLoaded) {
-    updateChart();
+    // 切换回图表模式
+    // 等待 DOM 更新完成后再更新图表
+    await nextTick();
+    
+    console.log('Switching to chart mode, container exists:', !!chartContainer.value);
+    console.log('Chart instance exists:', !!chartInstance);
+    
+    // 如果容器存在
+    if (chartContainer.value) {
+      // 无论图表实例是否存在，都重新初始化以确保正确绑定到DOM
+      if (chartInstance) {
+        console.log('Disposing existing chart instance');
+        chartInstance.dispose();
+      }
+      
+      console.log('Creating new chart instance');
+      chartInstance = echarts.init(chartContainer.value);
+      
+      // 更新图表
+      updateChart();
+      console.log('Chart updated successfully');
+    } else {
+      console.error('Chart container not found after nextTick');
+    }
   }
 });
 
