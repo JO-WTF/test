@@ -1083,6 +1083,11 @@ body.admin-theme {
     color: var(--ant-text-primary);
     line-height: 1.5
     }
+.admin-page .history-field-value .phone-number-suffix {
+    color: var(--ant-text-secondary);
+    font-size: 13px;
+    margin-left: 4px
+    }
 .admin-page .history-status {
     font-size: 15px
     }

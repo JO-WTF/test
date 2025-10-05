@@ -2179,7 +2179,16 @@ ${cellsHtml}
       const status = i18nStatusDisplay(item.status || '');
       const remark = item.remark ? escapeHtml(item.remark) : '<span class="muted">-</span>';
       const photoUrl = item.photo_url ? toAbsUrl(item.photo_url) : '';
-      const updatedBy = item.updated_by ? escapeHtml(item.updated_by) : '<span class="muted">-</span>';
+      
+      // Build updated_by with phone_number
+      let updatedBy = '<span class="muted">-</span>';
+      if (item.updated_by) {
+        updatedBy = escapeHtml(item.updated_by);
+        if (item.phone_number) {
+          updatedBy += ` <span class="phone-number-suffix">(${escapeHtml(item.phone_number)})</span>`;
+        }
+      }
+      
       const createdAt = item.created_at ? formatTimestampToJakarta(item.created_at) : '<span class="muted">-</span>';
       
       const [lat, lng] = [item.lat, item.lng];
