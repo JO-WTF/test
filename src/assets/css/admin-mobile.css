@@ -271,8 +271,19 @@
     content: none;
   }
 
-  /* LSP, Delivery, Status - in the same row */
-  .admin-page tr.summary-row td:nth-child(4),
+  /* LSP - separate row after DN and plan date */
+  .admin-page tr.summary-row td:nth-child(4) {
+    order: 2;
+    flex: 0 0 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+  }
+
+  /* Delivery and Status - in the same row */
   .admin-page tr.summary-row td:nth-child(6),
   .admin-page tr.summary-row td:nth-child(7) {
     order: 3;
