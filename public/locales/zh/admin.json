@@ -153,7 +153,6 @@
     "actions.edit": "编辑",
     "actions.delete": "删除",
     "dn.title": "DN 录入",
-    "dn.placeholder": "请输入或粘贴 DN 号",
     "dn.cancel": "取消",
     "dn.confirm": "确认",
     "dn.preview.empty": "粘贴后将在此预览格式化结果",
@@ -165,5 +164,11 @@
     "actions.exporting": "正在导出数据，请稍候…",
     "actions.exportNone": "没有匹配的数据可导出。",
     "actions.exportError": "导出失败",
-    "pager.info": "第 {page} / {pages} 页，共 {total} 条"
+    "pager.info": "第 {page} / {pages} 页，共 {total} 条",
+    "updateHistory.title": "DN 更新记录",
+    "updateHistory.loading": "加载中...",
+    "updateHistory.error": "加载失败",
+    "updateHistory.empty": "暂无更新记录",
+    "updateHistory.close": "关闭",
+    "details.save": "保存"
 }

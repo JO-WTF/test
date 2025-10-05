@@ -447,6 +447,23 @@
         </div>
       </div>
     </div>
+
+    <div id="update-history-modal" class="modal-mask">
+      <div class="modal large">
+        <div class="modal-header">
+          <h3>
+            <span data-i18n="updateHistory.title">DN 更新记录</span>
+            <span id="history-dn-number" class="tag"></span>
+          </h3>
+        </div>
+        <div id="history-content" class="modal-body">
+          <div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>
+        </div>
+        <div class="foot">
+          <button class="btn" id="history-ok" data-i18n="updateHistory.close">关闭</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

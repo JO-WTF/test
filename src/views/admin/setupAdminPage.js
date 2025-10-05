@@ -146,6 +146,11 @@ export function setupAdminPage(
   const dnConfirm = el('dn-confirm');
   const archiveExpiredDnBtn = el('btn-archive-expired-dn');
 
+  const updateHistoryModal = el('update-history-modal');
+  const historyDnNumber = el('history-dn-number');
+  const historyContent = el('history-content');
+  const historyOk = el('history-ok');
+
   let editingId = 0;
   let editingItem = null;
   let currentRoleKey = null;
@@ -1017,12 +1022,11 @@ export function setupAdminPage(
     
     // Build update count badge
     const updateCount = item?.update_count || 0;
-    // Debug log to check if update_count exists
-    if (typeof item?.update_count !== 'undefined') {
-      console.log('DN:', item.dn_number, 'update_count:', item.update_count);
+    if (updateCount > 0) {
+      console.log(`DN ${rawDnNumber} has update_count: ${updateCount}`);
     }
     const updateCountBadge = updateCount > 0 
-      ? `<span class="update-count-badge" title="更新次数: ${updateCount}">${updateCount}</span>` 
+      ? `<button type="button" class="update-count-badge" data-dn-number="${escapeHtml(rawDnNumber)}" title="点击查看更新记录 (${updateCount} 次)">${updateCount}</button>` 
       : '';
     
     const statusCell = `<td data-raw-status="${escapeHtml(statusRaw)}" data-status-delivery="${escapeHtml(
@@ -1556,9 +1560,14 @@ ${cellsHtml}
       const value = canonical || raw;
       const display = i18nStatusDisplay(value);
       
-      // Preserve update count badge if it exists
+      // Preserve update count badge data if it exists
       const existingWrapper = td.querySelector('.status-cell-wrapper');
       const existingBadge = existingWrapper ? existingWrapper.querySelector('.update-count-badge') : null;
+      const badgeData = existingBadge ? {
+        dnNumber: existingBadge.getAttribute('data-dn-number'),
+        count: existingBadge.textContent,
+        title: existingBadge.getAttribute('title')
+      } : null;
       
       td.innerHTML = '';
       
@@ -1571,9 +1580,21 @@ ${cellsHtml}
       textSpan.textContent = display || '';
       wrapper.appendChild(textSpan);
       
-      // Re-add update count badge if it existed
-      if (existingBadge) {
-        wrapper.appendChild(existingBadge.cloneNode(true));
+      // Re-create update count badge if it existed
+      if (badgeData && badgeData.dnNumber) {
+        const badge = document.createElement('button');
+        badge.type = 'button';
+        badge.className = 'update-count-badge';
+        badge.setAttribute('data-dn-number', badgeData.dnNumber);
+        badge.setAttribute('title', badgeData.title || `点击查看更新记录 (${badgeData.count} 次)`);
+        badge.textContent = badgeData.count;
+        badge.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          console.log('Badge clicked (from translateStatusCells), DN:', badgeData.dnNumber);
+          openUpdateHistoryModal(badgeData.dnNumber);
+        }, { signal });
+        wrapper.appendChild(badge);
       }
       
       td.appendChild(wrapper);
@@ -1794,6 +1815,24 @@ ${cellsHtml}
             trigger.blur();
           }
           openViewerWithUrl(url);
+        },
+        { signal }
+      );
+    });
+
+    tbody.querySelectorAll('.update-count-badge').forEach((badge) => {
+      badge.addEventListener(
+        'click',
+        (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const dnNumber = badge.getAttribute('data-dn-number');
+          console.log('Badge clicked, DN:', dnNumber);
+          if (dnNumber) {
+            openUpdateHistoryModal(dnNumber);
+          } else {
+            console.warn('No DN number found on badge');
+          }
         },
         { signal }
       );
@@ -2068,6 +2107,133 @@ ${cellsHtml}
     if (mStatusDelivery) {
       setFormControlValue(mStatusDelivery, '');
     }
+  }
+
+  async function openUpdateHistoryModal(dnNumber) {
+    if (!dnNumber || !updateHistoryModal) return;
+    
+    if (historyDnNumber) {
+      historyDnNumber.textContent = dnNumber;
+    }
+    
+    if (historyContent) {
+      historyContent.innerHTML = '<div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>';
+    }
+    
+    updateHistoryModal.style.display = 'flex';
+    
+    try {
+      const url = `${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`;
+      const resp = await fetch(url, { signal });
+      const text = await resp.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (err) {
+        console.error(err);
+      }
+      
+      if (!resp.ok) {
+        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+      }
+      
+      const items = Array.isArray(data?.items) ? data.items : [];
+      renderUpdateHistory(items);
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      if (historyContent) {
+        const errorMsg = i18n?.t('updateHistory.error') || '加载失败';
+        historyContent.innerHTML = `<div class="error-state">${escapeHtml(errorMsg)}: ${escapeHtml(err?.message || err)}</div>`;
+      }
+      console.error('Failed to load update history', err);
+    }
+  }
+
+  function closeUpdateHistoryModal() {
+    if (updateHistoryModal) {
+      updateHistoryModal.style.display = 'none';
+    }
+  }
+
+  function renderUpdateHistory(items) {
+    if (!historyContent) return;
+    
+    if (!items || items.length === 0) {
+      const emptyMsg = i18n?.t('updateHistory.empty') || '暂无更新记录';
+      historyContent.innerHTML = `<div class="empty-state">${escapeHtml(emptyMsg)}</div>`;
+      return;
+    }
+    
+    const recordsHtml = items.map((item, index) => {
+      const status = i18nStatusDisplay(item.status || '');
+      const remark = item.remark ? escapeHtml(item.remark) : '<span class="muted">-</span>';
+      const photoUrl = item.photo_url ? toAbsUrl(item.photo_url) : '';
+      const updatedBy = item.updated_by ? escapeHtml(item.updated_by) : '<span class="muted">-</span>';
+      const createdAt = item.created_at ? formatTimestampToJakarta(item.created_at) : '<span class="muted">-</span>';
+      
+      const [lat, lng] = [item.lat, item.lng];
+      const hasCoords = lat && lng;
+      const mapLink = hasCoords 
+        ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}" target="_blank" rel="noopener" class="history-map-link">${getIconMarkup('map')} ${escapeHtml(lat)}, ${escapeHtml(lng)}</a>`
+        : '<span class="muted">-</span>';
+      
+      const photoBtn = photoUrl
+        ? `<button type="button" class="btn ghost small view-link" data-url="${escapeHtml(photoUrl)}">${getIconMarkup('photo')} 查看照片</button>`
+        : '<span class="muted">无照片</span>';
+      
+      return `
+        <div class="history-record ${index === 0 ? 'latest' : ''}">
+          <div class="history-record-header">
+            <div class="history-record-index">#${items.length - index}</div>
+            <div class="history-record-time">${createdAt}</div>
+          </div>
+          <div class="history-record-body">
+            <div class="history-field">
+              <div class="history-field-label">状态</div>
+              <div class="history-field-value"><strong>${status}</strong></div>
+            </div>
+            <div class="history-field">
+              <div class="history-field-label">备注</div>
+              <div class="history-field-value">${remark}</div>
+            </div>
+            <div class="history-field">
+              <div class="history-field-label">更新人</div>
+              <div class="history-field-value">${updatedBy}</div>
+            </div>
+            <div class="history-field">
+              <div class="history-field-label">位置</div>
+              <div class="history-field-value">${mapLink}</div>
+            </div>
+            <div class="history-field">
+              <div class="history-field-label">照片</div>
+              <div class="history-field-value">${photoBtn}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    historyContent.innerHTML = `<div class="history-records">${recordsHtml}</div>`;
+    
+    // Bind photo view buttons
+    historyContent.querySelectorAll('.view-link').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = btn.getAttribute('data-url');
+        openViewerWithUrl(url);
+      }, { signal });
+    });
+  }
+
+  if (historyOk) {
+    historyOk.addEventListener('click', closeUpdateHistoryModal, { signal });
+  }
+  if (updateHistoryModal) {
+    updateHistoryModal.addEventListener('click', (e) => {
+      if (e.target === updateHistoryModal) {
+        closeUpdateHistoryModal();
+      }
+    }, { signal });
   }
 
   function buildFormDataForSave() {
