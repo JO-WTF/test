@@ -1031,10 +1031,42 @@ body.admin-theme {
     font-size: 13px;
     color: var(--ant-text-muted)
     }
-.admin-page .history-record-body {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+.admin-page .history-record-main {
+    display: flex;
+    flex-direction: column;
     gap: 12px
+    }
+.admin-page .history-record-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px
+    }
+.admin-page .history-info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px
+    }
+.admin-page .history-record-media {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-height: 180px
+    }
+@media (max-width: 768px) {
+    .admin-page .history-record-media {
+        grid-template-columns: 1fr
+        }
+    }
+.admin-page .history-media-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--ant-border-subtle);
+    background: var(--ant-surface-alt);
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center
     }
 .admin-page .history-field {
     display: flex;
@@ -1048,19 +1080,80 @@ body.admin-theme {
     }
 .admin-page .history-field-value {
     font-size: 14px;
-    color: var(--ant-text-primary)
+    color: var(--ant-text-primary);
+    line-height: 1.5
     }
-.admin-page .history-map-link {
-    display: inline-flex;
+.admin-page .history-status {
+    font-size: 15px
+    }
+.admin-page .history-map-image-link {
+    display: block;
+    position: relative;
+    cursor: pointer;
+    width: 100%;
+    height: 100%
+    }
+.admin-page .history-map-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s ease
+    }
+.admin-page .history-map-image-link:hover .history-map-image {
+    transform: scale(1.05)
+    }
+.admin-page .history-map-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    width: 40px;
+    height: 40px
+    }
+.admin-page .history-map-image-link:hover .history-map-overlay {
+    opacity: 1
+    }
+.admin-page .history-map-overlay .icon-svg {
+    width: 20px;
+    height: 20px;
+    fill: white
+    }
+.admin-page .history-map-link-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     color: var(--ant-primary);
-    text-decoration: none
+    text-decoration: none;
+    height: 100%;
+    width: 100%;
+    transition: all 0.2s ease
     }
-.admin-page .history-map-link:hover {
-    text-decoration: underline
+.admin-page .history-map-link-compact:hover {
+    background: var(--ant-primary-tint-faint)
     }
-.admin-page .history-map-link .icon-svg {
-    width: 16px;
-    height: 16px
+.admin-page .history-map-link-compact .icon-svg {
+    width: 20px;
+    height: 20px
+    }
+.admin-page .history-photo-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+    transition: transform 0.2s ease
+    }
+.admin-page .history-photo-thumbnail:hover {
+    transform: scale(1.05)
     }

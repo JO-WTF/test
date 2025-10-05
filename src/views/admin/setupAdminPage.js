@@ -9,7 +9,7 @@ import {
   STATUS_DISPLAY_OVERRIDES,
   DN_SCAN_STATUS_ITEMS,
 } from '../../config.js';
-import { getApiBase } from '../../utils/env.js';
+import { getApiBase, getMapboxAccessToken } from '../../utils/env.js';
 
 import { createDnEntryManager } from './dnEntry.js';
 import { createStatusCardManager } from './statusCards.js';
@@ -1020,12 +1020,10 @@ export function setupAdminPage(
     const statusValue = normalizeStatusValue(item?.status);
     const statusRaw = statusValue || item?.status || '';
     
-    // Build update count badge
+    // Build update count badge (only for Transport Manager)
+    const isTransportManager = isTransportManagerRole();
     const updateCount = item?.update_count || 0;
-    if (updateCount > 0) {
-      console.log(`DN ${rawDnNumber} has update_count: ${updateCount}`);
-    }
-    const updateCountBadge = updateCount > 0 
+    const updateCountBadge = isTransportManager && updateCount > 0 
       ? `<button type="button" class="update-count-badge" data-dn-number="${escapeHtml(rawDnNumber)}" title="点击查看更新记录 (${updateCount} 次)">${updateCount}</button>` 
       : '';
     
@@ -2155,6 +2153,19 @@ ${cellsHtml}
     }
   }
 
+  function getMapboxStaticImageUrl(lng, lat, zoom = 13, width = 300, height = 160) {
+    // Get Mapbox token from env
+    const mapboxToken = getMapboxAccessToken();
+    if (!mapboxToken || !lng || !lat) return '';
+    
+    // Mapbox Static Images API
+    // https://docs.mapbox.com/api/maps/static-images/
+    const style = 'mapbox/streets-v12'; // or 'mapbox/satellite-streets-v12' for satellite view
+    const marker = `pin-s+ff0000(${lng},${lat})`; // Small red pin
+    
+    return `https://api.mapbox.com/styles/v1/${style}/static/${marker}/${lng},${lat},${zoom},0/${width}x${height}@2x?access_token=${encodeURIComponent(mapboxToken)}`;
+  }
+
   function renderUpdateHistory(items) {
     if (!historyContent) return;
     
@@ -2173,12 +2184,38 @@ ${cellsHtml}
       
       const [lat, lng] = [item.lat, item.lng];
       const hasCoords = lat && lng;
-      const mapLink = hasCoords 
-        ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}" target="_blank" rel="noopener" class="history-map-link">${getIconMarkup('map')} ${escapeHtml(lat)}, ${escapeHtml(lng)}</a>`
-        : '<span class="muted">-</span>';
       
-      const photoBtn = photoUrl
-        ? `<button type="button" class="btn ghost small view-link" data-url="${escapeHtml(photoUrl)}">${getIconMarkup('photo')} 查看照片</button>`
+      // Build map preview section
+      let mapSection = '';
+      if (hasCoords) {
+        const mapImageUrl = getMapboxStaticImageUrl(lng, lat);
+        const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+        const coords = `${escapeHtml(lat)}, ${escapeHtml(lng)}`;
+        
+        if (mapImageUrl) {
+          mapSection = `
+            <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener" class="history-map-image-link" title="在 Google Maps 中打开">
+              <img src="${escapeHtml(mapImageUrl)}" alt="位置地图" class="history-map-image" loading="lazy" />
+              <div class="history-map-overlay">
+                ${getIconMarkup('map')}
+              </div>
+            </a>
+          `;
+        } else {
+          // Fallback if no Mapbox token
+          mapSection = `
+            <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener" class="history-map-link-compact">
+              ${getIconMarkup('map')} 查看地图
+            </a>
+          `;
+        }
+      } else {
+        mapSection = '<span class="muted">无位置</span>';
+      }
+      
+      // Build photo section
+      const photoSection = photoUrl
+        ? `<img src="${escapeHtml(photoUrl)}" alt="现场照片" class="history-photo-thumbnail view-link" data-url="${escapeHtml(photoUrl)}" loading="lazy" />`
         : '<span class="muted">无照片</span>';
       
       return `
@@ -2187,26 +2224,26 @@ ${cellsHtml}
             <div class="history-record-index">#${items.length - index}</div>
             <div class="history-record-time">${createdAt}</div>
           </div>
-          <div class="history-record-body">
-            <div class="history-field">
-              <div class="history-field-label">状态</div>
-              <div class="history-field-value"><strong>${status}</strong></div>
+          <div class="history-record-main">
+            <div class="history-record-info">
+              <div class="history-info-row">
+                <div class="history-field">
+                  <div class="history-field-label">状态</div>
+                  <div class="history-field-value history-status"><strong>${status}</strong></div>
+                </div>
+                <div class="history-field">
+                  <div class="history-field-label">更新人</div>
+                  <div class="history-field-value">${updatedBy}</div>
+                </div>
+              </div>
+              <div class="history-field">
+                <div class="history-field-label">备注</div>
+                <div class="history-field-value">${remark}</div>
+              </div>
             </div>
-            <div class="history-field">
-              <div class="history-field-label">备注</div>
-              <div class="history-field-value">${remark}</div>
-            </div>
-            <div class="history-field">
-              <div class="history-field-label">更新人</div>
-              <div class="history-field-value">${updatedBy}</div>
-            </div>
-            <div class="history-field">
-              <div class="history-field-label">位置</div>
-              <div class="history-field-value">${mapLink}</div>
-            </div>
-            <div class="history-field">
-              <div class="history-field-label">照片</div>
-              <div class="history-field-value">${photoBtn}</div>
+            <div class="history-record-media">
+              <div class="history-media-item">${mapSection}</div>
+              <div class="history-media-item">${photoSection}</div>
             </div>
           </div>
         </div>
@@ -2216,10 +2253,11 @@ ${cellsHtml}
     historyContent.innerHTML = `<div class="history-records">${recordsHtml}</div>`;
     
     // Bind photo view buttons
-    historyContent.querySelectorAll('.view-link').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+    historyContent.querySelectorAll('.view-link').forEach((trigger) => {
+      trigger.addEventListener('click', (e) => {
         e.preventDefault();
-        const url = btn.getAttribute('data-url');
+        e.stopPropagation();
+        const url = trigger.getAttribute('data-url');
         openViewerWithUrl(url);
       }, { signal });
     });
