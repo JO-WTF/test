@@ -4,24 +4,59 @@
       <div class="stats-header">
         <div class="header-content">
           <div class="mode-toggle">
-            <a-radio-group v-model:value="dateMode" button-style="solid">
-              <a-radio-button value="plan">按上站日期</a-radio-button>
-              <a-radio-button value="update">按更新日期</a-radio-button>
-            </a-radio-group>
+            <RadioGroup v-model:value="dateMode" button-style="solid">
+              <RadioButton value="plan">按上站日期</RadioButton>
+              <RadioButton value="update">按更新日期</RadioButton>
+              <RadioButton value="driver">按司机</RadioButton>
+            </RadioGroup>
           </div>
           <h1 class="stats-title">LSP 统计分析</h1>
           <p class="stats-subtitle">Last Mile Delivery Performance Overview</p>
         </div>
         <div class="metric-toggle" v-if="isPlanMode">
-          <a-radio-group v-model:value="metric" button-style="solid">
-            <a-radio-button value="rate">完成率</a-radio-button>
-            <a-radio-button value="status_not_empty">更新数</a-radio-button>
-            <a-radio-button value="total_dn">总数</a-radio-button>
-          </a-radio-group>
+          <RadioGroup v-model:value="metric" button-style="solid">
+            <RadioButton value="rate">完成率</RadioButton>
+            <RadioButton value="status_not_empty">更新数</RadioButton>
+            <RadioButton value="total_dn">总数</RadioButton>
+          </RadioGroup>
         </div>
       </div>
-      <div class="chart-wrapper">
+      <div class="chart-wrapper" v-if="dateMode !== 'driver'">
         <div ref="chartContainer" class="chart-container"></div>
+      </div>
+      <div class="table-wrapper" v-else>
+        <div class="table-header">
+          <h2 class="table-title">司机统计数据</h2>
+          <div class="table-summary">
+            共 <span class="highlight">{{ totalDrivers }}</span> 位司机
+          </div>
+        </div>
+        <Table
+          :columns="driverColumns"
+          :data-source="driverData"
+          :loading="loadingDriverData"
+          :pagination="{ pageSize: 20, showTotal: (total) => `共 ${total} 条` }"
+          :scroll="{ x: 600 }"
+          bordered
+        >
+          <template #bodyCell="{ column, record, index }">
+            <template v-if="column.key === 'index'">
+              {{ index + 1 }}
+            </template>
+            <template v-if="column.key === 'phone_number'">
+              <span class="phone-number">{{ record.phone_number }}</span>
+            </template>
+            <template v-if="column.key === 'unique_dn_count'">
+              <span class="count-badge primary">{{ record.unique_dn_count }}</span>
+            </template>
+            <template v-if="column.key === 'record_count'">
+              <span class="count-badge secondary">{{ record.record_count }}</span>
+            </template>
+            <template v-if="column.key === 'avg_updates'">
+              <span class="avg-value">{{ record.avg_updates }}</span>
+            </template>
+          </template>
+        </Table>
       </div>
     </div>
   </div>
@@ -29,6 +64,7 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
+import { Table, RadioGroup, RadioButton } from 'ant-design-vue';
 import { getApiBase } from '../utils/env';
 
 const chartContainer = ref(null);
@@ -39,8 +75,11 @@ let isEChartsLoaded = false;
 // 数据源
 const raw = ref([]);
 const rawUpdate = ref([]);
+const driverData = ref([]);
+const totalDrivers = ref(0);
+const loadingDriverData = ref(false);
 const metric = ref('rate'); // 'rate' | 'status_not_empty' | 'total_dn'
-const dateMode = ref('plan'); // 'plan' | 'update'
+const dateMode = ref('plan'); // 'plan' | 'update' | 'driver'
 
 const apiBase = getApiBase();
 const buildRequestUrl = () => {
@@ -119,6 +158,81 @@ const fetchData = async () => {
     console.error('Failed to fetch data:', error);
   }
 };
+
+const fetchDriverData = async () => {
+  loadingDriverData.value = true;
+  try {
+    const url = apiBase 
+      ? new URL('/api/dn/status/by-driver', apiBase).toString()
+      : '/api/dn/status/by-driver';
+    const res = await fetch(url);
+    const json = await res.json();
+    
+    if (json.ok && json.data) {
+      const processedData = json.data.map((item) => ({
+        phone_number: item.phone_number || '-',
+        unique_dn_count: Number(item.unique_dn_count || 0),
+        record_count: Number(item.record_count || 0),
+        avg_updates: item.unique_dn_count > 0 
+          ? (item.record_count / item.unique_dn_count).toFixed(2)
+          : '0.00'
+      }));
+      
+      // 按 unique_dn_count 降序排序
+      processedData.sort((a, b) => b.unique_dn_count - a.unique_dn_count);
+      
+      driverData.value = processedData;
+      totalDrivers.value = json.total_drivers || processedData.length;
+      
+      console.log('Driver data loaded:', processedData.length, 'drivers');
+    }
+  } catch (error) {
+    console.error('Failed to fetch driver data:', error);
+  } finally {
+    loadingDriverData.value = false;
+  }
+};
+
+// 定义表格列
+const driverColumns = [
+  {
+    title: '序号',
+    key: 'index',
+    width: 80,
+    align: 'center'
+  },
+  {
+    title: '司机电话',
+    dataIndex: 'phone_number',
+    key: 'phone_number',
+    width: 150,
+    align: 'center'
+  },
+  {
+    title: '唯一DN数',
+    dataIndex: 'unique_dn_count',
+    key: 'unique_dn_count',
+    width: 120,
+    align: 'center',
+    sorter: (a, b) => a.unique_dn_count - b.unique_dn_count
+  },
+  {
+    title: '总记录数',
+    dataIndex: 'record_count',
+    key: 'record_count',
+    width: 120,
+    align: 'center',
+    sorter: (a, b) => a.record_count - b.record_count
+  },
+  {
+    title: '平均更新次数',
+    dataIndex: 'avg_updates',
+    key: 'avg_updates',
+    width: 140,
+    align: 'center',
+    sorter: (a, b) => parseFloat(a.avg_updates) - parseFloat(b.avg_updates)
+  }
+];
 
 // 计算属性：根据指标处理数据
 const isPlanMode = computed(() => dateMode.value === 'plan');
@@ -323,8 +437,10 @@ watch(metric, () => {
   }
 });
 
-watch(dateMode, () => {
-  if (isEChartsLoaded) {
+watch(dateMode, (newMode) => {
+  if (newMode === 'driver') {
+    fetchDriverData();
+  } else if (isEChartsLoaded) {
     updateChart();
   }
 });
@@ -568,6 +684,128 @@ watch(rawUpdate, () => {
 
   .metric-toggle :deep(.ant-radio-button-wrapper) {
     transition: none;
+  }
+}
+
+.table-wrapper {
+  padding: clamp(24px, 4vw, 40px);
+  background: #ffffff;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.table-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.table-summary {
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.table-summary .highlight {
+  color: #667eea;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.phone-number {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #334155;
+  padding: 4px 8px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  min-width: 50px;
+}
+
+.count-badge.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.count-badge.secondary {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+}
+
+.avg-value {
+  font-weight: 600;
+  color: #059669;
+  font-size: 1rem;
+}
+
+.table-wrapper :deep(.ant-table) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.table-wrapper :deep(.ant-table-thead > tr > th) {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  font-weight: 700;
+  color: #334155;
+  border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.table-wrapper :deep(.ant-table-tbody > tr:hover > td) {
+  background: rgba(102, 126, 234, 0.03);
+}
+
+.table-wrapper :deep(.ant-table-tbody > tr > td) {
+  padding: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.table-wrapper :deep(.ant-pagination) {
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .table-wrapper {
+    padding: 20px;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .phone-number {
+    font-size: 0.875rem;
+  }
+
+  .count-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    min-width: 40px;
   }
 }
 </style>
