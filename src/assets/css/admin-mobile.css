@@ -1,5 +1,5 @@
 /* Mobile-specific styles for devices with width <= 430px */
-@media (max-width: 780px) {
+@media (max-width: 768px) {
   /* Base layout and overflow prevention */
   body.admin-theme {
     min-width: 320px;
