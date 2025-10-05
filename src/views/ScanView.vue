@@ -190,6 +190,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Toastify from 'toastify-js';
+import Compressor from 'compressorjs';
 import { createI18n } from '../i18n/core';
 import { useBodyTheme } from '../composables/useBodyTheme';
 import { useUpload } from '../composables/useUpload';
@@ -421,11 +422,66 @@ const resume = async () => {
   }
 };
 
-const onPickPhoto = (e) => {
-  const f = e.target.files?.[0] || null;
-  state.photoFile = f;
-  if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
-  state.photoPreview = f ? URL.createObjectURL(f) : null;
+// 压缩图片的辅助函数
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    new Compressor(file, {
+      maxWidth: 1600,
+      maxHeight: 1600,
+      quality: 0.8,
+      success(result) {
+        resolve(result);
+      },
+      error(err) {
+        reject(err);
+      },
+    });
+  });
+};
+
+const onPickPhoto = async (e) => {
+  const originalFile = e.target.files?.[0] || null;
+  
+  if (!originalFile) {
+    state.photoFile = null;
+    if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
+    state.photoPreview = null;
+    return;
+  }
+
+  try {
+    // 压缩图片
+    const compressedFile = await compressImage(originalFile);
+    
+    // 保留原始文件名
+    const finalFile = new File([compressedFile], originalFile.name, {
+      type: compressedFile.type,
+      lastModified: Date.now(),
+    });
+    
+    state.photoFile = finalFile;
+    if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
+    state.photoPreview = URL.createObjectURL(finalFile);
+    
+    // 显示压缩成功提示
+    const originalSizeKB = (originalFile.size / 1024).toFixed(2);
+    const compressedSizeKB = (finalFile.size / 1024).toFixed(2);
+    console.log(`Image compressed: ${originalSizeKB}KB → ${compressedSizeKB}KB`);
+  } catch (err) {
+    console.error('Image compression failed:', err);
+    
+    // 压缩失败时使用原图
+    state.photoFile = originalFile;
+    if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
+    state.photoPreview = URL.createObjectURL(originalFile);
+    
+    Toastify({
+      text: t('compressionFailed') || 'Image compression failed, using original',
+      duration: 2000,
+      gravity: 'bottom',
+      position: 'center',
+    }).showToast();
+  }
 };
 
 const clearPhoto = () => {

@@ -12,6 +12,7 @@
   "dependencies": {
     "@antv/g2plot": "^2.4.35",
     "ant-design-vue": "^4.2.6",
+    "compressorjs": "^1.2.1",
     "dayjs": "^1.11.18",
     "echarts": "^6.0.0",
     "libphonenumber-js": "^1.12.23",
