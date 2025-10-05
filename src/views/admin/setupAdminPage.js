@@ -15,13 +15,12 @@ import { createDnEntryManager } from './dnEntry.js';
 import { createStatusCardManager } from './statusCards.js';
 import { createLspSummaryCardManager } from './lspSummaryCards.js';
 import { createFilterBridgeManager } from './filterBridgeManager.js';
+import { createAuthHandler } from './authHandler.js';
 import { getTodayDateStringInTimezone } from './dateUtils.js';
 import { escapeHtml, setFormControlValue } from './utils.js';
 
 import {
-  ROLE_MAP,
   TRANSPORT_MANAGER_ROLE_KEY,
-  AUTH_STORAGE_KEY,
   STATUS_VALUE_TO_KEY,
   STATUS_ALIAS_LOOKUP,
   STATUS_KNOWN_VALUES,
@@ -153,22 +152,31 @@ export function setupAdminPage(
 
   let editingId = 0;
   let editingItem = null;
-  let currentRoleKey = null;
-  let currentUserInfo = null;
   let cachedItems = [];
   let removeI18nListener = null;
   let viewerInstance = null;
   let statusMismatchTooltips = [];
   let detailInputMounts = [];
 
-  const notifyRoleChange = (roleKey, role, userInfo) => {
-    if (typeof onRoleChange !== 'function') return;
-    try {
-      onRoleChange(roleKey || '', role || null, userInfo || null);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // 初始化授权处理器
+  const authHandler = createAuthHandler({
+    authModal,
+    authBtn,
+    authCancel,
+    authConfirm,
+    authInput,
+    authMsg,
+    authRoleTag,
+    signal,
+    i18n,
+    showToast,
+    onRoleChange,
+    onRoleApplied: handleAuthRoleApplied,
+    onAuthSuccess: (role, userInfo) => {
+      // 授权成功后刷新列表
+      fetchList();
+    },
+  });
 
   function convertDateToJakartaIso(dateString, { endOfDay = false } = {}) {
     if (!dateString) return '';
@@ -255,7 +263,7 @@ export function setupAdminPage(
   }
 
   function shouldShowActionsColumn() {
-    return Boolean(currentRoleKey);
+    return Boolean(authHandler.getCurrentRoleKey());
   }
 
   function getSummaryColumnCount(showActions = shouldShowActionsColumn()) {
@@ -424,15 +432,16 @@ export function setupAdminPage(
   }
 
   function getCurrentRole() {
-    return currentRoleKey ? ROLE_MAP.get(currentRoleKey) || null : null;
+    return authHandler.getCurrentRole();
   }
 
   function getCurrentPermissions() {
     return getCurrentRole()?.permissions || null;
   }
 
-  function isTransportManagerRole(roleKey = currentRoleKey) {
-    return roleKey === TRANSPORT_MANAGER_ROLE_KEY;
+  function isTransportManagerRole(roleKey) {
+    const key = roleKey !== undefined ? roleKey : authHandler.getCurrentRoleKey();
+    return key === TRANSPORT_MANAGER_ROLE_KEY;
   }
 
   const dnEntry = createDnEntryManager({
@@ -450,7 +459,7 @@ export function setupAdminPage(
     API_BASE,
     showToast,
     getCurrentPermissions,
-    getCurrentRoleKey: () => currentRoleKey,
+    getCurrentRoleKey: () => authHandler.getCurrentRoleKey(),
     fetchList,
   });
 
@@ -496,98 +505,7 @@ export function setupAdminPage(
     },
   });
 
-  function sanitizeUserInfo(user) {
-    if (!user || typeof user !== 'object') return null;
-    const info = {};
-    if (user.id != null) info.id = user.id;
-    if (typeof user.name === 'string') {
-      const trimmed = user.name.trim();
-      if (trimmed) info.name = trimmed;
-    }
-    return Object.keys(info).length ? info : null;
-  }
-
-  function getUserDisplayName(user) {
-    if (!user || typeof user !== 'object') return '';
-    if (typeof user.name === 'string') {
-      const trimmed = user.name.trim();
-      if (trimmed) return trimmed;
-    }
-    return '';
-  }
-
-  function getLocalStorageSafe() {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        return window.localStorage;
-      }
-    } catch (err) {
-      console.error(err);
-    }
-    return null;
-  }
-
-  function persistAuthState(roleKey, userInfo) {
-    const storage = getLocalStorageSafe();
-    if (!storage) return;
-    try {
-      if (!roleKey) {
-        storage.removeItem(AUTH_STORAGE_KEY);
-        return;
-      }
-      const payload = {
-        roleKey,
-        userInfo: sanitizeUserInfo(userInfo),
-      };
-      storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  function loadStoredAuthState() {
-    const storage = getLocalStorageSafe();
-    if (!storage) return null;
-    try {
-      const raw = storage.getItem(AUTH_STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') return null;
-      const { roleKey } = parsed;
-      if (!roleKey || !ROLE_MAP.has(roleKey)) {
-        storage.removeItem(AUTH_STORAGE_KEY);
-        return null;
-      }
-      return {
-        roleKey,
-        userInfo: sanitizeUserInfo(parsed.userInfo),
-      };
-    } catch (err) {
-      console.error(err);
-      try {
-        storage?.removeItem(AUTH_STORAGE_KEY);
-      } catch (removeErr) {
-        console.error(removeErr);
-      }
-    }
-    return null;
-  }
-
-  function getEffectiveUserInfo() {
-    if (currentUserInfo?.name) return currentUserInfo;
-    const stored = loadStoredAuthState();
-    if (stored?.userInfo) {
-      const sanitized = sanitizeUserInfo({
-        ...(currentUserInfo || {}),
-        ...stored.userInfo,
-      });
-      if (sanitized) {
-        currentUserInfo = sanitized;
-        return sanitized;
-      }
-    }
-    return currentUserInfo;
-  }
+  // 授权相关函数已移至 authHandler.js
 
   function normalizeStatusValue(raw) {
     const text = (raw || '').trim();
@@ -1191,8 +1109,7 @@ ${cellsHtml}
       applyTranslations();
     }
     translateStatusCells();
-    updateAuthButtonLabel();
-    updateRoleBadge();
+    authHandler.refreshLabels();
     statusCards.updateLabels();
     statusCards.updateActiveState();
     lspSummaryCards.updateActiveState();
@@ -1209,11 +1126,7 @@ ${cellsHtml}
     });
   }
 
-  function setRole(nextRoleKey, userInfo = null) {
-    currentRoleKey = nextRoleKey || null;
-    currentUserInfo = sanitizeUserInfo(userInfo);
-    updateAuthButtonLabel();
-    updateRoleBadge();
+  function handleAuthRoleApplied(_roleKey, _role, _userInfo) {
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
     populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
@@ -1223,60 +1136,6 @@ ${cellsHtml}
     statusCards.render();
     statusCards.refreshCounts();
     lspSummaryCards.updateActiveState();
-    persistAuthState(currentRoleKey, currentUserInfo);
-    const role = currentRoleKey ? ROLE_MAP.get(currentRoleKey) || null : null;
-    notifyRoleChange(currentRoleKey || '', role, currentUserInfo);
-  }
-
-  function getRoleLabel(role) {
-    if (!role) return '';
-    const fallback = role.label || role.description || role.key;
-    if (!i18n) return fallback;
-    try {
-      const key = `roles.${role.key}`;
-      const translated = i18n.t(key);
-      if (translated && translated !== key) return translated;
-    } catch (err) {
-      console.error(err);
-    }
-    return fallback;
-  }
-
-  function updateAuthButtonLabel() {
-    if (!authBtn) return;
-    const role = getCurrentRole();
-    const displayName = getUserDisplayName(currentUserInfo);
-    if (displayName) {
-      authBtn.textContent = displayName;
-      authBtn.removeAttribute('data-i18n');
-      return;
-    }
-    const key = role ? 'auth.switch' : 'auth.trigger';
-    const label = role ? getRoleLabel(role) : i18n?.t(key) || '授权';
-    authBtn.textContent = label;
-    authBtn.setAttribute('data-i18n', key);
-  }
-
-  function updateRoleBadge() {
-    if (!authRoleTag) return;
-    const role = getCurrentRole();
-    if (!role) {
-      authRoleTag.textContent = '';
-      authRoleTag.style.display = 'none';
-      return;
-    }
-    const roleLabel = getRoleLabel(role);
-    if (i18n) {
-      const tpl = i18n.t('auth.current');
-      if (tpl && tpl !== 'auth.current') {
-        authRoleTag.textContent = tpl.replace('{role}', roleLabel);
-      } else {
-        authRoleTag.textContent = `当前角色：${roleLabel}`;
-      }
-    } else {
-      authRoleTag.textContent = `当前角色：${roleLabel}`;
-    }
-    authRoleTag.style.display = '';
   }
 
   function updateModalFieldVisibility() {
@@ -2760,80 +2619,7 @@ ${cellsHtml}
     }
   }
 
-  function openAuthModal() {
-    if (!authModal) return;
-    authModal.style.display = 'flex';
-    if (authMsg) authMsg.textContent = '';
-    if (authInput) {
-      authInput.value = '';
-      setTimeout(() => {
-        try {
-          authInput.focus();
-        } catch (err) {
-          console.error(err);
-        }
-      }, 30);
-    }
-  }
-
-  function closeAuthModal() {
-    if (authModal) authModal.style.display = 'none';
-  }
-
-  function findRoleByPassword(password) {
-    if (!password) return null;
-    for (const role of ROLE_LIST || []) {
-      const users = Array.isArray(role?.users) ? role.users : [];
-      const matchedUser = users.find((user) => user?.password === password);
-      if (matchedUser) {
-        return { role, user: matchedUser };
-      }
-    }
-    return null;
-  }
-
-  function handleAuthSubmit() {
-    if (!authInput) return;
-    const pwd = authInput.value || '';
-    if (!pwd.trim()) {
-      if (authMsg) authMsg.textContent = i18n ? i18n.t('auth.modal.required') : '请输入密码';
-      return;
-    }
-    if (authMsg) authMsg.textContent = i18n ? i18n.t('auth.modal.checking') : '验证中…';
-    const matched = findRoleByPassword(pwd);
-    if (!matched) {
-      if (authMsg) authMsg.textContent = i18n ? i18n.t('auth.modal.failed') : '密码错误，请重试';
-      return;
-    }
-    const sanitizedUser = sanitizeUserInfo(matched.user);
-    setRole(matched.role.key, matched.user);
-    closeAuthModal();
-    const roleLabel = getRoleLabel(matched.role);
-    const displayName = getUserDisplayName(sanitizedUser) || roleLabel || 'user';
-    showToast(`You are logged in as ${displayName}.`, 'success');
-    fetchList();
-  }
-
-  authBtn?.addEventListener('click', openAuthModal, { signal });
-  authCancel?.addEventListener('click', closeAuthModal, { signal });
-  authConfirm?.addEventListener('click', handleAuthSubmit, { signal });
-  authModal?.addEventListener(
-    'click',
-    (e) => {
-      if (e.target === authModal) closeAuthModal();
-    },
-    { signal }
-  );
-  authInput?.addEventListener(
-    'keydown',
-    (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleAuthSubmit();
-      }
-    },
-    { signal }
-  );
+  // 授权模态框和事件处理已移至 authHandler.js
 
   subscribeToFilterChange('status', (values) => {
     const first = Array.isArray(values) && values.length ? values[0] : '';
@@ -3132,24 +2918,6 @@ ${cellsHtml}
     { signal }
   );
 
-  function restoreAuthFromStorage() {
-    const stored = loadStoredAuthState();
-    if (stored && stored.roleKey) {
-      setRole(stored.roleKey, stored.userInfo);
-    } else {
-      updateAuthButtonLabel();
-      updateRoleBadge();
-      refreshDnEntryVisibility();
-      populateModalStatusOptions('');
-      populateModalStatusDeliveryOptions('');
-      updateModalFieldVisibility();
-      rerenderTableActions();
-      statusCards.render();
-      statusCards.refreshCounts();
-      notifyRoleChange('', null, null);
-    }
-  }
-
   async function init() {
     dnEntry.normalizeFilterInput({ enforceFormat: false });
     if (hint) hint.textContent = i18n?.t('hint.ready') || '输入条件后点击查询。';
@@ -3157,7 +2925,7 @@ ${cellsHtml}
     await fetchList();
   }
 
-  restoreAuthFromStorage();
+  authHandler.restoreFromStorage();
   init();
   applyAllTranslations();
 
