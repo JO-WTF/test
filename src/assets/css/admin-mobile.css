@@ -536,6 +536,7 @@
   /* Update history modal */
   .admin-page .history-record {
     padding: 12px;
+    overflow-x: hidden;
   }
 
   .admin-page .history-info-row {
@@ -544,12 +545,30 @@
   }
 
   .admin-page .history-record-media {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: row;
     gap: 10px;
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .admin-page .history-media-item {
+    flex: 0 0 calc(50% - 5px);
+    min-width: calc(50% - 5px);
+    max-width: calc(50% - 5px);
     height: 150px;
+    overflow: hidden;
+  }
+
+  /* Ensure map and images fit within their containers */
+  .admin-page .history-media-item img,
+  .admin-page .history-media-item .leaflet-container,
+  .admin-page .history-media-item > div {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    object-fit: cover;
   }
 
   /* Buttons */
