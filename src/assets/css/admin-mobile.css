@@ -1,5 +1,5 @@
 /* Mobile-specific styles for devices with width <= 430px */
-@media (max-width: 680px) {
+@media (max-width: 780px) {
   /* Base layout and overflow prevention */
   body.admin-theme {
     min-width: 320px;
@@ -17,7 +17,6 @@
 
   .admin-page .card {
     padding: 12px;
-    box-sizing: border-box;
   }
 
   /* Page header layout */
@@ -97,7 +96,6 @@
 
   .admin-page .filters-grid .field > * {
     max-width: 100%;
-    box-sizing: border-box;
   }
 
   /* Filter actions */
@@ -188,7 +186,7 @@
     flex-shrink: 0;
   }
 
-  /* First row: DN Number + Plan Date in one row */
+  /* First row: DN Number on left, Region + Plan Date on right */
   .admin-page tr.summary-row td:first-child {
     order: 1;
     flex: 0 0 auto;
@@ -212,9 +210,9 @@
     font-size: 12px;
   }
 
-  /* Plan MOS Date - display after region with border */
+  /* Plan MOS Date - display after region with border, right aligned */
   .admin-page tr.summary-row td:nth-child(3) {
-    order: 2;
+    order: 1;
     flex: 0 0 auto;
     width: auto;
     margin-bottom: 8px;
@@ -271,43 +269,49 @@
     content: none;
   }
 
-  /* LSP - separate row after DN and plan date */
+  /* LSP - same row with Delivery and Status, same height as region/plan date */
   .admin-page tr.summary-row td:nth-child(4) {
     order: 2;
-    flex: 0 0 100%;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 6px;
-    white-space: nowrap;
-  }
-
-  /* Delivery and Status - in the same row */
-  .admin-page tr.summary-row td:nth-child(6),
-  .admin-page tr.summary-row td:nth-child(7) {
-    order: 3;
     flex: 0 0 auto;
     width: auto;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     margin-bottom: 6px;
-    margin-right: 12px;
+    margin-right: 6px;
+    padding: 4px 10px;
     white-space: nowrap;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 12px;
+    background: var(--ant-surface-container);
+  }
+
+  /* Delivery and Status - same row with LSP, same height as region/plan date */
+  .admin-page tr.summary-row td:nth-child(6),
+  .admin-page tr.summary-row td:nth-child(7) {
+    order: 2;
+    flex: 0 0 auto;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    margin-right: 6px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 12px;
+    background: var(--ant-surface-container);
   }
 
   .admin-page tr.summary-row td:nth-child(6) {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--ant-text-secondary);
     font-weight: 500;
   }
 
   .admin-page tr.summary-row td:nth-child(6)::before {
-    content: '配送: ';
-    font-weight: 600;
-    color: var(--ant-text-muted);
-    margin-right: 4px;
+    content: none;
   }
 
   .admin-page tr.summary-row td:nth-child(4)::before {
@@ -369,8 +373,7 @@
   }
 
   .admin-page tr.summary-row td:nth-child(7)::before {
-    content: '状态: ';
-    font-size: 12px;
+    content: none;
   }
 
   .admin-page tr.summary-row td:nth-child(7) .status-cell-wrapper {
@@ -607,8 +610,13 @@
   }
 
   /* Typography adjustments */
-  .admin-page label {
+  .admin-page label,
+  .admin-page .muted {
     font-size: 11px;
+  }
+
+  .admin-page h3 {
+    font-size: 16px;
   }
 
   .admin-page h2 {
@@ -616,14 +624,7 @@
     margin: 12px 0;
   }
 
-  .admin-page h3 {
-    font-size: 16px;
-  }
-
-  .admin-page .muted {
-    font-size: 11px;
-  }
-
+  /* Muted placeholder styling */
   .admin-page tr.summary-row td:nth-child(9) .muted,
   .admin-page tr.summary-row td:nth-child(10) .muted {
     font-size: 14px;

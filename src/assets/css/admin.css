@@ -168,14 +168,6 @@ body.admin-theme {
         )
     )
     }
-@media (max-width: 720px) {
-    .admin-page .status-card-grid {
-        grid-template-columns: repeat(
-            auto-fit,
-            minmax(var(--status-card-min-width), 1fr)
-        )
-        }
-    }
 .admin-page .status-card {
     appearance: none;
     border: 1px solid var(--ant-border-subtle);
@@ -464,13 +456,6 @@ body.admin-theme {
         align-items: flex-start;
         gap: 4px;
     }
-    .admin-page th, .admin-page td {
-    padding: 4px;
-    border-bottom: 1px solid var(--ant-border-subtle);
-    text-align: left;
-    font-size: 12px;
-    vertical-align: top
-    }
     /* make icon buttons flow naturally in the column layout */
     .admin-page table th:last-child .actions .icon-btn,
     .admin-page table th:last-child .actions .icon-link,
@@ -485,38 +470,28 @@ body.admin-theme {
 .admin-page tr.detail-row .detail-item {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 12px;
+    gap: 4px;
+    padding: 4px 6px;
     border: 1px solid var(--ant-border-subtle);
     border-radius: 10px;
     background: var(--ant-primary-pale)
     }
 .admin-page tr.detail-row .detail-key {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--ant-text-muted);
     word-break: break-all
     }
 .admin-page tr.detail-row .detail-value {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--ant-text-primary);
-    word-break: break-word
+    word-break: break-word;
+    line-height: 1.2
     }
 .admin-page tr.detail-row .detail-content {
     padding: 8px
     }
 .admin-page tr.detail-row .detail-grid {
     gap: 4px 6px
-    }
-.admin-page tr.detail-row .detail-item {
-    padding: 4px 6px;
-    gap: 4px
-    }
-.admin-page tr.detail-row .detail-key {
-    font-size: 11px
-    }
-.admin-page tr.detail-row .detail-value {
-    font-size: 11px;
-    line-height: 1.2
     }
 .admin-page tr.detail-row .detail-item.detail-item-input {
     background: var(--ant-primary-tint-soft)
@@ -1051,11 +1026,6 @@ body.admin-theme {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     max-height: 180px
-    }
-@media (max-width: 768px) {
-    .admin-page .history-record-media {
-        grid-template-columns: 1fr
-        }
     }
 .admin-page .history-media-item {
     position: relative;
