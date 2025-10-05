@@ -90,6 +90,7 @@ export const DN_DETAIL_KEYS = [
   'status_wh',
   'status_delivery',
   'status',
+  'update_count',
   'issue_remark',
   'remark',
   'photo_url',

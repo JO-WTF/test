@@ -1014,9 +1014,20 @@ export function setupAdminPage(
       : '<span class="muted">-</span>';
     const statusValue = normalizeStatusValue(item?.status);
     const statusRaw = statusValue || item?.status || '';
+    
+    // Build update count badge
+    const updateCount = item?.update_count || 0;
+    // Debug log to check if update_count exists
+    if (typeof item?.update_count !== 'undefined') {
+      console.log('DN:', item.dn_number, 'update_count:', item.update_count);
+    }
+    const updateCountBadge = updateCount > 0 
+      ? `<span class="update-count-badge" title="更新次数: ${updateCount}">${updateCount}</span>` 
+      : '';
+    
     const statusCell = `<td data-raw-status="${escapeHtml(statusRaw)}" data-status-delivery="${escapeHtml(
       statusDeliveryCanonical || ''
-    )}">${i18nStatusDisplay(statusRaw)}</td>`;
+    )}"><div class="status-cell-wrapper">${i18nStatusDisplay(statusRaw)}${updateCountBadge}</div></td>`;
     const photoCell = buildPhotoCell(item);
     const locationCell = buildLocationCell(item);
     const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
@@ -1544,11 +1555,28 @@ ${cellsHtml}
       const canonical = normalizeStatusValue(raw);
       const value = canonical || raw;
       const display = i18nStatusDisplay(value);
+      
+      // Preserve update count badge if it exists
+      const existingWrapper = td.querySelector('.status-cell-wrapper');
+      const existingBadge = existingWrapper ? existingWrapper.querySelector('.update-count-badge') : null;
+      
       td.innerHTML = '';
+      
+      // Create wrapper div
+      const wrapper = document.createElement('div');
+      wrapper.className = 'status-cell-wrapper';
+      
       const textSpan = document.createElement('span');
       textSpan.className = 'status-text';
       textSpan.textContent = display || '';
-      td.appendChild(textSpan);
+      wrapper.appendChild(textSpan);
+      
+      // Re-add update count badge if it existed
+      if (existingBadge) {
+        wrapper.appendChild(existingBadge.cloneNode(true));
+      }
+      
+      td.appendChild(wrapper);
 
       const statusDeliveryValue = td.getAttribute('data-status-delivery') || '';
       if (shouldShowStatusMismatch(statusDeliveryValue, raw)) {
@@ -1556,7 +1584,7 @@ ${cellsHtml}
         indicator.className = 'status-mismatch';
         indicator.setAttribute('data-status-mismatch', 'true');
         indicator.setAttribute('data-tooltip-message', tooltipMessage);
-        td.appendChild(indicator);
+        wrapper.appendChild(indicator);
         if (summaryRow) {
           summaryRow.classList.add('status-mismatch-row');
           summaryRow.setAttribute('data-status-mismatch', 'true');
