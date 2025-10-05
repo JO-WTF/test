@@ -1,0 +1,613 @@
+/* Mobile-specific styles for devices with width <= 430px */
+@media (max-width: 430px) {
+  /* Base layout and overflow prevention */
+  body.admin-theme {
+    min-width: 320px;
+    overflow-x: hidden;
+  }
+
+  .admin-page,
+  .admin-page .container,
+  .admin-page .card,
+  .admin-page .rhs {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .admin-page .card {
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  /* Page header layout */
+  .admin-page .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .admin-page .auth-area {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  /* Grid layout */
+  .admin-page .grid-2col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .admin-page .rhs {
+    min-width: 0;
+  }
+
+  /* Filters: 2 columns layout */
+  .admin-page .filters-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .admin-page .filters-grid .field {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    max-width: calc(50% - 4px);
+  }
+
+  .admin-page .filters-grid .field label {
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Ant Design components */
+  .admin-page .filters-grid .field .ant-select-selector {
+    height: auto !important;
+    min-height: 30px !important;
+    padding: 3px 11px !important;
+  }
+
+  .admin-page .filters-grid .field .ant-select-selection-overflow {
+    flex-wrap: wrap;
+    max-height: none;
+  }
+
+  .admin-page .filters-grid .field .ant-input,
+  .admin-page .filters-grid .field .ant-picker {
+    height: 30px;
+    width: 100%;
+  }
+
+  /* Native form elements */
+  .admin-page .filters-grid .field input:not([class*="ant-"]),
+  .admin-page .filters-grid .field select:not([class*="ant-"]) {
+    width: 100%;
+    height: 28px;
+    padding: 5px 10px;
+    box-sizing: border-box;
+  }
+
+  .admin-page .filters-grid .field > * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Filter actions */
+  .admin-page .filter-actions > div,
+  .admin-page .filter-actions .btn {
+    width: 100%;
+  }
+
+  .admin-page .filter-actions .btn {
+    justify-content: center;
+  }
+
+  /* Status and LSP cards */
+  .admin-page .status-card-grid {
+    --status-card-columns: 3;
+    --status-card-min-width: 90px;
+    gap: 8px;
+  }
+
+  .admin-page .status-card {
+    padding: 10px 12px;
+    min-height: 80px;
+  }
+
+  .admin-page .status-card__count {
+    font-size: 20px;
+  }
+
+  .admin-page .status-card__label,
+  .admin-page .lsp-summary-card {
+    font-size: 11px;
+  }
+
+  .admin-page .lsp-summary-card-section {
+    padding: 8px;
+  }
+
+  .admin-page .lsp-summary-card {
+    padding: 5px 8px;
+  }
+
+  /* Table to card transformation */
+  .admin-page table,
+  .admin-page table tbody {
+    display: block;
+    border: 0;
+  }
+
+  .admin-page table thead {
+    display: none;
+  }
+
+  /* Card-based row layout with flex container for reordering */
+  .admin-page tr.summary-row {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: var(--ant-surface);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .admin-page tr.summary-row:hover,
+  .admin-page tr.summary-row.expanded {
+    background: var(--ant-primary-tint-faint);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .admin-page tr.summary-row.status-mismatch-row {
+    border-color: var(--ant-danger);
+    background: var(--ant-danger-softer);
+  }
+
+  .admin-page tr.summary-row.status-mismatch-row:hover,
+  .admin-page tr.summary-row.status-mismatch-row.expanded {
+    background: var(--ant-danger-soft);
+  }
+
+  .admin-page tr.summary-row td {
+    display: block;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  /* First row: DN Number + Plan Date in one row */
+  .admin-page tr.summary-row td:first-child {
+    order: 1;
+    flex: 0 0 auto;
+    width: auto;
+    margin-bottom: 8px;
+    margin-right: auto;
+  }
+
+  .admin-page tr.summary-row .summary-cell {
+    gap: 6px;
+    display: flex;
+  }
+
+  .admin-page tr.summary-row .summary-primary {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ant-primary-strong);
+  }
+
+  .admin-page tr.summary-row .row-toggle::before {
+    font-size: 12px;
+  }
+
+  /* Plan MOS Date - display after region with border */
+  .admin-page tr.summary-row td:nth-child(3) {
+    order: 2;
+    flex: 0 0 auto;
+    width: auto;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    position: relative;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 12px;
+    background: var(--ant-surface-container);
+  }
+
+  /* When has mobile value, hide the original content */
+  .admin-page tr.summary-row td:nth-child(3)[data-mobile-value]:not([data-mobile-value=""]) {
+    font-size: 0 !important;
+    color: transparent !important;
+    line-height: 0;
+  }
+
+  /* Use mobile formatted value for Plan MOS Date */
+  .admin-page tr.summary-row td:nth-child(3)[data-mobile-value]:not([data-mobile-value=""])::before {
+    content: attr(data-mobile-value);
+    display: block;
+    font-size: 11px;
+    color: var(--ant-text-secondary);
+    font-weight: 500;
+    line-height: normal;
+  }
+
+  /* Hide all child elements when mobile value exists */
+  .admin-page tr.summary-row td:nth-child(3)[data-mobile-value]:not([data-mobile-value=""]) * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Region - display before plan date with border, no label */
+  .admin-page tr.summary-row td:nth-child(2) {
+    order: 1;
+    flex: 0 0 auto;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 8px;
+    margin-right: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--ant-text-secondary);
+    font-weight: 500;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 12px;
+    background: var(--ant-surface-container);
+  }
+
+  /* Remove region label */
+  .admin-page tr.summary-row td:nth-child(2)::before {
+    content: none;
+  }
+
+  /* LSP, Delivery, Status - in the same row */
+  .admin-page tr.summary-row td:nth-child(4),
+  .admin-page tr.summary-row td:nth-child(6),
+  .admin-page tr.summary-row td:nth-child(7) {
+    order: 3;
+    flex: 0 0 auto;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    margin-right: 12px;
+    white-space: nowrap;
+  }
+
+  .admin-page tr.summary-row td:nth-child(6) {
+    font-size: 12px;
+    color: var(--ant-text-secondary);
+    font-weight: 500;
+  }
+
+  .admin-page tr.summary-row td:nth-child(6)::before {
+    content: '配送: ';
+    font-weight: 600;
+    color: var(--ant-text-muted);
+    margin-right: 4px;
+  }
+
+  .admin-page tr.summary-row td:nth-child(4)::before {
+    content: 'LSP: ';
+  }
+
+  /* When has mobile value, hide the original LSP name */
+  .admin-page tr.summary-row td:nth-child(4)[data-mobile-value]:not([data-mobile-value=""]) {
+    font-size: 0 !important;
+    color: transparent !important;
+  }
+
+  /* Show abbreviation after the label */
+  .admin-page tr.summary-row td:nth-child(4)[data-mobile-value]:not([data-mobile-value=""])::after {
+    content: attr(data-mobile-value);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--ant-text-secondary);
+  }
+
+  /* Hide all child elements when mobile value exists */
+  .admin-page tr.summary-row td:nth-child(4)[data-mobile-value]:not([data-mobile-value=""]) * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Issue and Remark - separate rows */
+  .admin-page tr.summary-row td:nth-child(5),
+  .admin-page tr.summary-row td:nth-child(8) {
+    flex: 0 0 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .admin-page tr.summary-row td:nth-child(5) {
+    order: 4;
+  }
+
+  /* Common label styles for all fields */
+  .admin-page tr.summary-row td:nth-child(4)::before,
+  .admin-page tr.summary-row td:nth-child(5)::before,
+  .admin-page tr.summary-row td:nth-child(7)::before,
+  .admin-page tr.summary-row td:nth-child(8)::before {
+    font-weight: 600;
+    color: var(--ant-text-muted);
+    flex-shrink: 0;
+  }
+
+  .admin-page tr.summary-row td:nth-child(5)::before {
+    content: 'Issue: ';
+    font-size: 11px;
+  }
+
+  .admin-page tr.summary-row td:nth-child(7)::before {
+    content: '状态: ';
+    font-size: 12px;
+  }
+
+  .admin-page tr.summary-row td:nth-child(7) .status-cell-wrapper {
+    gap: 4px;
+  }
+
+  .admin-page tr.summary-row td:nth-child(7) .status-text {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* Update count badge - slightly smaller on mobile */
+  .admin-page .update-count-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 10px;
+  }
+
+  .admin-page tr.summary-row td:nth-child(8) {
+    order: 5;
+  }
+
+  .admin-page tr.summary-row td:nth-child(8)::before {
+    content: '备注: ';
+    font-size: 11px;
+  }
+
+  /* Photo, Location, and Actions - display in one row */
+  .admin-page tr.summary-row td:nth-child(9),
+  .admin-page tr.summary-row td:nth-child(10),
+  .admin-page tr.summary-row td:last-child {
+    order: 8;
+    flex: 0 0 auto;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 20px;
+    padding: 4px 24px 0 0;
+    margin: 0;
+    border: 0;
+    min-height: 44px;
+    height: 44px;
+  }
+
+  /* Remove previous labels */
+  .admin-page tr.summary-row td:nth-child(9)::before,
+  .admin-page tr.summary-row td:nth-child(10)::before {
+    content: none;
+  }
+
+  /* Adjust icon and button spacing */
+  .admin-page tr.summary-row td:nth-child(9) .icon-link,
+  .admin-page tr.summary-row td:nth-child(10) .icon-link,
+  .admin-page tr.summary-row td:last-child .icon-btn {
+    margin: 0;
+  }
+
+  /* Updated At - hide on mobile */
+  .admin-page tr.summary-row td[data-column="updatedAt"] {
+    display: none !important;
+  }
+
+  /* Actions - now in the same row as photo and location */
+  .admin-page tr.summary-row td:last-child .actions {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: nowrap;
+  }
+
+  /* Detail row adjustments for mobile */
+  .admin-page tr.detail-row {
+    display: block;
+    border: 0;
+    margin-top: -12px;
+    margin-bottom: 12px;
+  }
+
+  .admin-page tr.detail-row td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .admin-page tr.detail-row .detail-content {
+    border-radius: 0 0 12px 12px;
+    padding: 12px;
+  }
+
+  .admin-page tr.detail-row .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .admin-page tr.detail-row .detail-item {
+    padding: 8px;
+  }
+
+  /* Icon sizes for mobile - larger touch targets */
+  .admin-page .icon-svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .admin-page .icon-link,
+  .admin-page .icon-btn,
+  .admin-page tr.summary-row td:nth-child(9) .muted,
+  .admin-page tr.summary-row td:nth-child(10) .muted {
+    min-width: 33px;
+    min-height: 33px;
+    width: 33px;
+    height: 33px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Pager mobile layout */
+  .admin-page .pager {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .admin-page .pager #pginfo {
+    order: -2;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .admin-page .pager__page-size {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-page .pager button {
+    flex: 1;
+    min-width: 80px;
+  }
+
+  /* Modal mobile layout */
+  .admin-page .modal,
+  .admin-page .modal.small,
+  .admin-page .modal.large {
+    width: 95%;
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .admin-page .row-line {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .admin-page .field.grow {
+    min-width: 100%;
+  }
+
+  /* DN Modal */
+  .admin-page .dn-modal {
+    width: 95vw;
+    height: 60vh;
+    padding: 12px;
+  }
+
+  .admin-page .dn-modal__header h3 {
+    font-size: 16px;
+  }
+
+  /* Update history modal */
+  .admin-page .history-record {
+    padding: 12px;
+  }
+
+  .admin-page .history-info-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .admin-page .history-record-media {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .admin-page .history-media-item {
+    height: 150px;
+  }
+
+  /* Buttons */
+  .admin-page .btn {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  /* Table toggle */
+  .admin-page .table-toggle-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  /* DN preview area */
+  .admin-page .du-wrap {
+    min-height: 80px;
+  }
+
+  .admin-page .du-wrap textarea,
+  .admin-page .du-wrap .du-hilite {
+    min-height: 80px;
+    font-size: 13px;
+  }
+
+  /* Typography adjustments */
+  .admin-page label {
+    font-size: 11px;
+  }
+
+  .admin-page h2 {
+    font-size: 18px;
+    margin: 12px 0;
+  }
+
+  .admin-page h3 {
+    font-size: 16px;
+  }
+
+  .admin-page .muted {
+    font-size: 11px;
+  }
+
+  .admin-page tr.summary-row td:nth-child(9) .muted,
+  .admin-page tr.summary-row td:nth-child(10) .muted {
+    font-size: 14px;
+    color: var(--ant-text-muted);
+  }
+
+  /* Hide "click to view all fields" hint on mobile */
+  .admin-page tr.summary-row .summary-hint {
+    display: none !important;
+  }
+
+  /* Role tag adjustments */
+  .admin-page .role-tag {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}

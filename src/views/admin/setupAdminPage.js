@@ -955,6 +955,60 @@ export function setupAdminPage(
     return escapeHtml(text).replace(/\n/g, '<br>');
   }
 
+  // Mobile-specific helper functions for 430px and below
+  function getLspAbbreviation(lspName) {
+    if (!lspName) return '';
+    const lspMap = {
+      'HTM.SCHENKER-IDN': 'SCK',
+      'HTM.KAMADJAJA-IDN': 'KAMA',
+      'HTM.XPRESINDO-IDN': 'XP',
+      'HTM.SINOTRANS-IDN': 'SINO'
+    };
+    return lspMap[lspName] || lspName;
+  }
+
+  function formatPlanMosDateForMobile(dateString) {
+    if (!dateString) return '';
+    // Try to parse common date formats and return MM/DD
+    // Examples: "25 Dec 24", "2024-12-25", "12/25/2024", "Dec 25 2024"
+    try {
+      // Match "DD MMM YY" format (e.g., "25 Dec 24")
+      const ddMmmYyMatch = dateString.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+\d{2}$/);
+      if (ddMmmYyMatch) {
+        return `${ddMmmYyMatch[2]} ${ddMmmYyMatch[1]}`; // "Dec 25"
+      }
+      
+      // Match "YYYY-MM-DD" format
+      const isoMatch = dateString.match(/^\d{4}-(\d{2})-(\d{2})$/);
+      if (isoMatch) {
+        const month = parseInt(isoMatch[1], 10);
+        const day = parseInt(isoMatch[2], 10);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${monthNames[month - 1]} ${day}`;
+      }
+      
+      // Match "MM/DD/YYYY" format
+      const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/\d{4}$/);
+      if (usMatch) {
+        const month = parseInt(usMatch[1], 10);
+        const day = parseInt(usMatch[2], 10);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${monthNames[month - 1]} ${day}`;
+      }
+      
+      // If format is already "MMM DD" or similar, return as-is
+      if (dateString.match(/^[A-Za-z]{3}\s+\d{1,2}$/)) {
+        return dateString;
+      }
+      
+      // Fallback: return original
+      return dateString;
+    } catch (err) {
+      console.error('Error formatting date for mobile:', err);
+      return dateString;
+    }
+  }
+
   function buildDetailContent(item, entries) {
     const title =
       '<div class="detail-title" data-i18n="details.title">全部字段</div>';
@@ -1047,6 +1101,10 @@ export function setupAdminPage(
       : '';
     const actionsContent = showActions ? buildActionCell(item, remarkText || '') : '';
 
+    // Mobile-specific formatting
+    const lspAbbrev = lsp ? getLspAbbreviation(lsp) : '';
+    const planMosMobile = planMos ? formatPlanMosDateForMobile(planMos) : '';
+    
     const firstCell = `      <td>
         <div class="summary-cell">
           <span class="row-toggle" aria-hidden="true"></span>
@@ -1058,8 +1116,8 @@ export function setupAdminPage(
     const cells = [
       firstCell,
       `      <td>${regionCell}</td>`,
-      `      <td>${planCell}</td>`,
-      `      <td>${lspCell}</td>`,
+      `      <td data-mobile-value="${escapeHtml(planMosMobile)}">${planCell}</td>`,
+      `      <td data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
       `      <td>${issueRemarkCell}</td>`,
       `      <td>${statusDeliveryCell}</td>`,
       `      ${statusCell}`,

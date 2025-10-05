@@ -710,3 +710,4 @@ onBeforeUnmount(() => {
 
 
 <style src="../assets/css/admin.css"></style>
+<style src="../assets/css/admin-mobile.css"></style>
