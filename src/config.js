@@ -125,13 +125,13 @@ const STATUS_DEFINITIONS = [
 ];
 
 const DN_SCAN_STATUS_DEFINITIONS = [
-  {
-    key: 'ARRIVED_AT_WH',
-    value: 'ARRIVED AT WH',
-    translationKey: 'status.arrivedAtWh',
-    fallbackLabel: '到达仓库',
-    aliases: ['Arrived at WH', '到达仓库'],
-  },
+  // {
+  //   key: 'ARRIVED_AT_WH',
+  //   value: 'ARRIVED AT WH',
+  //   translationKey: 'status.arrivedAtWh',
+  //   fallbackLabel: '到达仓库',
+  //   aliases: ['Arrived at WH', '到达仓库'],
+  // },
   {
     key: 'TRANSPORTING_FROM_WH',
     value: 'TRANSPORTING FROM WH',
