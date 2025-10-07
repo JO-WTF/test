@@ -301,7 +301,7 @@
                 id="status-visibility-switch"
                 v-model:checked="showOnlyNonEmptyStatus"
                 size="small"
-                :default-checked="true"
+                :default-checked="false"
               />
             </label>
           </div>
@@ -557,7 +557,7 @@ const filterSelectOption = (input, option) => {
   return text.includes((input || '').toLowerCase());
 };
 
-const showOnlyNonEmptyStatus = ref(true);
+const showOnlyNonEmptyStatus = ref(false);
 const showMissingInGs = ref(false);
 let syncingFromStatusSelect = false;
 let syncingFromSwitch = false;

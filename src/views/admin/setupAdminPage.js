@@ -698,7 +698,7 @@ export function setupAdminPage(
   function applyLspSummaryCardFilter(lspName) {
     const normalizedLsp = normalizeTextValue(lspName);
     if (!normalizedLsp) return;
-    resetAllFilters({ statusValue: DEFAULT_STATUS_VALUE });
+  resetAllFilters();
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
       PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
@@ -1619,7 +1619,7 @@ export function setupAdminPage(
   el('btn-reset')?.addEventListener(
     'click',
     () => {
-      resetAllFilters({ statusValue: DEFAULT_STATUS_VALUE });
+  resetAllFilters();
       q.page = 1;
       fetchList();
     },
@@ -1630,7 +1630,7 @@ export function setupAdminPage(
     'admin:status-switch-change',
     (event) => {
       const detail = event?.detail || {};
-      const targetValue = detail.showOnlyNonEmpty ? DEFAULT_STATUS_VALUE : STATUS_ANY_VALUE;
+      const targetValue = detail.showOnlyNonEmpty ? STATUS_NOT_EMPTY_VALUE : STATUS_ANY_VALUE;
       setFilterValue('status', targetValue);
       q.page = 1;
       fetchList();

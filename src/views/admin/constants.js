@@ -26,7 +26,7 @@ export const STATUS_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
 export const STATUS_MISMATCH_TOOLTIP_FALLBACK =
   '配送状态(status_delivery)与司机上传的货物状态(status)不一致，请检查并更新。';
 export const STATUS_ANY_VALUE = '';
-export const DEFAULT_STATUS_VALUE = STATUS_NOT_EMPTY_VALUE;
+export const DEFAULT_STATUS_VALUE = STATUS_ANY_VALUE;
 
 // 时区相关常量
 export const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';

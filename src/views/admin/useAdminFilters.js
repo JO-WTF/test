@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
-import { STATUS_NOT_EMPTY_VALUE } from './constants.js';
+import { STATUS_NOT_EMPTY_VALUE, STATUS_ANY_VALUE } from './constants.js';
 import { DN_SCAN_STATUS_ITEMS } from '../../config.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
@@ -26,7 +26,7 @@ const HAS_COORDINATE_OPTION_DEFS = [
 ];
 
 const STATUS_FILTER_DEFS = [
-  { value: '', translationKey: 'status.filter.any', fallback: '任意' },
+  { value: STATUS_ANY_VALUE, translationKey: 'status.filter.any', fallback: '任意' },
   {
     value: STATUS_NOT_EMPTY_VALUE,
     translationKey: 'status.filter.notEmpty',
@@ -556,7 +556,7 @@ export function useAdminFilters() {
 
   const setDefaultStatusFilter = () => {
     try {
-      status.bridge.setValue(STATUS_NOT_EMPTY_VALUE);
+  status.bridge.setValue(STATUS_ANY_VALUE);
     } catch (err) {
       console.error(err);
     }
