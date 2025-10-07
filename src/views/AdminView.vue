@@ -323,12 +323,11 @@
               <th data-i18n="table.dn">DN 号</th>
               <th data-i18n="table.regionPlan">区域/MOS 计划</th>
               <th data-i18n="table.lsp">LSP</th>
-              <th data-i18n="table.issueRemark">ISSUE REMARK</th>
               <th data-i18n="table.statusDelivery">STATUS DELIVERY</th>
               <th data-i18n="table.status">状态</th>
+              <th data-i18n="table.issueRemark">ISSUE REMARK</th>
               <th data-i18n="table.remark">备注</th>
-              <th data-i18n="table.photo">照片</th>
-              <th data-i18n="table.location">位置</th>
+              <th data-i18n="table.checkin">打卡</th>
               <th
                 data-i18n="table.updatedAt"
                 data-column="updatedAt"

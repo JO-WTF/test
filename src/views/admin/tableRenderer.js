@@ -284,7 +284,14 @@ export function createTableRenderer(options = {}) {
   }
 
   function getLspDisplay(item) {
-    return getNormalizedField(item, LSP_FIELD);
+    const raw = getNormalizedField(item, LSP_FIELD);
+    if (!raw) return '';
+    // 提取 HTM. 和 -IDN 之间的内容
+    const match = raw.match(/HTM\.\s*(.*?)\s*-IDN/);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    return raw;
   }
 
   function getRegionDisplay(item) {
@@ -588,8 +595,10 @@ export function createTableRenderer(options = {}) {
         : '';
 
       const statusCell = `<td data-raw-status="${escapeHtml(statusRaw)}" data-status-delivery="${escapeHtml(statusDeliveryCanonical || '')}"><div class="status-cell-wrapper">${statusDisplay(statusRaw)}${updateCountBadge}</div></td>`;
-      const photoCell = buildPhotoCell(item);
-      const locationCell = buildLocationCell(item);
+  // 合并照片和位置为打卡列
+  const photoCell = buildPhotoCell(item);
+  const locationCell = buildLocationCell(item);
+  const checkinCell = `<div class="checkin-cell">${photoCell}${locationCell}</div>`;
       const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
       const regionLine = region
         ? `<span class="region-plan-cell__region">${escapeHtml(region)}</span>`
@@ -625,12 +634,11 @@ export function createTableRenderer(options = {}) {
           ${planLine}
         </td>`,
         `      <td data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
-        `      <td>${issueRemarkCell}</td>`,
         `      <td>${statusDeliveryCell}</td>`,
         `      ${statusCell}`,
+        `      <td>${issueRemarkCell}</td>`,
         `      <td>${remarkDisplay}</td>`,
-        `      <td>${photoCell}</td>`,
-        `      <td>${locationCell}</td>`,
+  `      <td class="summary-checkin-cell">${checkinCell}</td>`,
         `      <td data-column="updatedAt" aria-hidden="true" style="display: none">${updatedCell}</td>`,
       ];
 

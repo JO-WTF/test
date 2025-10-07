@@ -1,3 +1,52 @@
+.admin-page td.summary-checkin-cell {
+    white-space: normal;
+    vertical-align: top;
+    padding-right: 16px;
+}
+.admin-page .checkin-cell {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: flex-start;
+}
+@media (max-width: 960px) {
+    .admin-page td.summary-checkin-cell .checkin-cell {
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+    }
+    .admin-page td.summary-checkin-cell .checkin-cell .icon-link,
+    .admin-page td.summary-checkin-cell .checkin-cell .map-link {
+        align-items: center;
+        justify-content: flex-start;
+        display: inline-flex;
+        min-height: 24px;
+    }
+}
+@media (max-width: 1100px) {
+    /* 打卡列竖向展示 */
+            .admin-page td.summary-checkin-cell .checkin-cell {
+                flex-direction: column;
+                gap: 2px;
+                align-items: center;
+    }
+    /* 操作列竖向展示 */
+            .admin-page table th:last-child .actions,
+            .admin-page table td:last-child .actions {
+                flex-direction: column;
+                align-items: center;
+                gap: 1px;
+    }
+        .admin-page table th:last-child .actions .icon-btn,
+        .admin-page table th:last-child .actions .icon-link,
+        .admin-page table td:last-child .actions .icon-btn,
+        .admin-page table td:last-child .actions .icon-link {
+            width: auto;
+            display: inline-flex;
+            justify-content: center;
+            margin: 0;
+    }
+}
 body.admin-theme {
     min-width: 680px;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
@@ -631,8 +680,8 @@ body.admin-theme {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 18px;
+    height: 18px;
     border-radius: 6px;
     color: var(--ant-text-muted);
     background: transparent;
@@ -827,24 +876,8 @@ body.admin-theme {
     padding: 14px
     }
 .admin-page .modal.small {
-    max-width: 360px
-    }
-.admin-page .du-wrap {
-    position: relative;
-    width: 100%;
-    min-height: 140px;
-    box-sizing: border-box
-    }
-.admin-page .du-wrap textarea, .admin-page .du-wrap .du-hilite {
-    font: inherit;
-    line-height: 1.5;
-    padding: 8px 10px;
-    border-radius: 10px;
-    min-height: 140px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    box-sizing: border-box
-    }
+    max-width: 360px;
+}
 .admin-page .du-hilite {
     position: absolute;
     inset: 0;
@@ -861,6 +894,10 @@ body.admin-theme {
     border: 1px solid var(--ant-border-subtle);
     z-index: 1;
     height: 100%;
+    min-height: 140px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-sizing: border-box;
     width: 100%;
     resize: none
     }
