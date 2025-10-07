@@ -321,6 +321,50 @@ body.admin-theme {
     color: var(--ant-text-muted);
     margin-top: 4px
     }
+.admin-page .summary-hint.summary-du-id {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    row-gap: 2px;
+    column-gap: 4px;
+    color: var(--ant-text-secondary)
+    }
+.admin-page .summary-du-id-value {
+    appearance: none;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.2;
+    background: var(--ant-surface-alt);
+    color: var(--ant-text-muted);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    box-shadow: none
+    }
+.admin-page .summary-du-id-value:hover {
+    background: var(--ant-primary-tint-faint);
+    border-color: var(--ant-primary-tint);
+    transform: translateY(-0.5px);
+    color: var(--ant-text-secondary)
+    }
+.admin-page .summary-du-id-value:active {
+    transform: scale(0.98);
+    background: var(--ant-primary-tint);
+    color: var(--ant-text-primary)
+    }
+.admin-page .summary-du-id-value:focus-visible {
+    outline: 2px solid var(--ant-focus-ring);
+    outline-offset: 2px
+    }
+.admin-page .summary-du-id-value:disabled {
+    cursor: default;
+    opacity: 0.6;
+    transform: none
+    }
 .admin-page .status-cell-wrapper {
     display: inline-flex;
     align-items: center;

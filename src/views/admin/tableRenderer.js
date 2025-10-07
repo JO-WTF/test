@@ -662,7 +662,12 @@ export function createTableRenderer(options = {}) {
       const issueRemarkCell = issueRemark ? escapeHtml(issueRemark).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
       const statusDeliveryCell = statusDelivery ? escapeHtml(statusDelivery).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
       const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
-      const hint = detailAvailable ? '<div class="summary-hint" data-i18n="table.expandHint">点击查看全部字段</div>' : '';
+      const duIdRaw = normalizeText(item?.du_id);
+      const duIdLabel = translate('table.duIdLabel', 'DU ID') || 'DU ID';
+      const duIdMarkup = duIdRaw
+        ? `<button type="button" class="summary-du-id-value" data-du-id="${escapeHtml(duIdRaw)}" title="${escapeHtml(duIdLabel)}" aria-label="${escapeHtml(duIdLabel)}">${escapeHtml(duIdRaw)}</button>`
+        : '<span class="muted">-</span>';
+      const hint = `<div class="summary-hint summary-du-id">${duIdMarkup}</div>`;
       const actionsContent = showActions ? buildActionCell(item, remarkText || '') : '';
 
       const lspAbbrev = lsp ? getLspAbbreviation(lsp) : '';
@@ -1046,6 +1051,22 @@ export function createTableRenderer(options = {}) {
         if (!dnValue) return;
         const copied = await copyTextToClipboard(dnValue);
         toast(copied ? '已复制DN Number' : '复制 DN Number 失败', copied ? 'success' : 'error');
+      });
+    });
+
+    tbody.querySelectorAll('.summary-du-id-value').forEach((duButton) => {
+      addListener(duButton, 'click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof duButton.blur === 'function') {
+          duButton.blur();
+        }
+        const duValue = (duButton.getAttribute('data-du-id') || '').trim();
+        if (!duValue) return;
+        const copied = await copyTextToClipboard(duValue);
+        const successMsg = translate('toast.copyDuIdSuccess', '已复制 DU ID') || '已复制 DU ID';
+        const failMsg = translate('toast.copyDuIdFail', '复制 DU ID 失败') || '复制 DU ID 失败';
+        toast(copied ? successMsg : failMsg, copied ? 'success' : 'error');
       });
     });
 
