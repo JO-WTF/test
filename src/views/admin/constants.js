@@ -137,184 +137,31 @@ export const DETAIL_INPUT_FIELD_SET = new Set(
   ].map((key) => key.toLowerCase())
 );
 
-export const REGION_FIELD_CANDIDATES = [
-  'region',
-  'region_name',
-  'regionName',
-  'area',
-  'territory',
-];
-
-export const PLAN_MOS_DATE_FIELD_CANDIDATES = [
-  'plan_mos_date',
-  'plan_mos',
-  'plan_date',
-  'plan_mos_datetime',
-  'plan_mos_at',
-  'plan_mos_time',
-  'plan_mos_dt',
-  'plan_delivery_date',
-];
-
-export const ISSUE_REMARK_FIELD_CANDIDATES = [
-  'issue_remark',
-  'issueRemark',
-  'issue_remarks',
-  'issueRemarks',
-  'issue_note',
-  'issue_notes',
-];
-
-export const STATUS_DELIVERY_FIELD_CANDIDATES = [
-  'status_delivery',
-  'delivery_status',
-  'statusDelivery',
-  'deliveryStatus',
-  'status_deliver',
-];
-
-export const UPDATED_AT_FIELD_CANDIDATES = [
-  'updated_at',
-  'created_at',
-  'updatedAt',
-  'createdAt',
-  'last_updated',
-  'lastUpdate',
-  'lastUpdated',
-  'modified_at',
-  'modifiedAt',
-  'timestamp',
-];
-
-export const LSP_FIELD_CANDIDATES = [
-  'lsp',
-  'lsp_name',
-  'lsp_code',
-  'logistics_provider',
-  'logistics_service_provider',
-  'logistic_provider',
-  'provider',
-  'provider_name',
-];
-
-export const ORIGIN_FIELD_CANDIDATES = [
-  'origin_location',
-  'origin',
-  'origin_address',
-  'origin_city',
-  'origin_branch',
-  'from_location',
-  'from',
-  'from_address',
-  'from_city',
-  'pickup_location',
-  'pickup_address',
-  'pickup_city',
-  'start_location',
-  'start_address',
-];
-
-export const DESTINATION_FIELD_CANDIDATES = [
-  'destination_location',
-  'destination',
-  'destination_address',
-  'destination_city',
-  'destination_branch',
-  'to_location',
-  'to',
-  'to_address',
-  'to_city',
-  'drop_location',
-  'drop_address',
-  'arrival_location',
-  'arrival_address',
-  'end_location',
-  'end_address',
-];
-
-export const LAT_FIELD_CANDIDATES = ['lat', 'latitude'];
-export const LNG_FIELD_CANDIDATES = ['lng', 'longitude', 'long'];
-
-export const ORIGIN_FALLBACK_REGEX = /(origin|start|from|pickup)/i;
-export const DESTINATION_FALLBACK_REGEX = /(destination|dest|to|drop|arrival|end)/i;
-export const LSP_FALLBACK_REGEX = /(lsp|provider)/i;
-
-export const PHOTO_FIELD_CANDIDATES = [
-  'photo_url',
-  'photo',
-  'photo_urls',
-  'photoUrl',
-  'photoURL',
-  'image_url',
-  'image',
-  'imageUrl',
-  'picture_url',
-  'attachment',
-  'attachment_url',
-];
+export const REGION_FIELD = 'region';
+export const PLAN_MOS_DATE_FIELD = 'plan_mos_date';
+export const ISSUE_REMARK_FIELD = 'issue_remark';
+export const STATUS_DELIVERY_FIELD = 'status_delivery';
+export const UPDATED_AT_FIELD = 'updated_at';
+export const LSP_FIELD = 'lsp';
+export const LAT_FIELD = 'lat';
+export const LNG_FIELD = 'lng';
+export const PHOTO_FIELD = 'photo_url';
 
 export const SUMMARY_FIELD_KEYS = new Set([
   'dn_number',
+  'du_id',
+  'lsp',
+  'region',
+  'plan_mos_date',
+  'issue_remark',
+  'status_delivery',
   'status',
   'remark',
-  'issue_remark',
-  'issueRemark',
-  'issue_remarks',
-  'issueRemarks',
-  'issue_note',
-  'issue_notes',
-  'status_delivery',
-  'delivery_status',
-  'statusDelivery',
-  'deliveryStatus',
-  'status_deliver',
   'photo_url',
-  'photo',
-  'photo_urls',
-  'photoUrl',
-  'photoURL',
-  'image_url',
-  'image',
-  'imageUrl',
-  'picture_url',
-  'attachment',
-  'attachment_url',
   'lat',
   'lng',
-  'latitude',
-  'longitude',
-  'lsp',
-  'lsp_name',
-  'lsp_code',
-  'logistics_provider',
-  'logistics_service_provider',
-  'logistic_provider',
-  'provider',
-  'provider_name',
-  'provider_code',
-  'region',
-  'region_name',
-  'regionName',
-  'area',
-  'territory',
-  'plan_mos_date',
-  'plan_mos',
-  'plan_date',
-  'plan_mos_datetime',
-  'plan_mos_at',
-  'plan_mos_time',
-  'plan_mos_dt',
-  'plan_delivery_date',
-  'created_at',
-  'updated_at',
-  'updatedAt',
-  'createdAt',
-  'last_updated',
-  'lastUpdate',
-  'lastUpdated',
-  'modified_at',
-  'modifiedAt',
-  'timestamp',
+  'latest_record_created_at',
+  'update_count',
 ]);
 
 export const ICON_MARKUP = Object.freeze({

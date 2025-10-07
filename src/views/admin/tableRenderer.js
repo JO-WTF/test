@@ -6,20 +6,15 @@ import {
   STATUS_MISMATCH_TOOLTIP_FALLBACK,
   DN_DETAIL_KEYS,
   DETAIL_INPUT_FIELD_SET,
-  REGION_FIELD_CANDIDATES,
-  PLAN_MOS_DATE_FIELD_CANDIDATES,
-  ISSUE_REMARK_FIELD_CANDIDATES,
-  STATUS_DELIVERY_FIELD_CANDIDATES,
-  UPDATED_AT_FIELD_CANDIDATES,
-  LSP_FIELD_CANDIDATES,
-  ORIGIN_FIELD_CANDIDATES,
-  DESTINATION_FIELD_CANDIDATES,
-  LAT_FIELD_CANDIDATES,
-  LNG_FIELD_CANDIDATES,
-  ORIGIN_FALLBACK_REGEX,
-  DESTINATION_FALLBACK_REGEX,
-  LSP_FALLBACK_REGEX,
-  PHOTO_FIELD_CANDIDATES,
+  REGION_FIELD,
+  PLAN_MOS_DATE_FIELD,
+  ISSUE_REMARK_FIELD,
+  STATUS_DELIVERY_FIELD,
+  UPDATED_AT_FIELD,
+  LSP_FIELD,
+  LAT_FIELD,
+  LNG_FIELD,
+  PHOTO_FIELD,
   SUMMARY_FIELD_KEYS,
   ICON_MARKUP,
   HIDDEN_DETAIL_FIELDS,
@@ -282,110 +277,49 @@ export function createTableRenderer(options = {}) {
     return `idx:${index}`;
   }
 
-  function collectValues(item, candidates) {
-    const list = [];
-    const seen = new Set();
-    if (!item || typeof item !== 'object' || !Array.isArray(candidates)) {
-      return list;
-    }
-    candidates.forEach((key) => {
-      if (!key) return;
-      if (!Object.prototype.hasOwnProperty.call(item, key)) return;
-      const val = normalizeText(item[key]);
-      if (!val || seen.has(val)) return;
-      seen.add(val);
-      list.push(val);
-    });
-    return list;
-  }
-
-  function getValuesByRegex(item, regex, exclude = new Set()) {
-    const values = [];
-    const seen = new Set();
-    if (!item || typeof item !== 'object' || !regex) return values;
-    Object.entries(item).forEach(([key, raw]) => {
-      if (!regex.test(key)) return;
-      if (exclude.has(key)) return;
-      const val = normalizeText(raw);
-      if (!val || seen.has(val)) return;
-      seen.add(val);
-      values.push(val);
-    });
-    return values;
-  }
-
-  function getFirstNonEmpty(item, candidates) {
-    if (!item || typeof item !== 'object' || !Array.isArray(candidates)) return '';
-    for (const key of candidates) {
-      if (!key) continue;
-      if (Object.prototype.hasOwnProperty.call(item, key)) {
-        const val = normalizeText(item[key]);
-        if (val) return val;
-      }
-    }
-    return '';
+  function getNormalizedField(item, field) {
+    if (!item || typeof item !== 'object' || !field) return '';
+    if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
+    return normalizeText(item[field]);
   }
 
   function getLspDisplay(item) {
-    const direct = getFirstNonEmpty(item, LSP_FIELD_CANDIDATES);
-    if (direct) return direct;
-    const fallbackValues = getValuesByRegex(item, LSP_FALLBACK_REGEX, new Set(LSP_FIELD_CANDIDATES));
-    return fallbackValues.join(' / ');
-  }
-
-  function getLocationDisplay(item, candidates, regex) {
-    const values = collectValues(item, candidates);
-    if (!values.length && regex) {
-      values.push(...getValuesByRegex(item, regex, new Set(candidates)));
-    }
-    return values.join(' / ');
-  }
-
-  function getOriginDisplay(item) {
-    return getLocationDisplay(item, ORIGIN_FIELD_CANDIDATES, ORIGIN_FALLBACK_REGEX);
-  }
-
-  function getDestinationDisplay(item) {
-    return getLocationDisplay(item, DESTINATION_FIELD_CANDIDATES, DESTINATION_FALLBACK_REGEX);
+    return getNormalizedField(item, LSP_FIELD);
   }
 
   function getRegionDisplay(item) {
-    return getFirstNonEmpty(item, REGION_FIELD_CANDIDATES);
+    return getNormalizedField(item, REGION_FIELD);
   }
 
   function getPlanMosDateDisplay(item) {
-    return getFirstNonEmpty(item, PLAN_MOS_DATE_FIELD_CANDIDATES);
+    return getNormalizedField(item, PLAN_MOS_DATE_FIELD);
   }
 
   function getIssueRemarkDisplay(item) {
-    return getFirstNonEmpty(item, ISSUE_REMARK_FIELD_CANDIDATES);
+    return getNormalizedField(item, ISSUE_REMARK_FIELD);
   }
 
   function getStatusDeliveryCanonicalValue(item) {
-    const raw = getFirstNonEmpty(item, STATUS_DELIVERY_FIELD_CANDIDATES);
+    const raw = getNormalizedField(item, STATUS_DELIVERY_FIELD);
     return normalizeStatus(raw);
   }
 
   function getStatusDeliveryDisplay(item) {
-    return getFirstNonEmpty(item, STATUS_DELIVERY_FIELD_CANDIDATES);
+    return getNormalizedField(item, STATUS_DELIVERY_FIELD);
   }
 
   function getUpdatedAtDisplay(item) {
-    return getFirstNonEmpty(item, UPDATED_AT_FIELD_CANDIDATES);
+    return getNormalizedField(item, UPDATED_AT_FIELD);
   }
 
   function getCoordinateParts(item) {
-    const lat = getFirstNonEmpty(item, LAT_FIELD_CANDIDATES);
-    const lng = getFirstNonEmpty(item, LNG_FIELD_CANDIDATES);
+    const lat = getNormalizedField(item, LAT_FIELD);
+    const lng = getNormalizedField(item, LNG_FIELD);
     return [lat, lng];
   }
 
   function getPhotoUrl(item) {
-    if (!item || typeof item !== 'object') return '';
-    const direct = getFirstNonEmpty(item, PHOTO_FIELD_CANDIDATES);
-    if (direct) return direct;
-    const fallback = getValuesByRegex(item, /(photo|image|picture|attachment)/i, new Set(PHOTO_FIELD_CANDIDATES));
-    return fallback.length ? fallback[0] : '';
+    return getNormalizedField(item, PHOTO_FIELD);
   }
 
   function buildLocationCell(item) {
