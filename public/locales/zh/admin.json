@@ -110,6 +110,7 @@
     "table.dn": "DN 号",
     "table.region": "区域",
     "table.planMosDate": "计划 MOS 日期",
+    "table.regionPlan": "区域/MOS 计划",
     "table.lsp": "LSP",
     "table.issueRemark": "问题备注",
     "table.statusDelivery": "配送状态",

@@ -34,8 +34,8 @@ export const PLAN_MOS_TIMEZONE_OFFSET_MINUTES = 7 * 60;
 export const JAKARTA_UTC_OFFSET_MINUTES = 7 * 60;
 
 // 表格列数常量
-export const SUMMARY_BASE_COLUMN_COUNT = 11;
-export const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 12;
+export const SUMMARY_BASE_COLUMN_COUNT = 10;
+export const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 11;
 
 // 归档相关常量
 export const ARCHIVE_THRESHOLD_DAYS = 55;

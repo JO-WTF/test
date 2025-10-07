@@ -321,8 +321,7 @@
           <thead>
             <tr>
               <th data-i18n="table.dn">DN 号</th>
-              <th data-i18n="table.region">区域</th>
-              <th data-i18n="table.planMosDate">PLAN MOS DATE</th>
+              <th data-i18n="table.regionPlan">区域/MOS 计划</th>
               <th data-i18n="table.lsp">LSP</th>
               <th data-i18n="table.issueRemark">ISSUE REMARK</th>
               <th data-i18n="table.statusDelivery">STATUS DELIVERY</th>

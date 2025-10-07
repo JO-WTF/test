@@ -591,8 +591,13 @@ export function createTableRenderer(options = {}) {
       const photoCell = buildPhotoCell(item);
       const locationCell = buildLocationCell(item);
       const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
-      const regionCell = region ? escapeHtml(region) : '<span class="muted">-</span>';
-      const planCell = planMos ? escapeHtml(planMos) : '<span class="muted">-</span>';
+      const regionLine = region
+        ? `<span class="region-plan-cell__region">${escapeHtml(region)}</span>`
+        : '<span class="region-plan-cell__region muted">-</span>';
+      const planLine = planMos
+        ? `<span class="region-plan-cell__plan">${escapeHtml(planMos)}</span>`
+        : '<span class="region-plan-cell__plan muted">-</span>';
+      const planMosMobile = planMos ? formatPlanMosDateForMobile(planMos) : '';
       const issueRemarkCell = issueRemark ? escapeHtml(issueRemark).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
       const statusDeliveryCell = statusDelivery ? escapeHtml(statusDelivery).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
       const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
@@ -605,8 +610,6 @@ export function createTableRenderer(options = {}) {
       const actionsContent = showActions ? buildActionCell(item, remarkText || '') : '';
 
       const lspAbbrev = lsp ? getLspAbbreviation(lsp) : '';
-      const planMosMobile = planMos ? formatPlanMosDateForMobile(planMos) : '';
-
       const firstCell = `      <td>
           <div class="summary-cell">
             <span class="row-toggle" aria-hidden="true"></span>
@@ -617,8 +620,10 @@ export function createTableRenderer(options = {}) {
 
       const cells = [
         firstCell,
-        `      <td>${regionCell}</td>`,
-        `      <td data-mobile-value="${escapeHtml(planMosMobile)}">${planCell}</td>`,
+        `      <td class="summary-region-plan-cell" data-mobile-value="${escapeHtml(planMosMobile)}">
+          ${regionLine}
+          ${planLine}
+        </td>`,
         `      <td data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
         `      <td>${issueRemarkCell}</td>`,
         `      <td>${statusDeliveryCell}</td>`,

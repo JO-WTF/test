@@ -109,6 +109,7 @@
     "table.dn": "DN Number",
     "table.region": "Region",
     "table.planMosDate": "PLAN MOS DATE",
+    "table.regionPlan": "Region / MOS Plan",
     "table.lsp": "LSP",
     "table.issueRemark": "Issue Remark",
     "table.statusDelivery": "Delivery Status",
