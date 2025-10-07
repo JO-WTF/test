@@ -883,7 +883,6 @@ body.admin-theme {
     inset: 0;
     color: transparent;
     background: transparent;
-    border: 1px solid var(--ant-border-subtle);
     pointer-events: none;
     z-index: 0;
     overflow: hidden
