@@ -628,22 +628,28 @@ export function createTableRenderer(options = {}) {
         </td>`;
 
       const cells = [
-        firstCell,
-        `      <td class="summary-region-plan-cell" data-mobile-value="${escapeHtml(planMosMobile)}">
-          ${regionLine}
-          ${planLine}
-        </td>`,
-        `      <td data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
-        `      <td>${statusDeliveryCell}</td>`,
-        `      ${statusCell}`,
-        `      <td>${issueRemarkCell}</td>`,
-        `      <td>${remarkDisplay}</td>`,
-  `      <td class="summary-checkin-cell">${checkinCell}</td>`,
-        `      <td data-column="updatedAt" aria-hidden="true" style="display: none">${updatedCell}</td>`,
+          `      <td class="summary-dn-cell">
+            <div class="summary-cell">
+              <span class="row-toggle" aria-hidden="true"></span>
+              <div class="summary-primary" data-dn-number="${safeDnNumber}">${dnNumberDisplay}</div>
+            </div>
+            ${hint}
+          </td>`,
+          `      <td class="summary-region-plan-cell" data-mobile-value="${escapeHtml(planMosMobile)}">
+            ${regionLine}
+            ${planLine}
+          </td>`,
+          `      <td class="summary-lsp-cell" data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
+          `      <td class="summary-status-delivery-cell">${statusDeliveryCell}</td>`,
+          `      <td class="summary-status-cell">${statusCell}</td>`,
+          `      <td class="summary-issue-remark-cell">${issueRemarkCell}</td>`,
+          `      <td class="summary-remark-cell">${remarkDisplay}</td>`,
+          `      <td class="summary-checkin-cell">${checkinCell}</td>`,
+          `      <td class="summary-updated-cell" data-column="updatedAt" aria-hidden="true" style="display: none">${updatedCell}</td>`,
       ];
 
       if (showActions) {
-        cells.push(`      <td>${actionsContent || '<span class="muted">-</span>'}</td>`);
+          cells.push(`      <td class="summary-actions-cell">${actionsContent || '<span class="muted">-</span>'}</td>`);
       }
 
       const cellsHtml = cells.join('\n');
