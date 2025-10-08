@@ -1,15 +1,15 @@
 import { api as viewerApi } from 'v-viewer';
 import Toastify from 'toastify-js';
 import {
-  STATUS_VALUES,
-  DN_SCAN_STATUS_VALUES,
-  STATUS_DISPLAY_OVERRIDES,
-  DN_SCAN_STATUS_ITEMS,
+  STATUS_DELIVERY_VALUES,
+  DN_SCAN_STATUS_DELIVERY_VALUES,
+  STATUS_DELIVERY_DISPLAY_OVERRIDES,
+  DN_SCAN_STATUS_DELIVERY_ITEMS,
 } from '../../config.js';
 import { getApiBase, getMapboxAccessToken } from '../../utils/env.js';
 
 import { createDnEntryManager } from './dnEntry.js';
-import { createStatusCardManager } from './statusCards.js';
+import { createStatusDeliveryCardManager } from './statusCards.js';
 import { createLspSummaryCardManager } from './lspSummaryCards.js';
 import { createFilterBridgeManager } from './filterBridgeManager.js';
 import { createAuthHandler } from './authHandler.js';
@@ -25,25 +25,25 @@ import { createTableRenderer } from './tableRenderer.js';
 
 import {
   TRANSPORT_MANAGER_ROLE_KEY,
-  STATUS_VALUE_TO_KEY,
-  STATUS_ALIAS_LOOKUP,
-  STATUS_KNOWN_VALUES,
-  STATUS_NOT_EMPTY_VALUE,
-  STATUS_ANY_VALUE,
-  DEFAULT_STATUS_VALUE,
+  STATUS_DELIVERY_VALUE_TO_KEY,
+  STATUS_DELIVERY_ALIAS_LOOKUP,
+  STATUS_DELIVERY_KNOWN_VALUES,
+  STATUS_DELIVERY_NOT_EMPTY_VALUE,
+  STATUS_DELIVERY_ANY_VALUE,
+  DEFAULT_STATUS_DELIVERY_VALUE,
   PLAN_MOS_TIME_ZONE,
   PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
   JAKARTA_UTC_OFFSET_MINUTES,
   ARCHIVE_THRESHOLD_DAYS,
-  TRANSPORT_MANAGER_STATUS_CARDS,
+  TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   STATUS_SITE_OPTIONS,
-  DEFAULT_MODAL_STATUS_ORDER,
+  DEFAULT_MODAL_STATUS_DELIVERY_ORDER,
   DN_DETAIL_KEYS,
   ICON_MARKUP,
 } from './constants.js';
 
 const SCAN_STATUS_META = new Map(
-  (DN_SCAN_STATUS_ITEMS || []).map((item) => [item.value, item])
+  (DN_SCAN_STATUS_DELIVERY_ITEMS || []).map((item) => [item.value, item])
 );
 
 const API_BASE = getApiBase();
@@ -242,9 +242,9 @@ export function setupAdminPage(
     return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
   }
 
-  // 使用 STATUS_VALUES 作为 status 值，label 也使用同样的值以保持一致性
+  // 使用 STATUS_DELIVERY_VALUES 作为 status_delivery 值，label 也使用同样的值以保持一致性
   // 实际显示文本会通过 i18n 系统翻译
-  setFilterValue('status', DEFAULT_STATUS_VALUE);
+  setFilterValue('status_delivery', DEFAULT_STATUS_DELIVERY_VALUE);
 
   function getIconMarkup(name) {
     return ICON_MARKUP[name] || '';
@@ -361,18 +361,18 @@ export function setupAdminPage(
     },
   });
 
-  const statusCards = createStatusCardManager({
+  const statusCards = createStatusDeliveryCardManager({
     container: statusCardContainer,
     wrapper: statusCardWrapper,
     signal,
     API_BASE,
     i18n,
     getCurrentRole,
-    normalizeStatusValue,
+    normalizeStatusDeliveryValue,
     i18nStatusDisplay,
   getStatusSiteValues: () => getFilterValues('status_site'),
-    getStatusFilterValue: () => getSingleFilterValue('status'),
-    transportManagerCards: TRANSPORT_MANAGER_STATUS_CARDS,
+  getStatusDeliveryFilterValue: () => getSingleFilterValue('status_delivery'),
+    transportManagerCards: TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
     onApplyFilter(def, canonicalStatus) {
       applyStatusCardFilter(def, canonicalStatus);
       statusCards.updateActiveState();
@@ -393,24 +393,24 @@ export function setupAdminPage(
 
   // 授权相关函数已移至 authHandler.js
 
-  function normalizeStatusValue(raw) {
+  function normalizeStatusDeliveryValue(raw) {
     const text = (raw || '').trim();
     if (!text) return '';
-    const alias = STATUS_ALIAS_LOOKUP[text];
+    const alias = STATUS_DELIVERY_ALIAS_LOOKUP[text];
     if (alias) return alias;
-    if (STATUS_KNOWN_VALUES.has(text)) return text;
+    if (STATUS_DELIVERY_KNOWN_VALUES.has(text)) return text;
     const upper = text.toUpperCase();
-    if (STATUS_KNOWN_VALUES.has(upper)) return upper;
+    if (STATUS_DELIVERY_KNOWN_VALUES.has(upper)) return upper;
     return text;
   }
 
   function i18nStatusDisplay(value) {
-    const canonical = normalizeStatusValue(value);
+    const canonical = normalizeStatusDeliveryValue(value);
     const override =
-      (STATUS_DISPLAY_OVERRIDES && STATUS_DISPLAY_OVERRIDES[canonical]) ||
-      (STATUS_DISPLAY_OVERRIDES && STATUS_DISPLAY_OVERRIDES[value]);
+      (STATUS_DELIVERY_DISPLAY_OVERRIDES && STATUS_DELIVERY_DISPLAY_OVERRIDES[canonical]) ||
+      (STATUS_DELIVERY_DISPLAY_OVERRIDES && STATUS_DELIVERY_DISPLAY_OVERRIDES[value]);
     if (override) return override;
-    const key = STATUS_VALUE_TO_KEY[canonical] || STATUS_VALUE_TO_KEY[value];
+    const key = STATUS_DELIVERY_VALUE_TO_KEY[canonical] || STATUS_DELIVERY_VALUE_TO_KEY[value];
     if (key && i18n) {
       try {
         const translated = i18n.t(key);
@@ -523,7 +523,7 @@ export function setupAdminPage(
   }
 
   function getModalStatusLabel(value) {
-    const canonical = normalizeStatusValue(value);
+    const canonical = normalizeStatusDeliveryValue(value);
     if (!canonical) return '';
     const meta = SCAN_STATUS_META.get(canonical);
     if (meta) {
@@ -541,19 +541,19 @@ export function setupAdminPage(
     const rawAllowed = Array.isArray(perms?.statusOptions)
       ? perms.statusOptions
       : [];
-    const baseList = rawAllowed.length ? rawAllowed : DEFAULT_MODAL_STATUS_ORDER;
+    const baseList = rawAllowed.length ? rawAllowed : DEFAULT_MODAL_STATUS_DELIVERY_ORDER;
     const seen = new Set();
     const normalized = [];
 
     baseList.forEach((value) => {
-      const canonical = normalizeStatusValue(value);
+      const canonical = normalizeStatusDeliveryValue(value);
       if (!canonical || seen.has(canonical)) return;
       seen.add(canonical);
       normalized.push(canonical);
     });
 
     const ordered = [];
-    DEFAULT_MODAL_STATUS_ORDER.forEach((value) => {
+    DEFAULT_MODAL_STATUS_DELIVERY_ORDER.forEach((value) => {
       if (seen.has(value)) {
         ordered.push(value);
         seen.delete(value);
@@ -567,26 +567,26 @@ export function setupAdminPage(
     });
 
     if (!ordered.length) {
-      ordered.push(...DEFAULT_MODAL_STATUS_ORDER);
+      ordered.push(...DEFAULT_MODAL_STATUS_DELIVERY_ORDER);
     }
 
     const selectedRaw = selected || '';
-    const selectedCanonical = normalizeStatusValue(selectedRaw);
+    const selectedCanonical = normalizeStatusDeliveryValue(selectedRaw);
     if (selectedCanonical && !ordered.includes(selectedCanonical)) {
       ordered.push(selectedCanonical);
     }
 
-    const keepLabel = i18n?.t('modal.status.keep') || '（不修改）';
+  const keepLabel = i18n?.t('modal.status_delivery.keep') || '（不修改）';
     mStatus.innerHTML = '';
     const keepOption = document.createElement('option');
     keepOption.value = '';
-    keepOption.setAttribute('data-i18n', 'modal.status.keep');
+  keepOption.setAttribute('data-i18n', 'modal.status_delivery.keep');
     keepOption.textContent = keepLabel;
     mStatus.appendChild(keepOption);
 
     const appended = new Set();
     ordered.forEach((value) => {
-      const canonical = normalizeStatusValue(value);
+      const canonical = normalizeStatusDeliveryValue(value);
       if (!canonical || appended.has(canonical)) return;
       appended.add(canonical);
       const opt = document.createElement('option');
@@ -617,7 +617,7 @@ export function setupAdminPage(
   function populateModalStatusSiteOptions(selected) {
     if (!mStatusSite) return;
     const selectedRaw = selected || '';
-    const selectedCanonical = normalizeStatusValue(selectedRaw);
+    const selectedCanonical = normalizeStatusDeliveryValue(selectedRaw);
     const keepLabel = i18n?.t('modal.statusSite.keep') || '（不修改）';
 
     mStatusSite.innerHTML = '';
@@ -629,7 +629,7 @@ export function setupAdminPage(
 
     const appended = new Set();
     STATUS_SITE_OPTIONS.forEach((value) => {
-      const canonical = normalizeStatusValue(value);
+      const canonical = normalizeStatusDeliveryValue(value);
       if (!canonical || appended.has(canonical)) return;
       appended.add(canonical);
       const opt = document.createElement('option');
@@ -659,26 +659,26 @@ export function setupAdminPage(
 
   function syncStatusSiteWithStatus() {
     if (!mStatus || !mStatusSite) return;
-    const canonicalStatus = normalizeStatusValue(mStatus.value);
+    const canonicalStatus = normalizeStatusDeliveryValue(mStatus.value);
     if (!canonicalStatus) {
       setFormControlValue(mStatusSite, '');
       return;
     }
-    if (canonicalStatus === DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH) {
+    if (canonicalStatus === DN_SCAN_STATUS_DELIVERY_VALUES.ARRIVED_AT_WH) {
       setFormControlValue(mStatusSite, '');
       return;
     }
 
-    const ARRIVED_AT_SITE = DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
-    const POD_STATUS = DN_SCAN_STATUS_VALUES.POD || 'POD';
-    const podSiteValue = STATUS_VALUES.POD || POD_STATUS;
+    const ARRIVED_AT_SITE = DN_SCAN_STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE;
+    const POD_STATUS = DN_SCAN_STATUS_DELIVERY_VALUES.POD || 'POD';
+    const podSiteValue = STATUS_DELIVERY_VALUES.POD || POD_STATUS;
 
     const statusSiteMap = {
-      [ARRIVED_AT_SITE]: STATUS_VALUES.ON_SITE,
+      [ARRIVED_AT_SITE]: STATUS_DELIVERY_VALUES.ON_SITE,
       [POD_STATUS]: podSiteValue,
     };
 
-    const nextValue = statusSiteMap[canonicalStatus] || STATUS_VALUES.ON_THE_WAY;
+    const nextValue = statusSiteMap[canonicalStatus] || STATUS_DELIVERY_VALUES.ON_THE_WAY;
     setFormControlValue(mStatusSite, nextValue);
   }
 
@@ -719,7 +719,7 @@ export function setupAdminPage(
   }
 
   function applyStatusCardFilter(def, canonicalStatus) {
-    const targetStatus = def?.type === 'status' ? canonicalStatus : '';
+  const targetStatus = def?.type === 'status_delivery' ? canonicalStatus : '';
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
       PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
@@ -738,9 +738,9 @@ export function setupAdminPage(
     setFilterValue('subcon', '');
     setFilterValue('status_wh', '');
 
-  // Clicking a status card should only apply the status_site filter.
-    // Keep the status filter cleared so the query does not constrain by status.
-    setFilterValue('status', '');
+  // Clicking a status card应该只应用 status_site 筛选。
+  // 保持 status_delivery 筛选为空，避免查询被 status_delivery 限制。
+  setFilterValue('status_delivery', '');
 
   setFilterValue('status_site', targetStatus);
 
@@ -793,7 +793,7 @@ export function setupAdminPage(
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = getSingleFilterValue('status');
+  const st = getSingleFilterValue('status_delivery');
       const rk = getInputValue('remark').trim();
       const hp = hasSelect?.value;
       const hc = getSingleFilterValue('has_coordinate');
@@ -809,10 +809,10 @@ export function setupAdminPage(
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
-      if (st === STATUS_NOT_EMPTY_VALUE) {
+      if (st === STATUS_DELIVERY_NOT_EMPTY_VALUE) {
         params.set('status_not_empty', 'true');
       } else if (st) {
-        params.set('status', st);
+  params.set('status_delivery', st);
       }
       if (rk) params.set('remark', rk);
       if (hp) params.set('has_photo', hp);
@@ -953,13 +953,13 @@ export function setupAdminPage(
         console.error(err);
       }
     }
-    const canonicalStatus = normalizeStatusValue(item.status);
+  const canonicalStatus = normalizeStatusDeliveryValue(item.status_delivery || item.status);
     populateModalStatusOptions(canonicalStatus);
     const statusSiteRaw =
       item.status_site ||
       item.statusSite ||
       '';
-    const canonicalStatusSite = normalizeStatusValue(statusSiteRaw);
+    const canonicalStatusSite = normalizeStatusDeliveryValue(statusSiteRaw);
     populateModalStatusSiteOptions(canonicalStatusSite);
     updateModalFieldVisibility();
     if (mMsg) mMsg.textContent = '';
@@ -1060,7 +1060,7 @@ export function setupAdminPage(
     }
     
     const recordsHtml = items.map((item, index) => {
-      const status = i18nStatusDisplay(item.status || '');
+  const status = i18nStatusDisplay(item.status_delivery || item.status || '');
       const remark = item.remark ? escapeHtml(item.remark) : '<span class="muted">-</span>';
       const photoUrl = item.photo_url ? toAbsUrl(item.photo_url) : '';
       
@@ -1170,11 +1170,11 @@ export function setupAdminPage(
   function buildFormDataForSave() {
     const perms = getCurrentPermissions();
     const form = new FormData();
-    const statusValRaw = mStatus?.value || '';
-    const statusVal = normalizeStatusValue(statusValRaw) || statusValRaw;
+  const statusDeliveryValRaw = mStatus?.value || '';
+  const statusDeliveryVal = normalizeStatusDeliveryValue(statusDeliveryValRaw) || statusDeliveryValRaw;
     const statusSiteRaw = mStatusSite?.value || '';
     const statusSiteVal =
-      normalizeStatusValue(statusSiteRaw) || statusSiteRaw;
+      normalizeStatusDeliveryValue(statusSiteRaw) || statusSiteRaw;
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
     const currentItem = editingItem || null;
@@ -1187,16 +1187,16 @@ export function setupAdminPage(
     const updatedBy = (resolvedUser?.name || '').trim();
     form.set('updated_by', updatedBy);
 
-    const originalStatusRaw = currentItem?.status || '';
+  const originalStatusRaw = currentItem?.status_delivery || currentItem?.status || '';
     const originalStatus =
-      normalizeStatusValue(originalStatusRaw) || originalStatusRaw || '';
-    const statusToSubmit = statusVal || originalStatus;
-    if (statusToSubmit) {
-      form.set('status', statusToSubmit);
+      normalizeStatusDeliveryValue(originalStatusRaw) || originalStatusRaw || '';
+    const statusDeliveryToSubmit = statusDeliveryVal || originalStatus;
+    if (statusDeliveryToSubmit) {
+      form.set('status_delivery', statusDeliveryToSubmit);
     }
     const originalStatusSiteRaw = currentItem?.status_site || currentItem?.statusSite || '';
     const originalStatusSite =
-      normalizeStatusValue(originalStatusSiteRaw) || originalStatusSiteRaw || '';
+      normalizeStatusDeliveryValue(originalStatusSiteRaw) || originalStatusSiteRaw || '';
     const statusSiteToSubmit = statusSiteVal || originalStatusSite;
     form.set('status_site', statusSiteToSubmit || '');
     if (remarkVal) form.set('remark', remarkVal);
@@ -1205,12 +1205,12 @@ export function setupAdminPage(
     }
     return {
       form,
-      statusVal,
+      statusDeliveryVal,
       statusSiteVal,
       remarkVal,
       allowPhoto,
       dnNumber,
-      statusToSubmit,
+      statusDeliveryToSubmit,
       statusSiteToSubmit,
     };
   }
@@ -1230,41 +1230,41 @@ export function setupAdminPage(
       return false;
     }
 
-    if (perms.requireStatusSelection && !payload.statusVal) {
+  if (perms.requireStatusSelection && !payload.statusDeliveryVal) {
       if (mMsg)
         mMsg.textContent = i18n
-          ? i18n.t('modal.status.requiredHint')
+          ? i18n.t('modal.status_delivery.requiredHint')
           : '请选择允许的状态后再保存。';
       return false;
     }
 
     const allowedOptions = Array.isArray(perms?.statusOptions)
-      ? perms.statusOptions.map((status) => normalizeStatusValue(status) || status)
+  ? perms.statusOptions.map((status_delivery) => normalizeStatusDeliveryValue(status_delivery) || status_delivery)
       : [];
 
     if (
-      payload.statusVal &&
+  payload.statusDeliveryVal &&
 
       allowedOptions.length &&
-      !allowedOptions.includes(payload.statusVal)
+  !allowedOptions.includes(payload.statusDeliveryVal)
     ) {
       if (mMsg)
         mMsg.textContent = i18n
-          ? i18n.t('modal.status.invalid')
+          ? i18n.t('modal.status_delivery.invalid')
           : '选择的状态不在当前角色的权限范围内。';
       return false;
     }
 
-    if (!payload.statusToSubmit) {
+  if (!payload.statusDeliveryToSubmit) {
       if (mMsg)
         mMsg.textContent = i18n
-          ? i18n.t('modal.status.requiredHint')
+          ? i18n.t('modal.status_delivery.requiredHint')
           : '请选择允许的状态后再保存。';
       return false;
     }
 
     if (
-      !payload.statusVal &&
+  !payload.statusDeliveryVal &&
       !payload.statusSiteVal &&
       !payload.remarkVal &&
       !payload.allowPhoto
@@ -1583,9 +1583,9 @@ export function setupAdminPage(
 
   // 授权模态框和事件处理已移至 authHandler.js
 
-  subscribeToFilterChange('status', (values) => {
+  subscribeToFilterChange('status_delivery', (values) => {
     const first = Array.isArray(values) && values.length ? values[0] : '';
-    const podValue = DN_SCAN_STATUS_VALUES?.POD || 'POD';
+    const podValue = DN_SCAN_STATUS_DELIVERY_VALUES?.POD || 'POD';
     if (first === podValue) {
       const currentSite = getFilterValues('status_site');
       if (!currentSite.includes(podValue)) {
@@ -1603,8 +1603,8 @@ export function setupAdminPage(
     lspSummaryCards.updateActiveState();
   });
 
-  function resetAllFilters({ statusValue = DEFAULT_STATUS_VALUE } = {}) {
-    setFilterValue('status', statusValue);
+  function resetAllFilters({ statusDeliveryValue = DEFAULT_STATUS_DELIVERY_VALUE } = {}) {
+  setFilterValue('status_delivery', statusDeliveryValue);
     setInputValue('remark', '');
     setFormControlValue(hasSelect, '');
     setFilterValue('has_coordinate', '');
@@ -1645,8 +1645,8 @@ export function setupAdminPage(
     'admin:status-switch-change',
     (event) => {
       const detail = event?.detail || {};
-      const targetValue = detail.showOnlyNonEmpty ? STATUS_NOT_EMPTY_VALUE : STATUS_ANY_VALUE;
-      setFilterValue('status', targetValue);
+      const targetValue = detail.showOnlyNonEmpty ? STATUS_DELIVERY_NOT_EMPTY_VALUE : STATUS_DELIVERY_ANY_VALUE;
+  setFilterValue('status_delivery', targetValue);
       q.page = 1;
       fetchList();
     },
@@ -1901,7 +1901,7 @@ export function setupAdminPage(
     getCurrentPermissions,
     isTransportManagerRole,
     translateInstant,
-    normalizeStatusValue,
+    normalizeStatusDeliveryValue,
     normalizeTextValue,
     i18nStatusDisplay,
     toAbsUrl,

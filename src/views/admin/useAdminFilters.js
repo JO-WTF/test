@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
-import { STATUS_NOT_EMPTY_VALUE, STATUS_ANY_VALUE } from './constants.js';
-import { DN_SCAN_STATUS_ITEMS } from '../../config.js';
+import { STATUS_DELIVERY_NOT_EMPTY_VALUE, STATUS_DELIVERY_ANY_VALUE } from './constants.js';
+import { DN_SCAN_STATUS_DELIVERY_ITEMS } from '../../config.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
 const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
@@ -17,7 +17,7 @@ const DATE_PRESET_FALLBACK_LABELS = {
 };
 
 // Re-export for backward compatibility
-export { STATUS_NOT_EMPTY_VALUE };
+export { STATUS_DELIVERY_NOT_EMPTY_VALUE };
 
 const HAS_COORDINATE_OPTION_DEFS = [
   { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
@@ -26,13 +26,13 @@ const HAS_COORDINATE_OPTION_DEFS = [
 ];
 
 const STATUS_FILTER_DEFS = [
-  { value: STATUS_ANY_VALUE, translationKey: 'status.filter.any', fallback: '任意' },
+  { value: STATUS_DELIVERY_ANY_VALUE, translationKey: 'status.filter.any', fallback: '任意' },
   {
-    value: STATUS_NOT_EMPTY_VALUE,
+    value: STATUS_DELIVERY_NOT_EMPTY_VALUE,
     translationKey: 'status.filter.notEmpty',
     fallback: '任意非空',
   },
-  ...DN_SCAN_STATUS_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
+  ...DN_SCAN_STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
     value,
     translationKey: filterLabelKey,
     fallback: fallbackLabel,
@@ -556,7 +556,7 @@ export function useAdminFilters() {
 
   const setDefaultStatusFilter = () => {
     try {
-  status.bridge.setValue(STATUS_ANY_VALUE);
+  status.bridge.setValue(STATUS_DELIVERY_ANY_VALUE);
     } catch (err) {
       console.error(err);
     }

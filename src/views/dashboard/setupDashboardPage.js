@@ -1,39 +1,39 @@
 import { getApiBase } from '../../utils/env.js';
 import { 
-  STATUS_VALUES, 
+  STATUS_DELIVERY_VALUES, 
   STATUS_TRANSLATION_KEYS,
   STATUS_ALIAS_MAP 
 } from '../../config.js';
 
 // Dashboard 页面状态顺序定义
-// 注意：这里定义的是显示顺序，实际状态值来自 STATUS_VALUES
+// 注意：这里定义的是显示顺序，实际状态值来自 STATUS_DELIVERY_VALUES
 // 后端返回的各种格式会通过 STATUS_ALIAS_MAP 自动映射到标准值
 const STATUS_ORDER = [
-  STATUS_VALUES.NEW_MOS,
-  STATUS_VALUES.PREPARE_VEHICLE,
-  STATUS_VALUES.ON_THE_WAY,
-  STATUS_VALUES.ON_SITE,
-  STATUS_VALUES.POD,
-  STATUS_VALUES.REPLAN_MOS_PROJECT,
-  STATUS_VALUES.WAITING_PIC_FEEDBACK,
-  STATUS_VALUES.REPLAN_MOS_LSP_DELAY,
-  STATUS_VALUES.CLOSE_BY_RN,
-  STATUS_VALUES.CANCEL_MOS,
+  STATUS_DELIVERY_VALUES.NEW_MOS,
+  STATUS_DELIVERY_VALUES.PREPARE_VEHICLE,
+  STATUS_DELIVERY_VALUES.ON_THE_WAY,
+  STATUS_DELIVERY_VALUES.ON_SITE,
+  STATUS_DELIVERY_VALUES.POD,
+  STATUS_DELIVERY_VALUES.REPLAN_MOS_PROJECT,
+  STATUS_DELIVERY_VALUES.WAITING_PIC_FEEDBACK,
+  STATUS_DELIVERY_VALUES.REPLAN_MOS_LSP_DELAY,
+  STATUS_DELIVERY_VALUES.CLOSE_BY_RN,
+  STATUS_DELIVERY_VALUES.CANCEL_MOS,
   'TOTAL',  // TOTAL 是特殊值，不是状态
 ];
 
 // 状态到翻译键的映射
 const STATUS_LABEL_KEYS = {
-  [STATUS_VALUES.NEW_MOS]: 'status.newMos',
-  [STATUS_VALUES.PREPARE_VEHICLE]: 'status.prepareVehicle',
-  [STATUS_VALUES.ON_THE_WAY]: 'status.onTheWay',
-  [STATUS_VALUES.ON_SITE]: 'status.onSite',
-  [STATUS_VALUES.POD]: 'status.pod',
-  [STATUS_VALUES.REPLAN_MOS_PROJECT]: 'status.replanProject',
-  [STATUS_VALUES.WAITING_PIC_FEEDBACK]: 'status.waitingFeedback',
-  [STATUS_VALUES.REPLAN_MOS_LSP_DELAY]: 'status.replanLspDelay',
-  [STATUS_VALUES.CLOSE_BY_RN]: 'status.closeByRn',
-  [STATUS_VALUES.CANCEL_MOS]: 'status.cancelMos',
+  [STATUS_DELIVERY_VALUES.NEW_MOS]: 'status.newMos',
+  [STATUS_DELIVERY_VALUES.PREPARE_VEHICLE]: 'status.prepareVehicle',
+  [STATUS_DELIVERY_VALUES.ON_THE_WAY]: 'status.onTheWay',
+  [STATUS_DELIVERY_VALUES.ON_SITE]: 'status.onSite',
+  [STATUS_DELIVERY_VALUES.POD]: 'status.pod',
+  [STATUS_DELIVERY_VALUES.REPLAN_MOS_PROJECT]: 'status.replanProject',
+  [STATUS_DELIVERY_VALUES.WAITING_PIC_FEEDBACK]: 'status.waitingFeedback',
+  [STATUS_DELIVERY_VALUES.REPLAN_MOS_LSP_DELAY]: 'status.replanLspDelay',
+  [STATUS_DELIVERY_VALUES.CLOSE_BY_RN]: 'status.closeByRn',
+  [STATUS_DELIVERY_VALUES.CANCEL_MOS]: 'status.cancelMos',
   'TOTAL': 'status.total',
 };
 
@@ -152,16 +152,16 @@ export function setupDashboardPage(rootEl, opts = {}) {
     const podTotal = $('#podTotal');
     const replanTotal = $('#replanTotal');
     const closedTotal = $('#closedTotal');
-    const idxPod = STATUS_INDEX[STATUS_VALUES.POD] ?? STATUS_ORDER.indexOf(STATUS_VALUES.POD);
+    const idxPod = STATUS_INDEX[STATUS_DELIVERY_VALUES.POD] ?? STATUS_ORDER.indexOf(STATUS_DELIVERY_VALUES.POD);
     if (podTotal) podTotal.textContent = totals[idxPod] ?? 0;
 
-    const idxReplanProject = STATUS_INDEX[STATUS_VALUES.REPLAN_MOS_PROJECT] ?? STATUS_ORDER.indexOf(STATUS_VALUES.REPLAN_MOS_PROJECT);
-    const idxReplanLsp = STATUS_INDEX[STATUS_VALUES.REPLAN_MOS_LSP_DELAY] ?? STATUS_ORDER.indexOf(STATUS_VALUES.REPLAN_MOS_LSP_DELAY);
+    const idxReplanProject = STATUS_INDEX[STATUS_DELIVERY_VALUES.REPLAN_MOS_PROJECT] ?? STATUS_ORDER.indexOf(STATUS_DELIVERY_VALUES.REPLAN_MOS_PROJECT);
+    const idxReplanLsp = STATUS_INDEX[STATUS_DELIVERY_VALUES.REPLAN_MOS_LSP_DELAY] ?? STATUS_ORDER.indexOf(STATUS_DELIVERY_VALUES.REPLAN_MOS_LSP_DELAY);
     if (replanTotal)
       replanTotal.textContent = (totals[idxReplanProject] ?? 0) + (totals[idxReplanLsp] ?? 0);
 
-    const idxCloseRn = STATUS_INDEX[STATUS_VALUES.CLOSE_BY_RN] ?? STATUS_ORDER.indexOf(STATUS_VALUES.CLOSE_BY_RN);
-    const idxCancel = STATUS_INDEX[STATUS_VALUES.CANCEL_MOS] ?? STATUS_ORDER.indexOf(STATUS_VALUES.CANCEL_MOS);
+    const idxCloseRn = STATUS_INDEX[STATUS_DELIVERY_VALUES.CLOSE_BY_RN] ?? STATUS_ORDER.indexOf(STATUS_DELIVERY_VALUES.CLOSE_BY_RN);
+    const idxCancel = STATUS_INDEX[STATUS_DELIVERY_VALUES.CANCEL_MOS] ?? STATUS_ORDER.indexOf(STATUS_DELIVERY_VALUES.CANCEL_MOS);
     if (closedTotal) closedTotal.textContent = (totals[idxCloseRn] ?? 0) + (totals[idxCancel] ?? 0);
 
     const thead = $('#thead-row');

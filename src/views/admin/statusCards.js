@@ -1,25 +1,25 @@
-import { STATUS_VALUES } from '../../config.js';
+import { STATUS_DELIVERY_VALUES } from '../../config.js';
 import {
-  TRANSPORT_MANAGER_STATUS_CARDS,
+  TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   TRANSPORT_MANAGER_ROLE_KEY,
 } from './constants.js';
 
-const STATUS_CARD_MAX_COLUMNS = 13;
-const STATUS_CARD_TOTAL_KEY = '__TOTAL__';
+const STATUS_DELIVERY_CARD_MAX_COLUMNS = 13;
+const STATUS_DELIVERY_CARD_TOTAL_KEY = '__TOTAL__';
 
-export function createStatusCardManager({
+export function createStatusDeliveryCardManager({
   container,
   wrapper,
   signal,
   API_BASE,
   i18n,
   getCurrentRole,
-  normalizeStatusValue,
-  i18nStatusDisplay,
+  normalizeStatusDeliveryValue,
+  i18nStatusDeliveryDisplay,
   getStatusSiteValues,
-  getStatusFilterValue,
+  getStatusDeliveryFilterValue,
   onApplyFilter,
-  transportManagerCards = TRANSPORT_MANAGER_STATUS_CARDS,
+  transportManagerDeliveryCards = TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   onStatsFetched,
   onLoadingChange,
 }) {
@@ -28,7 +28,7 @@ export function createStatusCardManager({
   let abortController = null;
   let requestId = 0;
 
-  function getStatusCardLabel(def) {
+  function getStatusDeliveryCardLabel(def) {
     if (!def) return '';
     if (def.labelKey && i18n) {
       try {
@@ -39,32 +39,32 @@ export function createStatusCardManager({
       }
     }
     if (def.label) return def.label;
-    return i18nStatusDisplay(def.status);
+  return i18nStatusDeliveryDisplay(def.status_delivery);
   }
 
-  function getRoleStatusHighlights(role) {
+  function getRoleStatusDeliveryHighlights(role) {
     if (!role) return [];
-    const highlights = Array.isArray(role.statusHighlights)
-      ? role.statusHighlights
+    const highlights = Array.isArray(role.statusDeliveryHighlights)
+      ? role.statusDeliveryHighlights
       : [];
     const seen = new Set();
     const list = [];
     highlights.forEach((item) => {
       if (!item) return;
-      let status = '';
+      let statusDelivery = '';
       let label = '';
       let labelKey = '';
       if (typeof item === 'string') {
-        status = normalizeStatusValue(item) || item;
+        statusDelivery = normalizeStatusDeliveryValue(item) || item;
       } else if (typeof item === 'object') {
-        const target = item.status ?? item.value ?? item.key;
-        status = normalizeStatusValue(target) || target || '';
+        const target = item.status_delivery ?? item.value ?? item.key;
+        statusDelivery = normalizeStatusDeliveryValue(target) || target || '';
         if (typeof item.label === 'string') label = item.label;
         if (typeof item.labelKey === 'string') labelKey = item.labelKey;
       }
-      if (!status || seen.has(status)) return;
-      seen.add(status);
-      list.push({ status, label, labelKey });
+      if (!statusDelivery || seen.has(statusDelivery)) return;
+      seen.add(statusDelivery);
+      list.push({ status_delivery: statusDelivery, label, labelKey });
     });
     return list;
   }
@@ -76,7 +76,7 @@ export function createStatusCardManager({
         if (!def || (def.type !== 'status' && def.type !== 'total')) return;
         const canonical =
           def.type === 'status'
-            ? normalizeStatusValue(def.status) || def.status || ''
+            ? normalizeStatusDeliveryValue(def.status_delivery) || def.status_delivery || ''
             : '';
         if (def.type === 'status' && !canonical) return;
         onApplyFilter?.(def, canonical);
@@ -95,38 +95,38 @@ export function createStatusCardManager({
       list = [];
     } else {
       if (role?.key === TRANSPORT_MANAGER_ROLE_KEY) {
-        list = transportManagerCards.map((card) => ({
-          status: card.status,
+        list = transportManagerDeliveryCards.map((card) => ({
+          status_delivery: card.status_delivery,
           label: card.label,
         }));
       } else {
-        list = getRoleStatusHighlights(role);
+        list = getRoleStatusDeliveryHighlights(role);
       }
 
       list = list.map((defItem, index) => {
-        const canonical = normalizeStatusValue(defItem.status);
-        const status = canonical || defItem.status || '';
+        const canonical = normalizeStatusDeliveryValue(defItem.status_delivery);
+        const status_delivery = canonical || defItem.status_delivery || '';
         const key =
-          status ||
+          status_delivery ||
           (typeof defItem.labelKey === 'string' && defItem.labelKey
             ? `label:${defItem.labelKey}`
-            : `status:${index}`);
+            : `status_delivery:${index}`);
         return {
           ...defItem,
-          status,
+          status_delivery,
           key,
           type: 'status',
         };
       });
 
-      list = list.filter((defItem) => defItem.type !== 'status' || defItem.status);
+      list = list.filter((defItem) => defItem.type !== 'status' || defItem.status_delivery);
 
       if (role?.key === TRANSPORT_MANAGER_ROLE_KEY && list.length) {
         list = [
           {
-            status: '',
+            status_delivery: '',
             label: 'Total',
-            key: STATUS_CARD_TOTAL_KEY,
+            key: STATUS_DELIVERY_CARD_TOTAL_KEY,
             type: 'total',
           },
           ...list,
@@ -155,13 +155,13 @@ export function createStatusCardManager({
     wrapper.style.display = '';
     wrapper.setAttribute('aria-hidden', 'false');
     container.innerHTML = '';
-    const columns = Math.max(1, Math.min(list.length, STATUS_CARD_MAX_COLUMNS));
+    const columns = Math.max(1, Math.min(list.length, STATUS_DELIVERY_CARD_MAX_COLUMNS));
 
     list.forEach((defItem) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'status-card';
-      btn.setAttribute('data-status', defItem.type === 'status' ? defItem.status : '');
+  btn.setAttribute('data-status_delivery', defItem.type === 'status' ? defItem.status_delivery : '');
       btn.setAttribute('data-card-key', defItem.key);
       btn.setAttribute('aria-pressed', 'false');
       btn.setAttribute('aria-busy', 'false');
@@ -172,7 +172,7 @@ export function createStatusCardManager({
 
       const labelEl = document.createElement('div');
       labelEl.className = 'status-card__label';
-      labelEl.textContent = getStatusCardLabel(defItem);
+      labelEl.textContent = getStatusDeliveryCardLabel(defItem);
 
       btn.appendChild(countEl);
       btn.appendChild(labelEl);
@@ -193,7 +193,7 @@ export function createStatusCardManager({
       const ref = refs.get(defItem.key);
       if (!ref) return;
       ref.def = defItem;
-      const label = getStatusCardLabel(defItem);
+      const label = getStatusDeliveryCardLabel(defItem);
       ref.labelEl.textContent = label;
       const currentCount = ref.countEl.textContent || '';
       ref.button.setAttribute('aria-label', `${label} ${currentCount}`.trim());
@@ -204,9 +204,9 @@ export function createStatusCardManager({
     if (!refs.size) return;
     const siteTokens = getStatusSiteValues();
     const siteValue = siteTokens.length ? siteTokens[0] : '';
-    const canonicalSite = normalizeStatusValue(siteValue);
-    const statusValue = getStatusFilterValue();
-    const canonicalStatus = normalizeStatusValue(statusValue);
+    const canonicalSite = normalizeStatusDeliveryValue(siteValue);
+    const statusValue = getStatusDeliveryFilterValue();
+    const canonicalStatus = normalizeStatusDeliveryValue(statusValue);
     const canonical = canonicalSite || canonicalStatus;
     const hasStatus = Boolean(canonical);
     refs.forEach((ref) => {
@@ -223,7 +223,7 @@ export function createStatusCardManager({
     });
   }
 
-  async function fetchStatusCardStats(signal) {
+  async function fetchStatusDeliveryCardStats(signal) {
     const url = `${API_BASE}/api/dn/status-delivery/stats`;
     const resp = await fetch(url, { signal });
     const text = await resp.text();
@@ -240,16 +240,15 @@ export function createStatusCardManager({
     const counts = Object.create(null);
     list.forEach((item) => {
       if (!item || typeof item !== 'object') return;
-      const statusRaw =
-        item.status_site ?? item.status ?? item.value ?? item.key ?? '';
-      const status = normalizeStatusValue(statusRaw);
-      if (!status) return;
+      const statusDeliveryRaw = item.status_delivery ?? '';
+      const status_delivery = normalizeStatusDeliveryValue(statusDeliveryRaw);
+      if (!status_delivery) return;
       const countRaw = Number(
-        item.count ?? item.total ?? item.value ?? item.qty ?? item.quantity ?? 0
+        item.count ?? item.total ?? 0
       );
       const countValue = Number.isFinite(countRaw) ? countRaw : 0;
-      const existing = Number.isFinite(counts[status]) ? counts[status] : 0;
-      counts[status] = existing + countValue;
+      const existing = Number.isFinite(counts[status_delivery]) ? counts[status_delivery] : 0;
+      counts[status_delivery] = existing + countValue;
     });
     const totalRaw = Number(data?.total ?? data?.count);
     const total = Number.isFinite(totalRaw) ? totalRaw : null;
@@ -293,7 +292,7 @@ export function createStatusCardManager({
 
     let stats = null;
     try {
-      stats = await fetchStatusCardStats(cardSignal);
+      stats = await fetchStatusDeliveryCardStats(cardSignal);
     } catch (err) {
       if (cardSignal.aborted || currentRequestId !== requestId) return;
       if (err?.name !== 'AbortError') {
@@ -328,20 +327,20 @@ export function createStatusCardManager({
       }
     }
 
-    const counts = stats?.counts || Object.create(null);
+    const counts = stats?.total || Object.create(null);
     let totalCount = 0;
 
     refs.forEach((ref) => {
       const defItem = ref.def;
       if (!defItem) return;
       if (defItem.type === 'status') {
-        const rawCount = counts?.[defItem.status];
+        const rawCount = counts?.[defItem.status_delivery];
         const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
         totalCount += displayCount;
         ref.countEl.textContent = String(displayCount);
         ref.button.classList.remove('loading');
         ref.button.setAttribute('aria-busy', 'false');
-        const label = getStatusCardLabel(defItem);
+        const label = getStatusDeliveryCardLabel(defItem);
         ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
       }
     });
@@ -350,14 +349,14 @@ export function createStatusCardManager({
       const defItem = ref.def;
       if (!defItem) return;
       if (defItem.type !== 'status') {
-        const displayCount = stats?.total ?? totalCount;
+        const displayCount = stats?.total;
         const safeCount = Number.isFinite(displayCount)
           ? displayCount
           : totalCount;
         ref.countEl.textContent = String(safeCount);
         ref.button.classList.remove('loading');
         ref.button.setAttribute('aria-busy', 'false');
-        const label = getStatusCardLabel(defItem);
+        const label = getStatusDeliveryCardLabel(defItem);
         ref.button.setAttribute('aria-label', `${label} ${safeCount}`.trim());
       }
     });

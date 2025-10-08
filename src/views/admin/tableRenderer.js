@@ -1,9 +1,9 @@
 import { createApp, h } from 'vue';
 import { Tooltip, Input } from 'ant-design-vue';
 import {
-  STATUS_VALUES,
-  DN_SCAN_STATUS_VALUES,
-  STATUS_MISMATCH_TOOLTIP_FALLBACK,
+  STATUS_DELIVERY_VALUES,
+  DN_SCAN_STATUS_DELIVERY_VALUES,
+  STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK,
   DN_DETAIL_KEYS,
   DETAIL_INPUT_FIELD_SET,
   REGION_FIELD,
@@ -29,7 +29,7 @@ function defaultGetIconMarkup(name) {
 
 function noop() {}
 
-function defaultNormalizeStatus(value) {
+function defaultNormalizeStatusDelivery(value) {
   if (value === null || value === undefined) return '';
   return String(value).trim().toUpperCase();
 }
@@ -64,9 +64,9 @@ export function createTableRenderer(options = {}) {
     getCurrentPermissions,
     isTransportManagerRole,
     translateInstant,
-    normalizeStatusValue,
+  normalizeStatusDeliveryValue,
     normalizeTextValue,
-    i18nStatusDisplay,
+  i18nStatusDeliveryDisplay,
     toAbsUrl,
     formatTimestampToJakarta,
     getCurrentRoleKey,
@@ -79,7 +79,7 @@ export function createTableRenderer(options = {}) {
       renderRows: noop,
       bindRowActions: noop,
       rerenderTableActions: noop,
-      translateStatusCells: noop,
+  translateStatusDeliveryCells: noop,
       updateDetailSaveButtonLabels: noop,
       updateActionColumnVisibility: noop,
       hideUpdatedAtColumn: noop,
@@ -88,9 +88,9 @@ export function createTableRenderer(options = {}) {
   }
 
   const translate = typeof translateInstant === 'function' ? translateInstant : (_key, fallback = '') => fallback;
-  const normalizeStatus = typeof normalizeStatusValue === 'function' ? normalizeStatusValue : defaultNormalizeStatus;
+  const normalizeStatusDelivery = typeof normalizeStatusDeliveryValue === 'function' ? normalizeStatusDeliveryValue : defaultNormalizeStatusDelivery;
   const normalizeText = typeof normalizeTextValue === 'function' ? normalizeTextValue : defaultNormalizeText;
-  const statusDisplay = typeof i18nStatusDisplay === 'function' ? i18nStatusDisplay : (value) => value || '';
+  const statusDeliveryDisplay = typeof i18nStatusDeliveryDisplay === 'function' ? i18nStatusDeliveryDisplay : (value) => value || '';
   const absoluteUrl = typeof toAbsUrl === 'function' ? toAbsUrl : (value) => (value ? String(value) : '');
   const formatTimestamp = typeof formatTimestampToJakarta === 'function' ? formatTimestampToJakarta : (value) => (value ? String(value) : '');
   const viewerFactory = typeof viewerApi === 'function' ? viewerApi : null;
@@ -114,7 +114,7 @@ export function createTableRenderer(options = {}) {
   const state = {
     cachedItems: [],
     detailInputMounts: [],
-    statusMismatchTooltips: [],
+  statusDeliveryMismatchTooltips: [],
     expandedRowKeys: new Set(),
     viewerInstance: null,
   };
@@ -210,35 +210,35 @@ export function createTableRenderer(options = {}) {
     }
   }
 
-  function shouldShowStatusMismatch(statusSiteRaw, statusRaw) {
-    const site = normalizeStatus(statusSiteRaw);
-    const status = normalizeStatus(statusRaw);
+  function shouldShowStatusDeliveryMismatch(statusSiteRaw, statusDeliveryRaw) {
+  const site = normalizeStatusDelivery(statusSiteRaw);
+  const statusDelivery = normalizeStatusDelivery(statusDeliveryRaw);
     if (!site) return false;
 
-    const arrivedStatus = DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
-    const podStatus = DN_SCAN_STATUS_VALUES.POD || 'POD';
+    const arrivedStatusDelivery = DN_SCAN_STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE;
+    const podStatusDelivery = DN_SCAN_STATUS_DELIVERY_VALUES.POD || 'POD';
 
-    if (site === STATUS_VALUES.ON_THE_WAY) {
-      const allowedTransportStatuses = [
-        DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH,
-        DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM,
+    if (site === STATUS_DELIVERY_VALUES.ON_THE_WAY) {
+      const allowedTransportStatusDelivery = [
+        DN_SCAN_STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_WH,
+        DN_SCAN_STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_XD_PM,
       ]
-        .map((value) => normalizeStatus(value))
+        .map((value) => normalizeStatusDelivery(value))
         .filter(Boolean);
-      const isAllowedTransportStatus = allowedTransportStatuses.includes(status);
-      return !isAllowedTransportStatus;
+      const isAllowedTransportStatusDelivery = allowedTransportStatusDelivery.includes(statusDelivery);
+      return !isAllowedTransportStatusDelivery;
     }
-    if (site === STATUS_VALUES.ON_SITE) {
-      return status !== arrivedStatus && status !== podStatus;
+    if (site === STATUS_DELIVERY_VALUES.ON_SITE) {
+      return statusDelivery !== arrivedStatusDelivery && statusDelivery !== podStatusDelivery;
     }
-    if (site === STATUS_VALUES.POD) {
-      return status !== podStatus && status !== arrivedStatus;
+    if (site === STATUS_DELIVERY_VALUES.POD) {
+      return statusDelivery !== podStatusDelivery && statusDelivery !== arrivedStatusDelivery;
     }
     return false;
   }
 
   function getStatusMismatchTooltipMessage() {
-    return translate('table.statusMismatchTooltip', STATUS_MISMATCH_TOOLTIP_FALLBACK);
+    return translate('table.statusMismatchTooltip', STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK);
   }
 
   function shouldRenderDetailInput(key) {
@@ -308,7 +308,7 @@ export function createTableRenderer(options = {}) {
 
   function getStatusSiteCanonicalValue(item) {
     const raw = getNormalizedField(item, STATUS_SITE_FIELD);
-    return normalizeStatus(raw);
+    return normalizeStatusDelivery(raw);
   }
 
   function getStatusSiteDisplay(item) {
@@ -534,7 +534,7 @@ export function createTableRenderer(options = {}) {
       if (!perms.canEdit && !perms.canDelete) return '';
 
       const buttons = [];
-      const canonicalStatus = normalizeStatus(item.status);
+      const canonicalStatus = normalizeStatusDelivery(item.status);
       const statusAttr = escapeHtml(canonicalStatus || item.status || '');
       const dnAttr = escapeHtml(item.dn_number || '');
       const duAttr = escapeHtml(item.du_id || '');
@@ -585,8 +585,8 @@ export function createTableRenderer(options = {}) {
       const updatedAt = getUpdatedAtDisplay(item);
       const remarkText = normalizeText(item?.remark);
       const remarkDisplay = remarkText ? escapeHtml(remarkText).replace(/\n/g, '。') : '<span class="muted">-</span>';
-      const statusValue = normalizeStatus(item?.status);
-      const statusRaw = statusValue || item?.status || '';
+      const statusDeliveryValue = normalizeStatusDelivery(item?.status_delivery);
+      const statusDeliveryRaw = statusDeliveryValue || item?.status_delivery || '';
 
       const transportManager = isTransportManager();
       const updateCount = item?.update_count || 0;
@@ -594,7 +594,7 @@ export function createTableRenderer(options = {}) {
         ? `<button type="button" class="update-count-badge" data-dn-number="${escapeHtml(rawDnNumber)}" title="点击查看更新记录 (${updateCount} 次)">${updateCount}</button>`
         : '';
 
-      const statusCellContent = `<div class="status-cell-wrapper">${statusDisplay(statusRaw)}${updateCountBadge}</div>`;
+      const statusCellContent = `<div class="status-cell-wrapper">${statusDeliveryDisplay(statusDeliveryRaw)}${updateCountBadge}</div>`;
       // 合并照片和位置为打卡列
       const photoCell = buildPhotoCell(item);
       const locationCell = buildLocationCell(item);
@@ -641,7 +641,7 @@ export function createTableRenderer(options = {}) {
           </td>`,
           `      <td class="summary-lsp-cell" data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
           `      <td class="summary-status-site-cell">${statusSiteCell}</td>`,
-          `      <td class="summary-status-cell" data-raw-status="${escapeHtml(statusRaw)}" data-status-site="${escapeHtml(statusSiteCanonical || '')}">${statusCellContent}</td>`,
+          `      <td class="summary-status-cell" data-raw-status="${escapeHtml(statusDeliveryRaw)}" data-status-site="${escapeHtml(statusSiteCanonical || '')}">${statusCellContent}</td>`,
           `      <td class="summary-issue-remark-cell">${issueRemarkCell}</td>`,
           `      <td class="summary-remark-cell">${remarkDisplay}</td>`,
           `      <td class="summary-checkin-cell">${checkinCell}</td>`,
@@ -703,9 +703,9 @@ export function createTableRenderer(options = {}) {
     }
   }
 
-  function cleanupStatusMismatchTooltips() {
-    if (!state.statusMismatchTooltips.length) return;
-    state.statusMismatchTooltips.forEach(({ app, mountEl }) => {
+  function cleanupstatusDeliveryMismatchTooltips() {
+    if (!state.statusDeliveryMismatchTooltips.length) return;
+    state.statusDeliveryMismatchTooltips.forEach(({ app, mountEl }) => {
       try {
         app.unmount();
       } catch (err) {
@@ -715,10 +715,10 @@ export function createTableRenderer(options = {}) {
         mountEl.parentNode.removeChild(mountEl);
       }
     });
-    state.statusMismatchTooltips = [];
+    state.statusDeliveryMismatchTooltips = [];
   }
 
-  function setupStatusMismatchTooltips() {
+  function setupstatusDeliveryMismatchTooltips() {
     const tooltipTargets = tbody.querySelectorAll('.status-mismatch[data-status-mismatch="true"]');
     if (!tooltipTargets.length) return;
     tooltipTargets.forEach((target) => {
@@ -745,13 +745,13 @@ export function createTableRenderer(options = {}) {
           );
         },
       });
-      state.statusMismatchTooltips.push({ app, mountEl });
+      state.statusDeliveryMismatchTooltips.push({ app, mountEl });
       app.mount(mountEl);
     });
   }
 
   function translateStatusCells() {
-    cleanupStatusMismatchTooltips();
+    cleanupstatusDeliveryMismatchTooltips();
     const tooltipMessage = getStatusMismatchTooltipMessage();
     const processedRows = new Set();
     tbody.querySelectorAll('td[data-raw-status]').forEach((td) => {
@@ -762,9 +762,9 @@ export function createTableRenderer(options = {}) {
         processedRows.add(summaryRow);
       }
       const raw = td.getAttribute('data-raw-status') || '';
-      const canonical = normalizeStatus(raw);
+      const canonical = normalizeStatusDelivery(raw);
       const value = canonical || raw;
-      const display = statusDisplay(value);
+      const display = statusDeliveryDisplay(value);
 
       const existingWrapper = td.querySelector('.status-cell-wrapper');
       const existingBadge = existingWrapper ? existingWrapper.querySelector('.update-count-badge') : null;
@@ -808,7 +808,7 @@ export function createTableRenderer(options = {}) {
       td.appendChild(wrapper);
 
       const statusSiteValue = td.getAttribute('data-status-site') || '';
-      if (shouldShowStatusMismatch(statusSiteValue, raw)) {
+      if (shouldShowStatusDeliveryMismatch(statusSiteValue, raw)) {
         const indicator = document.createElement('span');
         indicator.className = 'status-mismatch';
         indicator.setAttribute('data-status-mismatch', 'true');
@@ -820,7 +820,7 @@ export function createTableRenderer(options = {}) {
         }
       }
     });
-    setupStatusMismatchTooltips();
+    setupstatusDeliveryMismatchTooltips();
   }
 
   function openViewerWithUrl(url) {
@@ -903,7 +903,7 @@ export function createTableRenderer(options = {}) {
 
   function renderRows(items) {
     updateActionColumnVisibility();
-    cleanupStatusMismatchTooltips();
+    cleanupstatusDeliveryMismatchTooltips();
     cleanupDetailInputs();
 
     state.cachedItems = Array.isArray(items) ? items.slice() : [];
@@ -1046,7 +1046,7 @@ export function createTableRenderer(options = {}) {
   }
 
   function cleanup() {
-    cleanupStatusMismatchTooltips();
+    cleanupstatusDeliveryMismatchTooltips();
     cleanupDetailInputs();
     cleanupViewer();
     state.expandedRowKeys.clear();

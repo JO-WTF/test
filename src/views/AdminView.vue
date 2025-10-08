@@ -370,9 +370,9 @@
         </h3>
         <div class="row-line">
           <div class="field">
-            <label data-i18n="modal.status.label">状态</label>
+            <label data-i18n="modal.status_delivery.label">状态</label>
             <select id="m-status">
-              <option value="" data-i18n="modal.status.keep">（不修改）</option>
+              <option value="" data-i18n="modal.status_delivery.keep">（不修改）</option>
             </select>
           </div>
           <div class="field" id="m-status-site-field">
@@ -474,7 +474,7 @@ import { useRouter } from 'vue-router';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
-import { useAdminFilters, STATUS_NOT_EMPTY_VALUE } from './admin/useAdminFilters';
+import { useAdminFilters, STATUS_DELIVERY_NOT_EMPTY_VALUE } from './admin/useAdminFilters';
 import { TRANSPORT_MANAGER_ROLE_KEY } from './admin/constants';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import 'toastify-js/src/toastify.css';
@@ -615,7 +615,7 @@ watch(
   (val) => {
     const normalized = normalizeStatusSelection(val);
     const nextChecked =
-      normalized.length === 1 && normalized[0] === STATUS_NOT_EMPTY_VALUE;
+      normalized.length === 1 && normalized[0] === STATUS_DELIVERY_NOT_EMPTY_VALUE;
     if (syncingFromSwitch) {
       syncingFromSwitch = false;
       if (showOnlyNonEmptyStatus.value !== nextChecked) {

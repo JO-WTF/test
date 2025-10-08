@@ -1,4 +1,4 @@
-const STATUS_DEFINITIONS = [
+const STATUS_DELIVERY_DEFINITIONS = [
   {
     key: 'NEW_MOS',
     value: 'New MOS',
@@ -124,7 +124,7 @@ const STATUS_DEFINITIONS = [
   },
 ];
 
-const DN_SCAN_STATUS_DEFINITIONS = [
+const DN_SCAN_STATUS_DELIVERY_DEFINITIONS = [
   // {
   //   key: 'ARRIVED_AT_WH',
   //   value: 'ARRIVED AT WH',
@@ -252,12 +252,12 @@ const ROLE_USER_PREFIXES = {
   [TRANSPORT_MANAGER_ROLE_KEY]: 'VITE_ROLE_TRANSPORT_MANAGER_USER_',
 };
 
-export const STATUS_VALUES = buildValueMap(STATUS_DEFINITIONS);
-export const STATUS_ORDERED_LIST = buildList(STATUS_DEFINITIONS);
-export const DN_SCAN_STATUS_VALUES = buildValueMap(DN_SCAN_STATUS_DEFINITIONS);
-export const DN_SCAN_STATUS_ORDERED_LIST = buildList(DN_SCAN_STATUS_DEFINITIONS);
-export const DN_SCAN_STATUS_ITEMS = Object.freeze(
-  DN_SCAN_STATUS_DEFINITIONS.map(({ key, value, translationKey, fallbackLabel }) => {
+export const STATUS_DELIVERY_VALUES = buildValueMap(STATUS_DELIVERY_DEFINITIONS);
+export const STATUS_DELIVERY_ORDERED_LIST = buildList(STATUS_DELIVERY_DEFINITIONS);
+export const DN_SCAN_STATUS_DELIVERY_VALUES = buildValueMap(DN_SCAN_STATUS_DELIVERY_DEFINITIONS);
+export const DN_SCAN_STATUS_DELIVERY_ORDERED_LIST = buildList(DN_SCAN_STATUS_DELIVERY_DEFINITIONS);
+export const DN_SCAN_STATUS_DELIVERY_ITEMS = Object.freeze(
+  DN_SCAN_STATUS_DELIVERY_DEFINITIONS.map(({ key, value, translationKey, fallbackLabel }) => {
     const camelKey = toCamelCaseKey(key);
     return {
       key,
@@ -270,18 +270,18 @@ export const DN_SCAN_STATUS_ITEMS = Object.freeze(
   })
 );
 
-export const STATUS_TRANSLATION_KEYS = Object.freeze({
-  ...buildDefinitionMap(STATUS_DEFINITIONS, 'translationKey'),
-  ...buildDefinitionMap(DN_SCAN_STATUS_DEFINITIONS, 'translationKey'),
+export const STATUS_DELIVERY_TRANSLATION_KEYS = Object.freeze({
+  ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'translationKey'),
+  ...buildDefinitionMap(DN_SCAN_STATUS_DELIVERY_DEFINITIONS, 'translationKey'),
 });
 
-export const STATUS_FALLBACK_LABELS = Object.freeze({
-  ...buildDefinitionMap(STATUS_DEFINITIONS, 'fallbackLabel'),
-  ...buildDefinitionMap(DN_SCAN_STATUS_DEFINITIONS, 'fallbackLabel'),
+export const STATUS_DELIVERY_FALLBACK_LABELS = Object.freeze({
+  ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'fallbackLabel'),
+  ...buildDefinitionMap(DN_SCAN_STATUS_DELIVERY_DEFINITIONS, 'fallbackLabel'),
 });
 
-export const STATUS_DISPLAY_OVERRIDES = Object.freeze(
-  STATUS_DEFINITIONS.reduce((acc, { value, displayOverride }) => {
+export const STATUS_DELIVERY_DISPLAY_OVERRIDES = Object.freeze(
+  STATUS_DELIVERY_DEFINITIONS.reduce((acc, { value, displayOverride }) => {
     if (displayOverride) {
       acc[value] = displayOverride;
     }
@@ -289,9 +289,9 @@ export const STATUS_DISPLAY_OVERRIDES = Object.freeze(
   }, {})
 );
 
-export const STATUS_ALIAS_MAP = createAliasMap(
-  STATUS_DEFINITIONS,
-  DN_SCAN_STATUS_DEFINITIONS
+export const STATUS_DELIVERY_ALIAS_MAP = createAliasMap(
+  STATUS_DELIVERY_DEFINITIONS,
+  DN_SCAN_STATUS_DELIVERY_DEFINITIONS
 );
 
 export const ROLE_DEFINITIONS = {
@@ -305,13 +305,13 @@ export const ROLE_DEFINITIONS = {
       allowRemark: true,
       allowPhoto: true,
       requireStatusSelection: true,
-      statusOptions: [...DN_SCAN_STATUS_ORDERED_LIST],
+  statusOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
     },
     statusHighlights: [
-      { status: STATUS_VALUES.NEW_MOS },
-      { status: STATUS_VALUES.CANCEL_MOS },
-      { status: STATUS_VALUES.CLOSE_BY_RN },
-      { status: STATUS_VALUES.WAITING_PIC_FEEDBACK },
+      { status_delivery: STATUS_DELIVERY_VALUES.NEW_MOS },
+      { status_delivery: STATUS_DELIVERY_VALUES.CANCEL_MOS },
+      { status_delivery: STATUS_DELIVERY_VALUES.CLOSE_BY_RN },
+      { status_delivery: STATUS_DELIVERY_VALUES.WAITING_PIC_FEEDBACK },
     ],
     users: loadRoleUsers(ROLE_USER_PREFIXES.lsp),
   },
@@ -325,11 +325,11 @@ export const ROLE_DEFINITIONS = {
       allowRemark: true,
       allowPhoto: false,
       requireStatusSelection: false,
-      statusOptions: [...DN_SCAN_STATUS_ORDERED_LIST],
+  statusOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
     },
     statusHighlights: [
-      { status: STATUS_VALUES.NEW_MOS },
-      { status: STATUS_VALUES.POD },
+      { status_delivery: STATUS_DELIVERY_VALUES.NEW_MOS },
+      { status_delivery: STATUS_DELIVERY_VALUES.POD },
     ],
     users: loadRoleUsers(ROLE_USER_PREFIXES.customer),
   },
@@ -343,16 +343,16 @@ export const ROLE_DEFINITIONS = {
       allowRemark: true,
       allowPhoto: true,
       requireStatusSelection: false,
-      statusOptions: [...DN_SCAN_STATUS_ORDERED_LIST],
+  statusOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
     },
     statusHighlights: [
-      { status: STATUS_VALUES.NEW_MOS },
-      { status: STATUS_VALUES.CANCEL_MOS },
-      { status: STATUS_VALUES.CLOSE_BY_RN },
-      { status: STATUS_VALUES.REPLAN_MOS_PROJECT },
-      { status: STATUS_VALUES.REPLAN_MOS_LSP_DELAY },
-      { status: STATUS_VALUES.PREPARE_VEHICLE },
-      { status: STATUS_VALUES.ON_THE_WAY },
+      { status_delivery: STATUS_DELIVERY_VALUES.NEW_MOS },
+      { status_delivery: STATUS_DELIVERY_VALUES.CANCEL_MOS },
+      { status_delivery: STATUS_DELIVERY_VALUES.CLOSE_BY_RN },
+      { status_delivery: STATUS_DELIVERY_VALUES.REPLAN_MOS_PROJECT },
+      { status_delivery: STATUS_DELIVERY_VALUES.REPLAN_MOS_LSP_DELAY },
+      { status_delivery: STATUS_DELIVERY_VALUES.PREPARE_VEHICLE },
+      { status_delivery: STATUS_DELIVERY_VALUES.ON_THE_WAY },
     ],
     users: loadRoleUsers(ROLE_USER_PREFIXES[TRANSPORT_MANAGER_ROLE_KEY]),
   },
