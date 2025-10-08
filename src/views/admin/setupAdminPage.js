@@ -36,7 +36,7 @@ import {
   JAKARTA_UTC_OFFSET_MINUTES,
   ARCHIVE_THRESHOLD_DAYS,
   TRANSPORT_MANAGER_STATUS_CARDS,
-  STATUS_DELIVERY_OPTIONS,
+  STATUS_SITE_OPTIONS,
   DEFAULT_MODAL_STATUS_ORDER,
   DN_DETAIL_KEYS,
   ICON_MARKUP,
@@ -99,8 +99,8 @@ export function setupAdminPage(
   const mask = el('modal-mask');
   const mId = el('modal-id');
   const mStatus = el('m-status');
-  const mStatusDelivery = el('m-status-delivery');
-  const mStatusDeliveryField = el('m-status-delivery-field');
+  const mStatusSite = el('m-status-site');
+  const mStatusSiteField = el('m-status-site-field');
   const mRemark = el('m-remark');
   const mRemarkField = el('m-remark-field');
   const mPhoto = el('m-photo');
@@ -370,7 +370,7 @@ export function setupAdminPage(
     getCurrentRole,
     normalizeStatusValue,
     i18nStatusDisplay,
-    getStatusDeliveryValues: () => getFilterValues('status_delivery'),
+  getStatusSiteValues: () => getFilterValues('status_site'),
     getStatusFilterValue: () => getSingleFilterValue('status'),
     transportManagerCards: TRANSPORT_MANAGER_STATUS_CARDS,
     onApplyFilter(def, canonicalStatus) {
@@ -461,7 +461,7 @@ export function setupAdminPage(
     lspSummaryCards.updateActiveState();
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
-    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
+  populateModalStatusSiteOptions(mStatusSite?.value || '');
     dnEntry.renderFilterPreview();
   }
 
@@ -474,7 +474,7 @@ export function setupAdminPage(
   function handleAuthRoleApplied(_roleKey, _role, _userInfo) {
     refreshDnEntryVisibility();
     populateModalStatusOptions(mStatus?.value || '');
-    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
+  populateModalStatusSiteOptions(mStatusSite?.value || '');
     updateModalFieldVisibility();
     if (tableRenderer) {
       tableRenderer.updateActionColumnVisibility();
@@ -489,15 +489,15 @@ export function setupAdminPage(
     const perms = getCurrentPermissions();
     const allowRemark = Boolean(perms?.allowRemark);
     const allowPhoto = Boolean(perms?.allowPhoto);
-    const allowStatusDelivery = Boolean(perms?.canEdit);
+    const allowStatusSite = Boolean(perms?.canEdit);
 
-    if (mStatusDeliveryField) {
-      mStatusDeliveryField.style.display = allowStatusDelivery ? '' : 'none';
+    if (mStatusSiteField) {
+      mStatusSiteField.style.display = allowStatusSite ? '' : 'none';
     }
-    if (mStatusDelivery) {
-      mStatusDelivery.disabled = !allowStatusDelivery;
-      if (!allowStatusDelivery) {
-        setFormControlValue(mStatusDelivery, '');
+    if (mStatusSite) {
+      mStatusSite.disabled = !allowStatusSite;
+      if (!allowStatusSite) {
+        setFormControlValue(mStatusSite, '');
       }
     }
 
@@ -614,21 +614,21 @@ export function setupAdminPage(
     }
   }
 
-  function populateModalStatusDeliveryOptions(selected) {
-    if (!mStatusDelivery) return;
+  function populateModalStatusSiteOptions(selected) {
+    if (!mStatusSite) return;
     const selectedRaw = selected || '';
     const selectedCanonical = normalizeStatusValue(selectedRaw);
-    const keepLabel = i18n?.t('modal.statusDelivery.keep') || '（不修改）';
+    const keepLabel = i18n?.t('modal.statusSite.keep') || '（不修改）';
 
-    mStatusDelivery.innerHTML = '';
+    mStatusSite.innerHTML = '';
     const keepOption = document.createElement('option');
     keepOption.value = '';
-    keepOption.setAttribute('data-i18n', 'modal.statusDelivery.keep');
+    keepOption.setAttribute('data-i18n', 'modal.statusSite.keep');
     keepOption.textContent = keepLabel;
-    mStatusDelivery.appendChild(keepOption);
+    mStatusSite.appendChild(keepOption);
 
     const appended = new Set();
-    STATUS_DELIVERY_OPTIONS.forEach((value) => {
+    STATUS_SITE_OPTIONS.forEach((value) => {
       const canonical = normalizeStatusValue(value);
       if (!canonical || appended.has(canonical)) return;
       appended.add(canonical);
@@ -638,7 +638,7 @@ export function setupAdminPage(
       if (canonical === selectedCanonical) {
         opt.selected = true;
       }
-      mStatusDelivery.appendChild(opt);
+      mStatusSite.appendChild(opt);
     });
 
     if (selectedCanonical && !appended.has(selectedCanonical)) {
@@ -646,47 +646,47 @@ export function setupAdminPage(
       opt.value = selectedCanonical;
       opt.textContent = getModalStatusLabel(selectedCanonical);
       opt.selected = true;
-      mStatusDelivery.appendChild(opt);
+      mStatusSite.appendChild(opt);
       appended.add(selectedCanonical);
     }
 
     if (selectedCanonical) {
-      setFormControlValue(mStatusDelivery, selectedCanonical);
+      setFormControlValue(mStatusSite, selectedCanonical);
     } else {
-      setFormControlValue(mStatusDelivery, '');
+      setFormControlValue(mStatusSite, '');
     }
   }
 
-  function syncStatusDeliveryWithStatus() {
-    if (!mStatus || !mStatusDelivery) return;
+  function syncStatusSiteWithStatus() {
+    if (!mStatus || !mStatusSite) return;
     const canonicalStatus = normalizeStatusValue(mStatus.value);
     if (!canonicalStatus) {
-      setFormControlValue(mStatusDelivery, '');
+      setFormControlValue(mStatusSite, '');
       return;
     }
     if (canonicalStatus === DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH) {
-      setFormControlValue(mStatusDelivery, '');
+      setFormControlValue(mStatusSite, '');
       return;
     }
 
     const ARRIVED_AT_SITE = DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
     const POD_STATUS = DN_SCAN_STATUS_VALUES.POD || 'POD';
-    const podDeliveryValue = STATUS_VALUES.POD || POD_STATUS;
+    const podSiteValue = STATUS_VALUES.POD || POD_STATUS;
 
-    const statusDeliveryMap = {
+    const statusSiteMap = {
       [ARRIVED_AT_SITE]: STATUS_VALUES.ON_SITE,
-      [POD_STATUS]: podDeliveryValue,
+      [POD_STATUS]: podSiteValue,
     };
 
-    const nextValue = statusDeliveryMap[canonicalStatus] || STATUS_VALUES.ON_THE_WAY;
-    setFormControlValue(mStatusDelivery, nextValue);
+    const nextValue = statusSiteMap[canonicalStatus] || STATUS_VALUES.ON_THE_WAY;
+    setFormControlValue(mStatusSite, nextValue);
   }
 
-  if (mStatus && mStatusDelivery) {
+  if (mStatus && mStatusSite) {
     mStatus.addEventListener(
       'change',
       () => {
-        syncStatusDeliveryWithStatus();
+        syncStatusSiteWithStatus();
       },
       { signal }
     );
@@ -738,11 +738,11 @@ export function setupAdminPage(
     setFilterValue('subcon', '');
     setFilterValue('status_wh', '');
 
-    // Clicking a status card should only apply the status_delivery filter.
+  // Clicking a status card should only apply the status_site filter.
     // Keep the status filter cleared so the query does not constrain by status.
     setFilterValue('status', '');
 
-    setFilterValue('status_delivery', targetStatus);
+  setFilterValue('status_site', targetStatus);
 
     setFilterValue('plan_mos_date', todayJakarta);
 
@@ -774,8 +774,8 @@ export function setupAdminPage(
       setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
       setFilterDropdownOptions('subcon', payload?.subcon);
       setFilterDropdownOptions('status_wh', payload?.status_wh);
-      const deliveryOptions = payload?.status_delivery || payload?.status_deliver;
-      setFilterDropdownOptions('status_delivery', deliveryOptions);
+  const siteOptions = payload?.status_site || payload?.status_delivery || payload?.status_deliver;
+  setFilterDropdownOptions('status_site', siteOptions);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       console.error('Failed to load DN filter options', err);
@@ -805,7 +805,7 @@ export function setupAdminPage(
       const planMosDateTokens = getFilterValues('plan_mos_date');
       const subconValues = getFilterValues('subcon');
       const statusWhValues = getFilterValues('status_wh');
-      const statusDeliveryValues = getFilterValues('status_delivery');
+  const statusSiteValues = getFilterValues('status_site');
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
@@ -850,10 +850,10 @@ export function setupAdminPage(
       } else if (statusWhValues.length > 1) {
         statusWhValues.forEach((value) => params.append('status_wh', value));
       }
-      if (statusDeliveryValues.length === 1) {
-        params.set('status_delivery', statusDeliveryValues[0]);
-      } else if (statusDeliveryValues.length > 1) {
-        statusDeliveryValues.forEach((value) => params.append('status_delivery', value));
+      if (statusSiteValues.length === 1) {
+        params.set('status_site', statusSiteValues[0]);
+      } else if (statusSiteValues.length > 1) {
+        statusSiteValues.forEach((value) => params.append('status_site', value));
       }
     }
 
@@ -955,14 +955,16 @@ export function setupAdminPage(
     }
     const canonicalStatus = normalizeStatusValue(item.status);
     populateModalStatusOptions(canonicalStatus);
-    const statusDeliveryRaw =
-      item.status_delivery ||
+    const statusSiteRaw =
+      item.status_site ||
+      item.statusSite ||
+  item.status_site || item.statusSite || item.status_delivery || 
       item.statusDelivery ||
       item.status_deliver ||
       item.statusDeliver ||
       '';
-    const canonicalStatusDelivery = normalizeStatusValue(statusDeliveryRaw);
-    populateModalStatusDeliveryOptions(canonicalStatusDelivery);
+    const canonicalStatusSite = normalizeStatusValue(statusSiteRaw);
+    populateModalStatusSiteOptions(canonicalStatusSite);
     updateModalFieldVisibility();
     if (mMsg) mMsg.textContent = '';
     const wasVisible = mask && mask.style.display === 'flex';
@@ -980,8 +982,8 @@ export function setupAdminPage(
     }
     editingId = 0;
     editingItem = null;
-    if (mStatusDelivery) {
-      setFormControlValue(mStatusDelivery, '');
+    if (mStatusSite) {
+      setFormControlValue(mStatusSite, '');
     }
   }
 
@@ -1174,9 +1176,9 @@ export function setupAdminPage(
     const form = new FormData();
     const statusValRaw = mStatus?.value || '';
     const statusVal = normalizeStatusValue(statusValRaw) || statusValRaw;
-    const statusDeliveryRaw = mStatusDelivery?.value || '';
-    const statusDeliveryVal =
-      normalizeStatusValue(statusDeliveryRaw) || statusDeliveryRaw;
+    const statusSiteRaw = mStatusSite?.value || '';
+    const statusSiteVal =
+      normalizeStatusValue(statusSiteRaw) || statusSiteRaw;
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
     const currentItem = editingItem || null;
@@ -1196,16 +1198,18 @@ export function setupAdminPage(
     if (statusToSubmit) {
       form.set('status', statusToSubmit);
     }
-    const originalStatusDeliveryRaw =
-      currentItem?.status_delivery ||
+    const originalStatusSiteRaw =
+      currentItem?.status_site ||
+      currentItem?.statusSite ||
+  currentItem?.status_site || currentItem?.statusSite || currentItem?.status_delivery || 
       currentItem?.statusDelivery ||
       currentItem?.status_deliver ||
       currentItem?.statusDeliver ||
       '';
-    const originalStatusDelivery =
-      normalizeStatusValue(originalStatusDeliveryRaw) || originalStatusDeliveryRaw || '';
-    const statusDeliveryToSubmit = statusDeliveryVal || originalStatusDelivery;
-    form.set('status_delivery', statusDeliveryToSubmit || '');
+    const originalStatusSite =
+      normalizeStatusValue(originalStatusSiteRaw) || originalStatusSiteRaw || '';
+    const statusSiteToSubmit = statusSiteVal || originalStatusSite;
+    form.set('status_site', statusSiteToSubmit || '');
     if (remarkVal) form.set('remark', remarkVal);
     if (allowPhoto) {
       form.set('photo', mPhoto.files[0]);
@@ -1213,12 +1217,12 @@ export function setupAdminPage(
     return {
       form,
       statusVal,
-      statusDeliveryVal,
+      statusSiteVal,
       remarkVal,
       allowPhoto,
       dnNumber,
       statusToSubmit,
-      statusDeliveryToSubmit,
+      statusSiteToSubmit,
     };
   }
 
@@ -1272,7 +1276,7 @@ export function setupAdminPage(
 
     if (
       !payload.statusVal &&
-      !payload.statusDeliveryVal &&
+      !payload.statusSiteVal &&
       !payload.remarkVal &&
       !payload.allowPhoto
     ) {
@@ -1594,15 +1598,15 @@ export function setupAdminPage(
     const first = Array.isArray(values) && values.length ? values[0] : '';
     const podValue = DN_SCAN_STATUS_VALUES?.POD || 'POD';
     if (first === podValue) {
-      const currentDelivery = getFilterValues('status_delivery');
-      if (!currentDelivery.includes(podValue)) {
-        setFilterValue('status_delivery', podValue);
+      const currentSite = getFilterValues('status_site');
+      if (!currentSite.includes(podValue)) {
+        setFilterValue('status_site', podValue);
       }
     }
     statusCards.updateActiveState();
   });
 
-  subscribeToFilterChange('status_delivery', () => {
+  subscribeToFilterChange('status_site', () => {
     statusCards.updateActiveState();
   });
 
@@ -1622,7 +1626,7 @@ export function setupAdminPage(
     setFilterValue('region', '');
     setFilterValue('subcon', '');
     setFilterValue('status_wh', '');
-    setFilterValue('status_delivery', '');
+  setFilterValue('status_site', '');
     setInputValue('du', '');
     setFormControlValue(pageSizeInput, '20');
     if (dnInput) dnInput.value = '';

@@ -16,7 +16,7 @@ export function createStatusCardManager({
   getCurrentRole,
   normalizeStatusValue,
   i18nStatusDisplay,
-  getStatusDeliveryValues,
+  getStatusSiteValues,
   getStatusFilterValue,
   onApplyFilter,
   transportManagerCards = TRANSPORT_MANAGER_STATUS_CARDS,
@@ -202,12 +202,12 @@ export function createStatusCardManager({
 
   function updateActiveState() {
     if (!refs.size) return;
-    const deliveryTokens = getStatusDeliveryValues();
-    const deliveryValue = deliveryTokens.length ? deliveryTokens[0] : '';
-    const canonicalDelivery = normalizeStatusValue(deliveryValue);
+    const siteTokens = getStatusSiteValues();
+    const siteValue = siteTokens.length ? siteTokens[0] : '';
+    const canonicalSite = normalizeStatusValue(siteValue);
     const statusValue = getStatusFilterValue();
     const canonicalStatus = normalizeStatusValue(statusValue);
-    const canonical = canonicalDelivery || canonicalStatus;
+    const canonical = canonicalSite || canonicalStatus;
     const hasStatus = Boolean(canonical);
     refs.forEach((ref) => {
       const defItem = ref.def;
@@ -241,7 +241,7 @@ export function createStatusCardManager({
     list.forEach((item) => {
       if (!item || typeof item !== 'object') return;
       const statusRaw =
-        item.status_delivery ?? item.status ?? item.value ?? item.key ?? '';
+        item.status_site ?? item.status ?? item.value ?? item.key ?? '';
       const status = normalizeStatusValue(statusRaw);
       if (!status) return;
       const countRaw = Number(

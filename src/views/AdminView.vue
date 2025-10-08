@@ -147,12 +147,12 @@
                 ></a-select>
               </div>
               <div class="field filter-field">
-                <label data-i18n="statusDelivery.label">配送状态</label>
+                <label data-i18n="statusSite.label">站点状态</label>
                 <a-select
-                  id="f-status-delivery"
-                  v-model:value="statusDeliverySelectValue"
-                  :options="statusDeliverySelectOptions"
-                  :placeholder="statusDeliverySelectPlaceholder"
+                  id="f-status-site"
+                  v-model:value="statusSiteSelectValue"
+                  :options="statusSiteSelectOptions"
+                  :placeholder="statusSiteSelectPlaceholder"
                   :filter-option="filterSelectOption"
                   mode="multiple"
                   max-tag-count="responsive"
@@ -323,7 +323,7 @@
               <th data-i18n="table.dn">DN 号</th>
               <th data-i18n="table.regionPlan">区域/MOS 计划</th>
               <th data-i18n="table.lsp">LSP</th>
-              <th data-i18n="table.statusDelivery">STATUS DELIVERY</th>
+              <th data-i18n="table.statusSite">STATUS SITE</th>
               <th data-i18n="table.status">状态</th>
               <th data-i18n="table.issueRemark">ISSUE REMARK</th>
               <th data-i18n="table.remark">备注</th>
@@ -375,10 +375,10 @@
               <option value="" data-i18n="modal.status.keep">（不修改）</option>
             </select>
           </div>
-          <div class="field" id="m-status-delivery-field">
-            <label data-i18n="modal.statusDelivery.label">配送状态</label>
-            <select id="m-status-delivery">
-              <option value="" data-i18n="modal.statusDelivery.keep">（不修改）</option>
+          <div class="field" id="m-status-site-field">
+            <label data-i18n="modal.statusSite.label">站点状态</label>
+            <select id="m-status-site">
+              <option value="" data-i18n="modal.statusSite.keep">（不修改）</option>
             </select>
           </div>
           <div class="field grow" id="m-remark-field">
@@ -512,9 +512,9 @@ const {
   statusWhSelectOptions,
   statusWhSelectValue,
   statusWhSelectPlaceholder,
-  statusDeliverySelectOptions,
-  statusDeliverySelectValue,
-  statusDeliverySelectPlaceholder,
+  statusSiteSelectOptions,
+  statusSiteSelectValue,
+  statusSiteSelectPlaceholder,
   statusSelectOptions,
   statusSelectValue,
   statusSelectPlaceholder,

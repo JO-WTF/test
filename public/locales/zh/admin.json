@@ -1,4 +1,9 @@
 {
+    "statusSite.label": "站点状态",
+    "statusSite.placeholder": "输入或选择",
+    "table.statusSite": "站点状态",
+    "modal.statusSite.label": "站点状态",
+    "modal.statusSite.keep": "（不修改）",
     "title": "DN 提交记录管理",
     "dn.label": "DN 号（支持多行/逗号/空格分隔；多于1个则批量查询）",
     "dn.placeholder": "示例：\nDN123...\nDN456...",

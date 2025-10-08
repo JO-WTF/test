@@ -57,7 +57,7 @@ export const TRANSPORT_MANAGER_STATUS_CARDS = [
   { status: STATUS_VALUES.NO_STATUS, label: STATUS_VALUES.NO_STATUS },
 ];
 
-export const STATUS_DELIVERY_OPTIONS = [
+export const STATUS_SITE_OPTIONS = [
   STATUS_VALUES.PREPARE_VEHICLE,
   STATUS_VALUES.ON_THE_WAY,
   STATUS_VALUES.ON_SITE,
@@ -88,7 +88,7 @@ export const DN_DETAIL_KEYS = [
   'plan_mos_date',
   'area',
   'status_wh',
-  'status_delivery',
+  'status_site',
   'status',
   'update_count',
   'issue_remark',
@@ -140,7 +140,7 @@ export const DETAIL_INPUT_FIELD_SET = new Set(
 export const REGION_FIELD = 'region';
 export const PLAN_MOS_DATE_FIELD = 'plan_mos_date';
 export const ISSUE_REMARK_FIELD = 'issue_remark';
-export const STATUS_DELIVERY_FIELD = 'status_delivery';
+export const STATUS_SITE_FIELD = 'status_site';
 export const UPDATED_AT_FIELD = 'updated_at';
 export const LSP_FIELD = 'lsp';
 export const LAT_FIELD = 'lat';
@@ -154,7 +154,7 @@ export const SUMMARY_FIELD_KEYS = new Set([
   'region',
   'plan_mos_date',
   'issue_remark',
-  'status_delivery',
+  'status_site',
   'status',
   'remark',
   'photo_url',

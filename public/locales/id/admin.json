@@ -1,4 +1,9 @@
 {
+    "statusSite.label": "Status Site",
+    "statusSite.placeholder": "Ketik atau pilih",
+    "table.statusSite": "Status Site",
+    "modal.statusSite.label": "Status Site",
+    "modal.statusSite.keep": "(Tidak diubah)",
     "title": "Manajemen Catatan Pengajuan DN",
     "dn.label": "Nomor DN (mendukung baris/komma/spasi; lebih dari satu = pencarian batch)",
     "dn.placeholder": "Contoh:\nDN123...\nDN456...",

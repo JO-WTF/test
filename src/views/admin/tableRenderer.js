@@ -9,7 +9,7 @@ import {
   REGION_FIELD,
   PLAN_MOS_DATE_FIELD,
   ISSUE_REMARK_FIELD,
-  STATUS_DELIVERY_FIELD,
+    STATUS_SITE_FIELD,
   UPDATED_AT_FIELD,
   LSP_FIELD,
   LAT_FIELD,
@@ -210,15 +210,15 @@ export function createTableRenderer(options = {}) {
     }
   }
 
-  function shouldShowStatusMismatch(statusDeliveryRaw, statusRaw) {
-    const delivery = normalizeStatus(statusDeliveryRaw);
+  function shouldShowStatusMismatch(statusSiteRaw, statusRaw) {
+    const site = normalizeStatus(statusSiteRaw);
     const status = normalizeStatus(statusRaw);
-    if (!delivery) return false;
+    if (!site) return false;
 
     const arrivedStatus = DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
     const podStatus = DN_SCAN_STATUS_VALUES.POD || 'POD';
 
-    if (delivery === STATUS_VALUES.ON_THE_WAY) {
+    if (site === STATUS_VALUES.ON_THE_WAY) {
       const allowedTransportStatuses = [
         DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_WH,
         DN_SCAN_STATUS_VALUES.TRANSPORTING_FROM_XD_PM,
@@ -228,10 +228,10 @@ export function createTableRenderer(options = {}) {
       const isAllowedTransportStatus = allowedTransportStatuses.includes(status);
       return !isAllowedTransportStatus;
     }
-    if (delivery === STATUS_VALUES.ON_SITE) {
+    if (site === STATUS_VALUES.ON_SITE) {
       return status !== arrivedStatus && status !== podStatus;
     }
-    if (delivery === STATUS_VALUES.POD) {
+    if (site === STATUS_VALUES.POD) {
       return status !== podStatus && status !== arrivedStatus;
     }
     return false;
@@ -306,13 +306,13 @@ export function createTableRenderer(options = {}) {
     return getNormalizedField(item, ISSUE_REMARK_FIELD);
   }
 
-  function getStatusDeliveryCanonicalValue(item) {
-    const raw = getNormalizedField(item, STATUS_DELIVERY_FIELD);
+  function getStatusSiteCanonicalValue(item) {
+    const raw = getNormalizedField(item, STATUS_SITE_FIELD);
     return normalizeStatus(raw);
   }
 
-  function getStatusDeliveryDisplay(item) {
-    return getNormalizedField(item, STATUS_DELIVERY_FIELD);
+  function getStatusSiteDisplay(item) {
+    return getNormalizedField(item, STATUS_SITE_FIELD);
   }
 
   function getUpdatedAtDisplay(item) {
@@ -580,8 +580,8 @@ export function createTableRenderer(options = {}) {
       const region = getRegionDisplay(item);
       const planMos = getPlanMosDateDisplay(item);
       const issueRemark = getIssueRemarkDisplay(item);
-      const statusDelivery = getStatusDeliveryDisplay(item);
-      const statusDeliveryCanonical = getStatusDeliveryCanonicalValue(item);
+      const statusSite = getStatusSiteDisplay(item);
+  const statusSiteCanonical = getStatusSiteCanonicalValue(item);
       const updatedAt = getUpdatedAtDisplay(item);
       const remarkText = normalizeText(item?.remark);
       const remarkDisplay = remarkText ? escapeHtml(remarkText).replace(/\n/g, '。') : '<span class="muted">-</span>';
@@ -608,7 +608,7 @@ export function createTableRenderer(options = {}) {
         : '<span class="region-plan-cell__plan muted">-</span>';
       const planMosMobile = planMos ? formatPlanMosDateForMobile(planMos) : '';
       const issueRemarkCell = issueRemark ? escapeHtml(issueRemark).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
-      const statusDeliveryCell = statusDelivery ? escapeHtml(statusDelivery).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
+  const statusSiteCell = statusSite ? escapeHtml(statusSite).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
       const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
       const duIdRaw = normalizeText(item?.du_id);
       const duIdLabel = translate('table.duIdLabel', 'DU ID') || 'DU ID';
@@ -640,8 +640,8 @@ export function createTableRenderer(options = {}) {
             ${planLine}
           </td>`,
           `      <td class="summary-lsp-cell" data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
-          `      <td class="summary-status-delivery-cell">${statusDeliveryCell}</td>`,
-          `      <td class="summary-status-cell" data-raw-status="${escapeHtml(statusRaw)}" data-status-delivery="${escapeHtml(statusDeliveryCanonical || '')}">${statusCellContent}</td>`,
+          `      <td class="summary-status-site-cell">${statusSiteCell}</td>`,
+          `      <td class="summary-status-cell" data-raw-status="${escapeHtml(statusRaw)}" data-status-site="${escapeHtml(statusSiteCanonical || '')}">${statusCellContent}</td>`,
           `      <td class="summary-issue-remark-cell">${issueRemarkCell}</td>`,
           `      <td class="summary-remark-cell">${remarkDisplay}</td>`,
           `      <td class="summary-checkin-cell">${checkinCell}</td>`,
@@ -807,8 +807,8 @@ export function createTableRenderer(options = {}) {
 
       td.appendChild(wrapper);
 
-      const statusDeliveryValue = td.getAttribute('data-status-delivery') || '';
-      if (shouldShowStatusMismatch(statusDeliveryValue, raw)) {
+      const statusSiteValue = td.getAttribute('data-status-site') || '';
+      if (shouldShowStatusMismatch(statusSiteValue, raw)) {
         const indicator = document.createElement('span');
         indicator.className = 'status-mismatch';
         indicator.setAttribute('data-status-mismatch', 'true');
