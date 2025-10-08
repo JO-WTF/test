@@ -446,7 +446,7 @@ export function useAdminFilters() {
   const lsp = createSelectState();
   const subcon = createSelectState();
   const statusWh = createSelectState();
-  const statusDelivery = createSelectState();
+  const statusSite = createSelectState();
   const status = createSingleSelectState('Any');
   const hasCoordinate = createSingleSelectState('Any');
   const remark = createTextInputState('模糊匹配');
@@ -462,7 +462,7 @@ export function useAdminFilters() {
     lsp: lsp.bridge,
     subcon: subcon.bridge,
     status_wh: statusWh.bridge,
-    status_delivery: statusDelivery.bridge,
+    status_site: statusSite.bridge,
     status: status.bridge,
     has_coordinate: hasCoordinate.bridge,
     date_from: fromDate.bridge,
@@ -481,8 +481,8 @@ export function useAdminFilters() {
     { placeholderRef: subcon.placeholder, translationKey: 'subcon.placeholder' },
     { placeholderRef: statusWh.placeholder, translationKey: 'statusWh.placeholder' },
     {
-      placeholderRef: statusDelivery.placeholder,
-      translationKey: 'statusDelivery.placeholder',
+      placeholderRef: statusSite.placeholder,
+      translationKey: 'statusSite.placeholder',
     },
     {
       placeholderRef: status.placeholder,
@@ -585,10 +585,10 @@ export function useAdminFilters() {
     statusWhSelectValue: statusWh.value,
     statusWhSelectPlaceholder: statusWh.placeholder,
     statusWhSelectBridge: statusWh.bridge,
-    statusDeliverySelectOptions: statusDelivery.options,
-    statusDeliverySelectValue: statusDelivery.value,
-    statusDeliverySelectPlaceholder: statusDelivery.placeholder,
-    statusDeliverySelectBridge: statusDelivery.bridge,
+    statusSiteSelectOptions: statusSite.options,
+    statusSiteSelectValue: statusSite.value,
+    statusSiteSelectPlaceholder: statusSite.placeholder,
+    statusSiteSelectBridge: statusSite.bridge,
     statusSelectOptions: status.options,
     statusSelectValue: status.value,
     statusSelectPlaceholder: status.placeholder,

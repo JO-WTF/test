@@ -774,7 +774,7 @@ export function setupAdminPage(
       setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
       setFilterDropdownOptions('subcon', payload?.subcon);
       setFilterDropdownOptions('status_wh', payload?.status_wh);
-  const siteOptions = payload?.status_site || payload?.status_delivery || payload?.status_deliver;
+  const siteOptions = payload?.status_site;
   setFilterDropdownOptions('status_site', siteOptions);
     } catch (err) {
       if (err?.name === 'AbortError') return;
@@ -958,10 +958,6 @@ export function setupAdminPage(
     const statusSiteRaw =
       item.status_site ||
       item.statusSite ||
-  item.status_site || item.statusSite || item.status_delivery || 
-      item.statusDelivery ||
-      item.status_deliver ||
-      item.statusDeliver ||
       '';
     const canonicalStatusSite = normalizeStatusValue(statusSiteRaw);
     populateModalStatusSiteOptions(canonicalStatusSite);
@@ -1198,14 +1194,7 @@ export function setupAdminPage(
     if (statusToSubmit) {
       form.set('status', statusToSubmit);
     }
-    const originalStatusSiteRaw =
-      currentItem?.status_site ||
-      currentItem?.statusSite ||
-  currentItem?.status_site || currentItem?.statusSite || currentItem?.status_delivery || 
-      currentItem?.statusDelivery ||
-      currentItem?.status_deliver ||
-      currentItem?.statusDeliver ||
-      '';
+    const originalStatusSiteRaw = currentItem?.status_site || currentItem?.statusSite || '';
     const originalStatusSite =
       normalizeStatusValue(originalStatusSiteRaw) || originalStatusSiteRaw || '';
     const statusSiteToSubmit = statusSiteVal || originalStatusSite;
