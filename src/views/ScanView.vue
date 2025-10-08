@@ -79,12 +79,12 @@
       <template v-if="state.isValid">
         <div class="status-box" v-show="!state.submitOk">
           <div class="status-row" :class="{ shake: state.needsStatusShake }">
-            <label for="dnStatus">{{ t('updateStatus') }}：</label>
+            <label for="dnStatusDelivery">{{ t('updateStatus') }}：</label>
             <select
-              id="dnStatus"
+              id="dnStatusDelivery"
               class="status"
               :class="{ invalid: state.needsStatusHint }"
-              v-model="state.dnStatus"
+              v-model="state.dnStatusDelivery"
               aria-invalid="true"
               @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }"
             >
@@ -238,7 +238,7 @@ const state = reactive({
   location: null,
   hasDN: false,
   dnNumber: '',
-  dnStatus: '',
+  dnStatusDelivery: '',
   remark: '',
   photoFile: null,
   photoPreview: null,
@@ -294,11 +294,11 @@ const submitSummaryRows = computed(() => {
       value: formatResultText(view.dnNumber),
       mono: true,
     },
-    {
-      key: 'status',
-      label: t('statusLabel'),
-      value: formatResultText(statusLabel(view.status)),
-    },
+      {
+        key: 'status_delivery',
+        label: t('statusLabel'),
+        value: formatResultText(statusLabel(view.status_delivery)),
+      },
     {
       key: 'remark',
       label: t('remarkLabel'),
@@ -405,7 +405,7 @@ const resume = async () => {
   state.showResult = false;
   state.submitMsg = '';
   state.submitOk = false;
-  state.dnStatus = '';
+  state.dnStatusDelivery = '';
   state.remark = '';
   state.photoFile = null;
   if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
@@ -547,7 +547,7 @@ const formatCoordinate = (val) => {
 
 const submitUpdate = async () => {
   if (!state.isValid) return;
-  if (!state.dnStatus) {
+  if (!state.dnStatusDelivery) {
     state.needsStatusHint = true;
     state.needsStatusShake = true;
     return;
@@ -594,7 +594,7 @@ const submitUpdate = async () => {
       state.submitView = {
         phoneNumber: currentPhone,
         dnNumber: state.dnNumber,
-        status: state.dnStatus,
+      status_delivery: state.dnStatusDelivery,
         remark: state.remark,
         photo: state.photoPreview || null,
         lng: state.location?.lng,
@@ -609,7 +609,7 @@ const submitUpdate = async () => {
 
     const fd = new FormData();
     fd.append('dnNumber', state.dnNumber);
-    fd.append('status', state.dnStatus ?? '');
+  fd.append('status_delivery', state.dnStatusDelivery ?? '');
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
@@ -641,7 +641,7 @@ const submitUpdate = async () => {
     state.submitView = {
       phoneNumber: currentPhone,
       dnNumber: state.dnNumber,
-      status: state.dnStatus,
+  status_delivery: state.dnStatusDelivery,
       remark: state.remark,
       photo: state.photoPreview || null,
       lng: state.location?.lng,
