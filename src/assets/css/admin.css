@@ -11,31 +11,36 @@
 }
 @media (max-width: 960px) {
     .admin-page td.summary-checkin-cell .checkin-cell {
-        flex-direction: column;
-        gap: 6px;
-        align-items: flex-start;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
     }
     .admin-page td.summary-checkin-cell .checkin-cell .icon-link,
     .admin-page td.summary-checkin-cell .checkin-cell .map-link {
         align-items: center;
-        justify-content: flex-start;
+        justify-content: center;
         display: inline-flex;
         min-height: 24px;
     }
 }
 @media (max-width: 1100px) {
-    /* 打卡列竖向展示 */
-            .admin-page td.summary-checkin-cell .checkin-cell {
-                flex-direction: column;
-                gap: 2px;
-                align-items: center;
+    /* 打卡列保持同一行显示 */
+    .admin-page td.summary-checkin-cell .checkin-cell {
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
     }
-    /* 操作列竖向展示 */
-            .admin-page table th:last-child .actions,
-            .admin-page table td:last-child .actions {
-                flex-direction: column;
-                align-items: center;
-                gap: 1px;
+    /* 操作列按钮横向对齐 */
+    .admin-page table th:last-child .actions,
+    .admin-page table td:last-child .actions {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-start;
     }
         .admin-page table th:last-child .actions .icon-btn,
         .admin-page table th:last-child .actions .icon-link,
