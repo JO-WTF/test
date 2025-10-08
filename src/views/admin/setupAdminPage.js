@@ -14,7 +14,13 @@ import { createLspSummaryCardManager } from './lspSummaryCards.js';
 import { createFilterBridgeManager } from './filterBridgeManager.js';
 import { createAuthHandler } from './authHandler.js';
 import { getTodayDateStringInTimezone } from './dateUtils.js';
-import { escapeHtml, setFormControlValue } from './utils.js';
+import {
+  escapeHtml,
+  setFormControlValue,
+  lockBodyScroll,
+  unlockBodyScroll,
+  resetBodyScrollLock,
+} from './utils.js';
 import { createTableRenderer } from './tableRenderer.js';
 
 import {
@@ -959,11 +965,19 @@ export function setupAdminPage(
     populateModalStatusDeliveryOptions(canonicalStatusDelivery);
     updateModalFieldVisibility();
     if (mMsg) mMsg.textContent = '';
+    const wasVisible = mask && mask.style.display === 'flex';
     if (mask) mask.style.display = 'flex';
+    if (!wasVisible) {
+      lockBodyScroll();
+    }
   }
 
   function closeModal() {
+    const wasVisible = mask && mask.style.display === 'flex';
     if (mask) mask.style.display = 'none';
+    if (wasVisible) {
+      unlockBodyScroll();
+    }
     editingId = 0;
     editingItem = null;
     if (mStatusDelivery) {
@@ -982,8 +996,12 @@ export function setupAdminPage(
       historyContent.innerHTML = '<div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>';
     }
     
+    const wasVisible = updateHistoryModal.style.display === 'flex';
     updateHistoryModal.style.display = 'flex';
-    
+    if (!wasVisible) {
+      lockBodyScroll();
+    }
+
     try {
       const url = `${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`;
       const resp = await fetch(url, { signal });
@@ -1013,7 +1031,11 @@ export function setupAdminPage(
 
   function closeUpdateHistoryModal() {
     if (updateHistoryModal) {
+      const wasVisible = updateHistoryModal.style.display === 'flex';
       updateHistoryModal.style.display = 'none';
+      if (wasVisible) {
+        unlockBodyScroll();
+      }
     }
   }
 
@@ -1923,5 +1945,6 @@ export function setupAdminPage(
       console.error(err);
     }
     if (tableRenderer) tableRenderer.cleanup();
+    resetBodyScrollLock();
   };
 }

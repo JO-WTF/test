@@ -1,4 +1,4 @@
-import { escapeHtml } from './utils.js';
+import { escapeHtml, lockBodyScroll, unlockBodyScroll } from './utils.js';
 import { TRANSPORT_MANAGER_ROLE_KEY } from './constants.js';
 import { normalizeDnSoft, DN_VALID_RE } from '../../utils/dn.js';
 
@@ -157,7 +157,11 @@ export function createDnEntryManager({
       );
       return;
     }
+    const wasVisible = dnModal.style.display === 'flex';
     dnModal.style.display = 'flex';
+    if (!wasVisible) {
+      lockBodyScroll();
+    }
     if (dnEntryPreview) {
       dnEntryPreview.innerHTML = '';
     }
@@ -175,7 +179,13 @@ export function createDnEntryManager({
   }
 
   function closeModal() {
-    if (dnModal) dnModal.style.display = 'none';
+    if (dnModal) {
+      const wasVisible = dnModal.style.display === 'flex';
+      dnModal.style.display = 'none';
+      if (wasVisible) {
+        unlockBodyScroll();
+      }
+    }
   }
 
   async function handleConfirm() {

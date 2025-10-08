@@ -5,6 +5,7 @@
 
 import { ROLE_LIST } from '../../config.js';
 import { ROLE_MAP, AUTH_STORAGE_KEY } from './constants.js';
+import { lockBodyScroll, unlockBodyScroll } from './utils.js';
 
 /**
  * 清理用户信息对象
@@ -188,7 +189,11 @@ export function createAuthHandler(options) {
    */
   function openAuthModal() {
     if (!authModal) return;
+    const wasVisible = authModal.style.display === 'flex';
     authModal.style.display = 'flex';
+    if (!wasVisible) {
+      lockBodyScroll();
+    }
     if (authMsg) authMsg.textContent = '';
     if (authInput) {
       authInput.value = '';
@@ -206,7 +211,13 @@ export function createAuthHandler(options) {
    * 关闭授权登录模态框
    */
   function closeAuthModal() {
-    if (authModal) authModal.style.display = 'none';
+    if (authModal) {
+      const wasVisible = authModal.style.display === 'flex';
+      authModal.style.display = 'none';
+      if (wasVisible) {
+        unlockBodyScroll();
+      }
+    }
   }
 
   /**
