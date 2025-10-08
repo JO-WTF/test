@@ -89,7 +89,7 @@
   .admin-page .filters-grid .field input:not([class*="ant-"]),
   .admin-page .filters-grid .field select:not([class*="ant-"]) {
     width: 100%;
-    height: 28px;
+    height: 16px;
     padding: 5px 10px;
     box-sizing: border-box;
   }
@@ -192,15 +192,17 @@
     padding: 0;
     text-align: left;
     flex-shrink: 0;
+    min-height: 18px;
   }
 
   /* First row: DN Number on left, Region + Plan Date on right */
-  .admin-page tr.summary-row td:first-child {
+  .admin-page tr.summary-row .summary-dn-cell {
     order: 1;
     flex: 0 0 auto;
     width: auto;
     margin-bottom: 8px;
     margin-right: auto;
+    min-height: 18px;
   }
 
   .admin-page tr.summary-row .summary-cell {
@@ -218,67 +220,55 @@
     font-size: 12px;
   }
 
-  /* Plan MOS Date - display after region with border, right aligned */
-  .admin-page tr.summary-row td:nth-child(3) {
+  /* Region & Plan MOS - compact tag with optional mobile formatting */
+  .admin-page tr.summary-row .summary-region-plan-cell {
     order: 1;
     flex: 0 0 auto;
     width: auto;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
     margin-bottom: 8px;
+    margin-right: 6px;
     padding: 4px 10px;
-    position: relative;
+    font-size: 11px;
+    font-weight: 500;
     border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
     background: var(--ant-surface-container);
+    position: relative;
+    min-height: 18px;
   }
 
-  /* When has mobile value, hide the original content */
-  .admin-page tr.summary-row td:nth-child(3)[data-mobile-value]:not([data-mobile-value=""]) {
-    font-size: 0 !important;
-    color: transparent !important;
-    line-height: 0;
+  .admin-page tr.summary-row .summary-region-plan-cell .region-plan-cell__region,
+  .admin-page tr.summary-row .summary-region-plan-cell .region-plan-cell__plan {
+    display: inline;
+    margin: 0;
   }
 
-  /* Use mobile formatted value for Plan MOS Date */
-  .admin-page tr.summary-row td:nth-child(3)[data-mobile-value]:not([data-mobile-value=""])::before {
+  .admin-page tr.summary-row .summary-region-plan-cell::before {
+    content: none;
+  }
+
+  /* When a mobile-friendly Plan value exists, display it via pseudo element */
+  .admin-page tr.summary-row .summary-region-plan-cell[data-mobile-value]:not([data-mobile-value=""])::after {
     content: attr(data-mobile-value);
-    display: block;
+    display: inline;
     font-size: 11px;
     color: var(--ant-text-secondary);
     font-weight: 500;
     line-height: normal;
+    margin-left: 6px;
   }
 
-  /* Hide all child elements when mobile value exists */
-  .admin-page tr.summary-row td:nth-child(3)[data-mobile-value]:not([data-mobile-value=""]) * {
+  .admin-page tr.summary-row .summary-region-plan-cell[data-mobile-value]:not([data-mobile-value=""]) .region-plan-cell__plan {
     display: none !important;
     visibility: hidden !important;
   }
 
-  /* Region - display before plan date with border, no label */
-  .admin-page tr.summary-row td:nth-child(2) {
-    order: 1;
-    flex: 0 0 auto;
-    width: auto;
-    display: inline-flex;
-    align-items: center;
-    margin-bottom: 8px;
-    margin-right: 6px;
-    padding: 4px 10px;
-    font-size: 11px;
-    color: var(--ant-text-secondary);
-    font-weight: 500;
-    border: 1px solid var(--ant-border-subtle);
-    border-radius: 12px;
-    background: var(--ant-surface-container);
-  }
-
-  /* Remove region label */
-  .admin-page tr.summary-row td:nth-child(2)::before {
-    content: none;
-  }
-
   /* LSP - same row with Delivery and Status, same height as region/plan date */
-  .admin-page tr.summary-row td:nth-child(4) {
+  .admin-page tr.summary-row .summary-lsp-cell {
     order: 2;
     flex: 0 0 auto;
     width: auto;
@@ -292,11 +282,12 @@
     border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
     background: var(--ant-surface-container);
+    min-height: 16px;
   }
 
   /* Delivery and Status - same row with LSP, same height as region/plan date */
-  .admin-page tr.summary-row td:nth-child(6),
-  .admin-page tr.summary-row td:nth-child(7) {
+  .admin-page tr.summary-row .summary-status-delivery-cell,
+  .admin-page tr.summary-row .summary-status-cell {
     order: 2;
     flex: 0 0 auto;
     width: auto;
@@ -310,30 +301,42 @@
     border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
     background: var(--ant-surface-container);
+    min-height: 16px;
   }
 
-  .admin-page tr.summary-row td:nth-child(6) {
+  .admin-page tr.summary-row .summary-status-delivery-cell {
     font-size: 11px;
     color: var(--ant-text-secondary);
     font-weight: 500;
+    min-height: 16px;
   }
 
-  .admin-page tr.summary-row td:nth-child(6)::before {
+  .admin-page tr.summary-row .summary-status-delivery-cell::before,
+  .admin-page tr.summary-row .summary-status-cell::before {
     content: none;
   }
 
-  .admin-page tr.summary-row td:nth-child(4)::before {
+  .admin-page tr.summary-row .summary-lsp-cell::before,
+  .admin-page tr.summary-row .summary-issue-remark-cell::before,
+  .admin-page tr.summary-row .summary-status-cell::before,
+  .admin-page tr.summary-row .summary-remark-cell::before {
+    font-weight: 600;
+    color: var(--ant-text-muted);
+    flex-shrink: 0;
+  }
+
+  .admin-page tr.summary-row .summary-lsp-cell::before {
     content: 'LSP: ';
   }
 
   /* When has mobile value, hide the original LSP name */
-  .admin-page tr.summary-row td:nth-child(4)[data-mobile-value]:not([data-mobile-value=""]) {
+  .admin-page tr.summary-row .summary-lsp-cell[data-mobile-value]:not([data-mobile-value=""]) {
     font-size: 0 !important;
     color: transparent !important;
   }
 
   /* Show abbreviation after the label */
-  .admin-page tr.summary-row td:nth-child(4)[data-mobile-value]:not([data-mobile-value=""])::after {
+  .admin-page tr.summary-row .summary-lsp-cell[data-mobile-value]:not([data-mobile-value=""])::after {
     content: attr(data-mobile-value);
     font-weight: 600;
     text-transform: uppercase;
@@ -343,14 +346,14 @@
   }
 
   /* Hide all child elements when mobile value exists */
-  .admin-page tr.summary-row td:nth-child(4)[data-mobile-value]:not([data-mobile-value=""]) * {
+  .admin-page tr.summary-row .summary-lsp-cell[data-mobile-value]:not([data-mobile-value=""]) * {
     display: none !important;
     visibility: hidden !important;
   }
 
   /* Issue and Remark - separate rows */
-  .admin-page tr.summary-row td:nth-child(5),
-  .admin-page tr.summary-row td:nth-child(8) {
+  .admin-page tr.summary-row .summary-issue-remark-cell,
+  .admin-page tr.summary-row .summary-remark-cell {
     flex: 0 0 100%;
     width: 100%;
     display: flex;
@@ -359,36 +362,24 @@
     gap: 4px;
     font-size: 12px;
     margin-bottom: 6px;
+    min-height: 16px;
   }
 
-  .admin-page tr.summary-row td:nth-child(5) {
+  .admin-page tr.summary-row .summary-issue-remark-cell {
     order: 4;
+    min-height: 18px;
   }
 
-  /* Common label styles for all fields */
-  .admin-page tr.summary-row td:nth-child(4)::before,
-  .admin-page tr.summary-row td:nth-child(5)::before,
-  .admin-page tr.summary-row td:nth-child(7)::before,
-  .admin-page tr.summary-row td:nth-child(8)::before {
-    font-weight: 600;
-    color: var(--ant-text-muted);
-    flex-shrink: 0;
-  }
-
-  .admin-page tr.summary-row td:nth-child(5)::before {
+  .admin-page tr.summary-row .summary-issue-remark-cell::before {
     content: 'Issue: ';
     font-size: 11px;
   }
 
-  .admin-page tr.summary-row td:nth-child(7)::before {
-    content: none;
-  }
-
-  .admin-page tr.summary-row td:nth-child(7) .status-cell-wrapper {
+  .admin-page tr.summary-row .summary-status-cell .status-cell-wrapper {
     gap: 4px;
   }
 
-  .admin-page tr.summary-row td:nth-child(7) .status-text {
+  .admin-page tr.summary-row .summary-status-cell .status-text {
     font-weight: 600;
     font-size: 13px;
   }
@@ -401,43 +392,67 @@
     font-size: 10px;
   }
 
-  .admin-page tr.summary-row td:nth-child(8) {
+  .admin-page tr.summary-row .summary-remark-cell {
     order: 5;
+    min-height: 18px;
   }
 
-  .admin-page tr.summary-row td:nth-child(8)::before {
+  .admin-page tr.summary-row .summary-remark-cell::before {
     content: '备注: ';
     font-size: 11px;
   }
 
   /* Photo, Location, and Actions - display in one row */
-  .admin-page tr.summary-row td:nth-child(9),
-  .admin-page tr.summary-row td:nth-child(10),
-  .admin-page tr.summary-row td:last-child {
+  .admin-page tr.summary-row .summary-checkin-cell,
+  .admin-page tr.summary-row .summary-actions-cell {
     order: 8;
     flex: 0 0 auto;
     width: auto;
     display: inline-flex;
     align-items: center;
-    gap: 20px;
-    padding: 4px 24px 0 0;
+    gap: 12px;
+    padding: 0 8px 0 0;
     margin: 0;
     border: 0;
-    min-height: 44px;
-    height: 44px;
+    min-height: 16px;
+    height: 16px;
+  }
+
+  .admin-page tr.summary-row .summary-actions-cell {
+    padding: 0;
+    min-height: 16px;
+    height: 16px;
   }
 
   /* Remove previous labels */
-  .admin-page tr.summary-row td:nth-child(9)::before,
-  .admin-page tr.summary-row td:nth-child(10)::before {
+  .admin-page tr.summary-row .summary-checkin-cell::before {
     content: none;
   }
 
   /* Adjust icon and button spacing */
-  .admin-page tr.summary-row td:nth-child(9) .icon-link,
-  .admin-page tr.summary-row td:nth-child(10) .icon-link,
-  .admin-page tr.summary-row td:last-child .icon-btn {
+  .admin-page tr.summary-row .summary-checkin-cell .icon-link,
+  .admin-page tr.summary-row .summary-actions-cell .icon-link,
+  .admin-page tr.summary-row .summary-actions-cell .icon-btn {
     margin: 0;
+  }
+
+  /* Photo + map buttons appear side-by-side */
+  .admin-page tr.summary-row .summary-checkin-cell .checkin-cell,
+  .admin-page tr.summary-row .summary-actions-cell .actions {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .admin-page tr.summary-row .summary-checkin-cell .checkin-cell > *,
+  .admin-page tr.summary-row .summary-actions-cell .actions > * {
+    flex: 0 0 auto;
+  }
+
+  .admin-page tr.summary-row .summary-updated-cell {
+    min-height: 16px;
   }
 
   /* Updated At - hide on mobile */
@@ -446,7 +461,7 @@
   }
 
   /* Actions - now in the same row as photo and location */
-  .admin-page tr.summary-row td:last-child .actions {
+  .admin-page tr.summary-row .summary-actions-cell .actions {
     display: inline-flex;
     flex-direction: row;
     align-items: center;
@@ -490,12 +505,11 @@
 
   .admin-page .icon-link,
   .admin-page .icon-btn,
-  .admin-page tr.summary-row td:nth-child(9) .muted,
-  .admin-page tr.summary-row td:nth-child(10) .muted {
-    min-width: 33px;
-    min-height: 33px;
-    width: 33px;
-    height: 33px;
+  .admin-page tr.summary-row .summary-checkin-cell .muted {
+    min-width: 16px;
+    min-height: 16px;
+    width: 16px;
+    height: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -633,8 +647,7 @@
   }
 
   /* Muted placeholder styling */
-  .admin-page tr.summary-row td:nth-child(9) .muted,
-  .admin-page tr.summary-row td:nth-child(10) .muted {
+  .admin-page tr.summary-row .summary-checkin-cell .muted {
     font-size: 14px;
     color: var(--ant-text-muted);
   }

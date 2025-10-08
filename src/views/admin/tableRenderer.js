@@ -594,11 +594,11 @@ export function createTableRenderer(options = {}) {
         ? `<button type="button" class="update-count-badge" data-dn-number="${escapeHtml(rawDnNumber)}" title="点击查看更新记录 (${updateCount} 次)">${updateCount}</button>`
         : '';
 
-      const statusCell = `<td data-raw-status="${escapeHtml(statusRaw)}" data-status-delivery="${escapeHtml(statusDeliveryCanonical || '')}"><div class="status-cell-wrapper">${statusDisplay(statusRaw)}${updateCountBadge}</div></td>`;
-  // 合并照片和位置为打卡列
-  const photoCell = buildPhotoCell(item);
-  const locationCell = buildLocationCell(item);
-  const checkinCell = `<div class="checkin-cell">${photoCell}${locationCell}</div>`;
+      const statusCellContent = `<div class="status-cell-wrapper">${statusDisplay(statusRaw)}${updateCountBadge}</div>`;
+      // 合并照片和位置为打卡列
+      const photoCell = buildPhotoCell(item);
+      const locationCell = buildLocationCell(item);
+      const checkinCell = `<div class="checkin-cell">${photoCell}${locationCell}</div>`;
       const lspCell = lsp ? escapeHtml(lsp) : '<span class="muted">-</span>';
       const regionLine = region
         ? `<span class="region-plan-cell__region">${escapeHtml(region)}</span>`
@@ -641,7 +641,7 @@ export function createTableRenderer(options = {}) {
           </td>`,
           `      <td class="summary-lsp-cell" data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
           `      <td class="summary-status-delivery-cell">${statusDeliveryCell}</td>`,
-          `      <td class="summary-status-cell">${statusCell}</td>`,
+          `      <td class="summary-status-cell" data-raw-status="${escapeHtml(statusRaw)}" data-status-delivery="${escapeHtml(statusDeliveryCanonical || '')}">${statusCellContent}</td>`,
           `      <td class="summary-issue-remark-cell">${issueRemarkCell}</td>`,
           `      <td class="summary-remark-cell">${remarkDisplay}</td>`,
           `      <td class="summary-checkin-cell">${checkinCell}</td>`,
