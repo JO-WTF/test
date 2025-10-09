@@ -1,6 +1,5 @@
 import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
-import { STATUS_DELIVERY_NOT_EMPTY_VALUE, STATUS_DELIVERY_ANY_VALUE } from './constants.js';
 import { STATUS_DELIVERY_ITEMS } from '../../config.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
@@ -16,9 +15,6 @@ const DATE_PRESET_FALLBACK_LABELS = {
   tomorrow: 'Tomorrow',
 };
 
-// Re-export for backward compatibility
-export { STATUS_DELIVERY_NOT_EMPTY_VALUE };
-
 const HAS_COORDINATE_OPTION_DEFS = [
   { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
   { value: 'true', translationKey: 'hasCoord.true', fallback: '有经纬度' },
@@ -26,9 +22,9 @@ const HAS_COORDINATE_OPTION_DEFS = [
 ];
 
 const STATUS_FILTER_DEFS = [
-  { value: STATUS_DELIVERY_ANY_VALUE, translationKey: 'status.filter.any', fallback: '任意' },
+  { value: "", translationKey: 'status.filter.any', fallback: '任意' },
   {
-    value: STATUS_DELIVERY_NOT_EMPTY_VALUE,
+    value: '__NOT_EMPTY__',
     translationKey: 'status.filter.notEmpty',
     fallback: '任意非空',
   },
@@ -556,7 +552,7 @@ export function useAdminFilters() {
 
   const setDefaultStatusFilter = () => {
     try {
-  status.bridge.setValue(STATUS_DELIVERY_ANY_VALUE);
+  status.bridge.setValue("");
     } catch (err) {
       console.error(err);
     }

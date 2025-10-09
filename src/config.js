@@ -152,13 +152,10 @@ export const STATUS_DELIVERY_ITEMS = Object.freeze(
   })
 );
 
-export const STATUS_DELIVERY_TRANSLATION_KEYS = Object.freeze({
+export const STATUS_DELIVERY_VALUE_TO_KEY = Object.freeze({
   ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'translationKey'),
 });
 
-export const STATUS_DELIVERY_FALLBACK_LABELS = Object.freeze({
-  ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'fallbackLabel'),
-});
 
 export const STATUS_DELIVERY_DISPLAY_OVERRIDES = Object.freeze(
   STATUS_SITE_DEFINITIONS.reduce((acc, { value, displayOverride }) => {
@@ -189,12 +186,8 @@ export const STATUS_SITE_ITEMS = Object.freeze(
   })
 );
 
-export const STATUS_SITE_TRANSLATION_KEYS = Object.freeze(
+export const STATUS_SITE_VALUE_TO_KEY = Object.freeze(
   buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'translationKey')
-);
-
-export const STATUS_SITE_FALLBACK_LABELS = Object.freeze(
-  buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'fallbackLabel')
 );
 
 export const STATUS_SITE_DISPLAY_OVERRIDES = Object.freeze(

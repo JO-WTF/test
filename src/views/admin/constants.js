@@ -3,14 +3,15 @@ import {
   ROLE_LIST,
   STATUS_DELIVERY_VALUES,
   STATUS_SITE_VALUES,
-  STATUS_DELIVERY_TRANSLATION_KEYS,
+  STATUS_DELIVERY_VALUE_TO_KEY,
+  STATUS_SITE_VALUE_TO_KEY,
   STATUS_DELIVERY_ALIAS_MAP,
   STATUS_DELIVERY_ORDERED_LIST,
   TRANSPORT_MANAGER_ROLE_KEY,
 } from '../../config.js';
 
 // Re-export constants from config.js for use in other modules
-export { STATUS_DELIVERY_VALUES, STATUS_SITE_VALUES, TRANSPORT_MANAGER_ROLE_KEY };
+export { STATUS_DELIVERY_VALUES, STATUS_SITE_VALUES, STATUS_DELIVERY_VALUE_TO_KEY, STATUS_DELIVERY_ALIAS_MAP,TRANSPORT_MANAGER_ROLE_KEY };
 
 // 角色相关常量
 export const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
@@ -19,18 +20,14 @@ export const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]
 export const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
 
 // 状态相关常量
-export const STATUS_DELIVERY_VALUE_TO_KEY = STATUS_DELIVERY_TRANSLATION_KEYS || {};
-export const STATUS_DELIVERY_ALIAS_LOOKUP = STATUS_DELIVERY_ALIAS_MAP || {};
 export const STATUS_DELIVERY_KNOWN_VALUES = new Set(Object.keys(STATUS_DELIVERY_VALUE_TO_KEY));
-export const STATUS_DELIVERY_NOT_EMPTY_VALUE = '__NOT_EMPTY__';
+export const STATUS_SITE_KNOWN_VALUES = new Set(Object.keys(STATUS_SITE_VALUE_TO_KEY));
+export const DEFAULT_STATUS_DELIVERY_VALUE = "";
 export const STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK =
   '配送状态(status_delivery)与司机上传的货物状态(status)不一致，请检查并更新。';
-export const STATUS_DELIVERY_ANY_VALUE = '';
-export const DEFAULT_STATUS_DELIVERY_VALUE = STATUS_DELIVERY_ANY_VALUE;
 
 // 时区相关常量
 export const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';
-export const PLAN_MOS_TIMEZONE_OFFSET_MINUTES = 7 * 60;
 export const JAKARTA_UTC_OFFSET_MINUTES = 7 * 60;
 
 // 表格列数常量
@@ -38,7 +35,7 @@ export const SUMMARY_BASE_COLUMN_COUNT = 10;
 export const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 11;
 
 // 归档相关常量
-export const ARCHIVE_THRESHOLD_DAYS = 55;
+export const ARCHIVE_THRESHOLD_DAYS = 10;
 
 // 状态卡片配置
 export const TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS = [

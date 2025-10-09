@@ -26,13 +26,10 @@ import { createTableRenderer } from './tableRenderer.js';
 import {
   TRANSPORT_MANAGER_ROLE_KEY,
   STATUS_DELIVERY_VALUE_TO_KEY,
-  STATUS_DELIVERY_ALIAS_LOOKUP,
+  STATUS_DELIVERY_ALIAS_MAP,
   STATUS_DELIVERY_KNOWN_VALUES,
-  STATUS_DELIVERY_NOT_EMPTY_VALUE,
-  STATUS_DELIVERY_ANY_VALUE,
   DEFAULT_STATUS_DELIVERY_VALUE,
   PLAN_MOS_TIME_ZONE,
-  PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
   JAKARTA_UTC_OFFSET_MINUTES,
   ARCHIVE_THRESHOLD_DAYS,
   TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
@@ -396,7 +393,7 @@ export function setupAdminPage(
   function normalizeStatusDeliveryValue(raw) {
     const text = (raw || '').trim();
     if (!text) return '';
-    const alias = STATUS_DELIVERY_ALIAS_LOOKUP[text];
+    const alias = STATUS_DELIVERY_ALIAS_MAP[text];
     if (alias) return alias;
     if (STATUS_DELIVERY_KNOWN_VALUES.has(text)) return text;
     const upper = text.toUpperCase();
@@ -707,7 +704,7 @@ export function setupAdminPage(
     resetAllFilters();
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
-      PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
+      JAKARTA_UTC_OFFSET_MINUTES,
       'dd MMM yy'
     );
     setFilterValue('plan_mos_date', todayJakarta);
@@ -722,7 +719,7 @@ export function setupAdminPage(
     const targetStatus = def?.type === 'status_delivery' ? canonicalStatus : '';
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
-      PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
+      JAKARTA_UTC_OFFSET_MINUTES,
       'dd MMM yy'
     );
 
@@ -809,7 +806,7 @@ export function setupAdminPage(
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
-      if (st === STATUS_DELIVERY_NOT_EMPTY_VALUE) {
+      if (st === '__NOT_EMPTY__') {
         params.set('status_not_empty', 'true');
       } else if (st) {
         params.set('status_delivery', st);
@@ -1629,7 +1626,7 @@ export function setupAdminPage(
     'admin:status-switch-change',
     (event) => {
       const detail = event?.detail || {};
-      const targetValue = detail.showOnlyNonEmpty ? STATUS_DELIVERY_NOT_EMPTY_VALUE : STATUS_DELIVERY_ANY_VALUE;
+      const targetValue = detail.showOnlyNonEmpty ? '__NOT_EMPTY__' : "";
       setFilterValue('status_delivery', targetValue);
       q.page = 1;
       fetchList();

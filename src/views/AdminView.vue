@@ -474,7 +474,7 @@ import { useRouter } from 'vue-router';
 import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
-import { useAdminFilters, STATUS_DELIVERY_NOT_EMPTY_VALUE } from './admin/useAdminFilters';
+import { useAdminFilters } from './admin/useAdminFilters';
 import { TRANSPORT_MANAGER_ROLE_KEY } from './admin/constants';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import 'toastify-js/src/toastify.css';
@@ -615,7 +615,7 @@ watch(
   (val) => {
     const normalized = normalizeStatusSelection(val);
     const nextChecked =
-      normalized.length === 1 && normalized[0] === STATUS_DELIVERY_NOT_EMPTY_VALUE;
+      normalized.length === 1 && normalized[0] === '__NOT_EMPTY__';
     if (syncingFromSwitch) {
       syncingFromSwitch = false;
       if (showOnlyNonEmptyStatus.value !== nextChecked) {
