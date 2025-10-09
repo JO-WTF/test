@@ -977,7 +977,9 @@ export function setupAdminPage(
     }
 
     const recordsHtml = items.map((item, index) => {
-      const status = i18nStatusDisplay(item.status_delivery || item.status || '');
+      console.log(item);
+      const statusDelivery = i18nStatusDisplay(item.status_delivery || '');
+      const statusSite = i18nStatusDisplay(item.status_site || '');
       const remark = item.remark ? escapeHtml(item.remark) : '<span class="muted">-</span>';
       const photoUrl = item.photo_url ? toAbsUrl(item.photo_url) : '';
 
@@ -1038,8 +1040,12 @@ export function setupAdminPage(
             <div class="history-record-info">
               <div class="history-info-row">
                 <div class="history-field">
-                  <div class="history-field-label">状态</div>
-                  <div class="history-field-value history-status"><strong>${status}</strong></div>
+                  <div class="history-field-label">配送状态</div>
+                  <div class="history-field-value history-status"><strong>${statusDelivery}</strong></div>
+                </div>
+                <div class="history-field">
+                  <div class="history-field-label">站点状态</div>
+                  <div class="history-field-value history-status"><strong>${statusSite}</strong></div>
                 </div>
                 <div class="history-field">
                   <div class="history-field-label">更新人</div>
