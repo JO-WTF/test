@@ -22,6 +22,7 @@ import {
   resetBodyScrollLock,
 } from './utils.js';
 import { createTableRenderer } from './tableRenderer.js';
+import { createUpdateHistoryRenderer } from './updateHistoryRenderer.js';
 
 import {
   TRANSPORT_MANAGER_ROLE_KEY,
@@ -134,6 +135,18 @@ export function setupAdminPage(
   let editingItem = null;
   let removeI18nListener = null;
   let tableRenderer = null;
+  const updateHistoryRenderer = createUpdateHistoryRenderer({
+    container: historyContent,
+    signal,
+    i18n,
+    i18nStatusDisplay,
+    escapeHtml,
+    formatTimestampToJakarta,
+    toAbsUrl,
+    getIconMarkup,
+    getMapboxStaticImageUrl,
+    getTableRenderer: () => tableRenderer,
+  });
 
   // 初始化授权处理器
   const authHandler = createAuthHandler({
@@ -933,7 +946,7 @@ export function setupAdminPage(
       }
 
       const items = Array.isArray(data?.items) ? data.items : [];
-      renderUpdateHistory(items);
+      updateHistoryRenderer.render(items);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (historyContent) {
@@ -965,118 +978,6 @@ export function setupAdminPage(
     const marker = `pin-s+ff0000(${lng},${lat})`; // Small red pin
 
     return `https://api.mapbox.com/styles/v1/${style}/static/${marker}/${lng},${lat},${zoom},0/${width}x${height}@2x?access_token=${encodeURIComponent(mapboxToken)}`;
-  }
-
-  function renderUpdateHistory(items) {
-    if (!historyContent) return;
-
-    if (!items || items.length === 0) {
-      const emptyMsg = i18n?.t('updateHistory.empty') || '暂无更新记录';
-      historyContent.innerHTML = `<div class="empty-state">${escapeHtml(emptyMsg)}</div>`;
-      return;
-    }
-
-    const recordsHtml = items.map((item, index) => {
-      console.log(item);
-      const statusDelivery = i18nStatusDisplay(item.status_delivery || '');
-      const statusSite = i18nStatusDisplay(item.status_site || '');
-      const remark = item.remark ? escapeHtml(item.remark) : '<span class="muted">-</span>';
-      const photoUrl = item.photo_url ? toAbsUrl(item.photo_url) : '';
-
-      // Build updated_by with phone_number
-      let updatedBy = '<span class="muted">-</span>';
-      if (item.updated_by) {
-        updatedBy = escapeHtml(item.updated_by);
-        if (item.phone_number) {
-          updatedBy += ` <span class="phone-number-suffix">(${escapeHtml(item.phone_number)})</span>`;
-        }
-      }
-
-      const createdAt = item.created_at ? formatTimestampToJakarta(item.created_at) : '<span class="muted">-</span>';
-
-      const [lat, lng] = [item.lat, item.lng];
-      const hasCoords = lat && lng;
-
-      // Build map preview section
-      let mapSection = '';
-      if (hasCoords) {
-        const mapImageUrl = getMapboxStaticImageUrl(lng, lat);
-        const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
-        const coords = `${escapeHtml(lat)}, ${escapeHtml(lng)}`;
-
-        if (mapImageUrl) {
-          mapSection = `
-            <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener" class="history-map-image-link" title="在 Google Maps 中打开">
-              <img src="${escapeHtml(mapImageUrl)}" alt="位置地图" class="history-map-image" loading="lazy" />
-              <div class="history-map-overlay">
-                ${getIconMarkup('map')}
-              </div>
-            </a>
-          `;
-        } else {
-          // Fallback if no Mapbox token
-          mapSection = `
-            <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener" class="history-map-link-compact">
-              ${getIconMarkup('map')} 查看地图
-            </a>
-          `;
-        }
-      } else {
-        mapSection = '<span class="muted">无位置</span>';
-      }
-
-      // Build photo section
-      const photoSection = photoUrl
-        ? `<img src="${escapeHtml(photoUrl)}" alt="现场照片" class="history-photo-thumbnail view-link" data-url="${escapeHtml(photoUrl)}" loading="lazy" />`
-        : '<span class="muted">无照片</span>';
-
-      return `
-        <div class="history-record ${index === 0 ? 'latest' : ''}">
-          <div class="history-record-header">
-            <div class="history-record-index">#${items.length - index}</div>
-            <div class="history-record-time">${createdAt}</div>
-          </div>
-          <div class="history-record-main">
-            <div class="history-record-info">
-              <div class="history-info-row">
-                <div class="history-field">
-                  <div class="history-field-label">配送状态</div>
-                  <div class="history-field-value history-status"><strong>${statusDelivery}</strong></div>
-                </div>
-                <div class="history-field">
-                  <div class="history-field-label">站点状态</div>
-                  <div class="history-field-value history-status"><strong>${statusSite}</strong></div>
-                </div>
-                <div class="history-field">
-                  <div class="history-field-label">更新人</div>
-                  <div class="history-field-value">${updatedBy}</div>
-                </div>
-              </div>
-              <div class="history-field">
-                <div class="history-field-label">备注</div>
-                <div class="history-field-value">${remark}</div>
-              </div>
-            </div>
-            <div class="history-record-media">
-              <div class="history-media-item">${mapSection}</div>
-              <div class="history-media-item">${photoSection}</div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    historyContent.innerHTML = `<div class="history-records">${recordsHtml}</div>`;
-
-    // Bind photo view buttons
-    historyContent.querySelectorAll('.view-link').forEach((trigger) => {
-      trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const url = trigger.getAttribute('data-url');
-        tableRenderer.openViewerWithUrl(url);
-      }, { signal });
-    });
   }
 
   if (historyOk) {
