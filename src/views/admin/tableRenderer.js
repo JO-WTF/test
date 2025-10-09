@@ -640,8 +640,8 @@ export function createTableRenderer(options = {}) {
             ${planLine}
           </td>`,
           `      <td class="summary-lsp-cell" data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
-          `      <td class="summary-status-site-cell">${statusSiteCell}</td>`,
           `      <td class="summary-status-cell" data-raw-status="${escapeHtml(statusDeliveryRaw)}" data-status-site="${escapeHtml(statusSiteCanonical || '')}">${statusCellContent}</td>`,
+          `      <td class="summary-status-site-cell">${statusSiteCell}</td>`,
           `      <td class="summary-issue-remark-cell">${issueRemarkCell}</td>`,
           `      <td class="summary-remark-cell">${remarkDisplay}</td>`,
           `      <td class="summary-checkin-cell">${checkinCell}</td>`,

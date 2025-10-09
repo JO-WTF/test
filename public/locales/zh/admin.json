@@ -100,7 +100,6 @@
     "table.lsp": "LSP",
     "table.issueRemark": "问题备注",
     "table.statusDelivery": "配送状态",
-    "table.status": "状态",
     "table.remark": "备注",
     "table.checkin": "打卡",
     "table.updatedAt": "更新时间",
