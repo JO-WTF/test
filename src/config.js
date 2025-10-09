@@ -136,8 +136,6 @@ const ROLE_USER_PREFIXES = {
   [TRANSPORT_MANAGER_ROLE_KEY]: 'VITE_ROLE_TRANSPORT_MANAGER_USER_',
 };
 
-export const STATUS_SITE_VALUES = buildValueMap(STATUS_SITE_DEFINITIONS);
-export const STATUS_SITE_ORDERED_LIST = buildList(STATUS_SITE_DEFINITIONS);
 export const STATUS_DELIVERY_VALUES = buildValueMap(STATUS_DELIVERY_DEFINITIONS);
 export const STATUS_DELIVERY_ORDERED_LIST = buildList(STATUS_DELIVERY_DEFINITIONS);
 export const STATUS_DELIVERY_ITEMS = Object.freeze(
@@ -153,16 +151,12 @@ export const STATUS_DELIVERY_ITEMS = Object.freeze(
     };
   })
 );
-console.log(STATUS_SITE_VALUES);
-console.log(STATUS_DELIVERY_ITEMS);
 
 export const STATUS_DELIVERY_TRANSLATION_KEYS = Object.freeze({
-  ...buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'translationKey'),
   ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'translationKey'),
 });
 
 export const STATUS_DELIVERY_FALLBACK_LABELS = Object.freeze({
-  ...buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'fallbackLabel'),
   ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'fallbackLabel'),
 });
 
@@ -176,8 +170,39 @@ export const STATUS_DELIVERY_DISPLAY_OVERRIDES = Object.freeze(
 );
 
 export const STATUS_DELIVERY_ALIAS_MAP = createAliasMap(
-  STATUS_SITE_DEFINITIONS,
   STATUS_DELIVERY_DEFINITIONS
+);
+
+export const STATUS_SITE_VALUES = buildValueMap(STATUS_SITE_DEFINITIONS);
+export const STATUS_SITE_ORDERED_LIST = buildList(STATUS_SITE_DEFINITIONS);
+export const STATUS_SITE_ITEMS = Object.freeze(
+  STATUS_SITE_DEFINITIONS.map(({ key, value, translationKey, fallbackLabel }) => {
+    const camelKey = toCamelCaseKey(key);
+    return {
+      key,
+      value,
+      translationKey,
+      fallbackLabel,
+      camelKey,
+      filterLabelKey: `status.filter.${camelKey}`,
+    };
+  })
+);
+
+export const STATUS_SITE_TRANSLATION_KEYS = Object.freeze(
+  buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'translationKey')
+);
+
+export const STATUS_SITE_FALLBACK_LABELS = Object.freeze(
+  buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'fallbackLabel')
+);
+
+export const STATUS_SITE_DISPLAY_OVERRIDES = Object.freeze(
+  buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'displayOverride')
+);
+
+export const STATUS_SITE_ALIAS_MAP = createAliasMap(
+  STATUS_SITE_DEFINITIONS
 );
 
 export const ROLE_DEFINITIONS = {
@@ -191,14 +216,9 @@ export const ROLE_DEFINITIONS = {
       allowRemark: true,
       allowPhoto: true,
       requireStatusDeliverySelection: true,
-  statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
     },
-    statusDeliveryHighlights: [
-      { status_delivery: STATUS_SITE_VALUES.NEW_MOS },
-      { status_delivery: STATUS_SITE_VALUES.CANCEL_MOS },
-      { status_delivery: STATUS_SITE_VALUES.CLOSE_BY_RN },
-      { status_delivery: STATUS_SITE_VALUES.WAITING_PIC_FEEDBACK },
-    ],
+    statusDeliveryHighlights: [],
     users: loadRoleUsers(ROLE_USER_PREFIXES.lsp),
   },
   customer: {
@@ -211,7 +231,7 @@ export const ROLE_DEFINITIONS = {
       allowRemark: true,
       allowPhoto: false,
       requireStatusDeliverySelection: false,
-  statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
     },
     statusDeliveryHighlights: [
       { status_delivery: STATUS_SITE_VALUES.NEW_MOS },
@@ -229,17 +249,9 @@ export const ROLE_DEFINITIONS = {
       allowRemark: true,
       allowPhoto: true,
       requireStatusDeliverySelection: false,
-  statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
     },
-    statusDeliveryHighlights: [
-      { status_delivery: STATUS_SITE_VALUES.NEW_MOS },
-      { status_delivery: STATUS_SITE_VALUES.CANCEL_MOS },
-      { status_delivery: STATUS_SITE_VALUES.CLOSE_BY_RN },
-      { status_delivery: STATUS_SITE_VALUES.REPLAN_MOS_PROJECT },
-      { status_delivery: STATUS_SITE_VALUES.REPLAN_MOS_LSP_DELAY },
-      { status_delivery: STATUS_SITE_VALUES.PREPARE_VEHICLE },
-      { status_delivery: STATUS_SITE_VALUES.ON_THE_WAY },
-    ],
+    statusDeliveryHighlights: [],
     users: loadRoleUsers(ROLE_USER_PREFIXES[TRANSPORT_MANAGER_ROLE_KEY]),
   },
 };
