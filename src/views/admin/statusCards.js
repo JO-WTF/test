@@ -327,7 +327,7 @@ export function createStatusDeliveryCardManager({
       }
     }
 
-    const counts = stats?.total || Object.create(null);
+    const counts = stats?.counts ?? Object.create(null);
     let totalCount = 0;
 
     refs.forEach((ref) => {
