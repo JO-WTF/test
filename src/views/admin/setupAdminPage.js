@@ -59,7 +59,7 @@ export function setupAdminPage(
     onRoleChange,
   } = {}
 ) {
-  if (!rootEl) return () => {};
+  if (!rootEl) return () => { };
 
   const controller = new AbortController();
   const { signal } = controller;
@@ -98,7 +98,7 @@ export function setupAdminPage(
 
   const mask = el('modal-mask');
   const mId = el('modal-id');
-  const mStatus = el('m-status');
+  const mStatusDelivery = el('m-status-delivery');
   const mStatusSite = el('m-status-site');
   const mStatusSiteField = el('m-status-site-field');
   const mRemark = el('m-remark');
@@ -215,7 +215,7 @@ export function setupAdminPage(
 
   function formatTimestampToJakarta(timestamp) {
     if (!timestamp) return '';
-    
+
     let date;
     if (timestamp instanceof Date) {
       date = timestamp;
@@ -224,21 +224,21 @@ export function setupAdminPage(
     } else {
       return '';
     }
-    
+
     if (Number.isNaN(date.getTime())) return '';
-    
+
     // 转换为雅加达时间 (UTC+7)
     const jakartaOffset = JAKARTA_UTC_OFFSET_MINUTES || 420; // 默认 420 分钟 = 7 小时
     const utcTime = date.getTime();
     const jakartaTime = new Date(utcTime + jakartaOffset * 60 * 1000);
-    
+
     const year = jakartaTime.getUTCFullYear();
     const month = String(jakartaTime.getUTCMonth() + 1).padStart(2, '0');
     const day = String(jakartaTime.getUTCDate()).padStart(2, '0');
     const hours = String(jakartaTime.getUTCHours()).padStart(2, '0');
     const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
     const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
-    
+
     return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
   }
 
@@ -293,8 +293,8 @@ export function setupAdminPage(
       typeof paramInput === 'string'
         ? paramInput
         : paramInput && typeof paramInput.toString === 'function'
-        ? paramInput.toString()
-        : '';
+          ? paramInput.toString()
+          : '';
     const basePath =
       mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?';
     return `${API_BASE}${basePath}${params}`;
@@ -305,8 +305,8 @@ export function setupAdminPage(
       type === 'success'
         ? '#16a34a'
         : type === 'error'
-        ? '#dc2626'
-        : '#0f172a';
+          ? '#dc2626'
+          : '#0f172a';
     Toastify({
       text,
       duration: 3000,
@@ -370,8 +370,8 @@ export function setupAdminPage(
     getCurrentRole,
     normalizeStatusDeliveryValue,
     i18nStatusDisplay,
-  getStatusSiteValues: () => getFilterValues('status_site'),
-  getStatusDeliveryFilterValue: () => getSingleFilterValue('status_delivery'),
+    getStatusSiteValues: () => getFilterValues('status_site'),
+    getStatusDeliveryFilterValue: () => getSingleFilterValue('status_delivery'),
     transportManagerCards: TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
     onApplyFilter(def, canonicalStatus) {
       applyStatusCardFilter(def, canonicalStatus);
@@ -460,8 +460,8 @@ export function setupAdminPage(
     statusCards.updateActiveState();
     lspSummaryCards.updateActiveState();
     refreshDnEntryVisibility();
-    populateModalStatusOptions(mStatus?.value || '');
-  populateModalStatusSiteOptions(mStatusSite?.value || '');
+    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
+    populateModalStatusSiteOptions(mStatusSite?.value || '');
     dnEntry.renderFilterPreview();
   }
 
@@ -473,8 +473,8 @@ export function setupAdminPage(
 
   function handleAuthRoleApplied(_roleKey, _role, _userInfo) {
     refreshDnEntryVisibility();
-    populateModalStatusOptions(mStatus?.value || '');
-  populateModalStatusSiteOptions(mStatusSite?.value || '');
+    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
+    populateModalStatusSiteOptions(mStatusSite?.value || '');
     updateModalFieldVisibility();
     if (tableRenderer) {
       tableRenderer.updateActionColumnVisibility();
@@ -535,11 +535,11 @@ export function setupAdminPage(
     return canonical;
   }
 
-  function populateModalStatusOptions(selected) {
-    if (!mStatus) return;
+  function populateModalStatusDeliveryOptions(selected) {
+    if (!mStatusDelivery) return;
     const perms = getCurrentPermissions();
-    const rawAllowed = Array.isArray(perms?.statusOptions)
-      ? perms.statusOptions
+    const rawAllowed = Array.isArray(perms?.statusDeliveryOptions)
+      ? perms.statusDeliveryOptions
       : [];
     const baseList = rawAllowed.length ? rawAllowed : DEFAULT_MODAL_STATUS_DELIVERY_ORDER;
     const seen = new Set();
@@ -576,13 +576,13 @@ export function setupAdminPage(
       ordered.push(selectedCanonical);
     }
 
-  const keepLabel = i18n?.t('modal.status_delivery.keep') || '（不修改）';
-    mStatus.innerHTML = '';
+    const keepLabel = i18n?.t('modal.status_delivery.keep') || '（不修改）';
+    mStatusDelivery.innerHTML = '';
     const keepOption = document.createElement('option');
     keepOption.value = '';
-  keepOption.setAttribute('data-i18n', 'modal.status_delivery.keep');
+    keepOption.setAttribute('data-i18n', 'modal.status_delivery.keep');
     keepOption.textContent = keepLabel;
-    mStatus.appendChild(keepOption);
+    mStatusDelivery.appendChild(keepOption);
 
     const appended = new Set();
     ordered.forEach((value) => {
@@ -595,7 +595,7 @@ export function setupAdminPage(
       if (canonical === selectedCanonical) {
         opt.selected = true;
       }
-      mStatus.appendChild(opt);
+      mStatusDelivery.appendChild(opt);
     });
 
     if (selectedCanonical && !appended.has(selectedCanonical)) {
@@ -603,14 +603,14 @@ export function setupAdminPage(
       opt.value = selectedCanonical;
       opt.textContent = getModalStatusLabel(selectedCanonical);
       opt.selected = true;
-      mStatus.appendChild(opt);
+      mStatusDelivery.appendChild(opt);
       appended.add(selectedCanonical);
     }
 
     if (selectedCanonical) {
-      mStatus.value = selectedCanonical;
+      mStatusDelivery.value = selectedCanonical;
     } else {
-      mStatus.value = '';
+      mStatusDelivery.value = '';
     }
   }
 
@@ -658,8 +658,8 @@ export function setupAdminPage(
   }
 
   function syncStatusSiteWithStatus() {
-    if (!mStatus || !mStatusSite) return;
-    const canonicalStatus = normalizeStatusDeliveryValue(mStatus.value);
+    if (!mStatusDelivery || !mStatusSite) return;
+    const canonicalStatus = normalizeStatusDeliveryValue(mStatusDelivery.value);
     if (!canonicalStatus) {
       setFormControlValue(mStatusSite, '');
       return;
@@ -682,8 +682,8 @@ export function setupAdminPage(
     setFormControlValue(mStatusSite, nextValue);
   }
 
-  if (mStatus && mStatusSite) {
-    mStatus.addEventListener(
+  if (mStatusDelivery && mStatusSite) {
+    mStatusDelivery.addEventListener(
       'change',
       () => {
         syncStatusSiteWithStatus();
@@ -704,7 +704,7 @@ export function setupAdminPage(
   function applyLspSummaryCardFilter(lspName) {
     const normalizedLsp = normalizeTextValue(lspName);
     if (!normalizedLsp) return;
-  resetAllFilters();
+    resetAllFilters();
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
       PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
@@ -719,7 +719,7 @@ export function setupAdminPage(
   }
 
   function applyStatusCardFilter(def, canonicalStatus) {
-  const targetStatus = def?.type === 'status_delivery' ? canonicalStatus : '';
+    const targetStatus = def?.type === 'status_delivery' ? canonicalStatus : '';
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
       PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
@@ -738,11 +738,11 @@ export function setupAdminPage(
     setFilterValue('subcon', '');
     setFilterValue('status_wh', '');
 
-  // Clicking a status card应该只应用 status_site 筛选。
-  // 保持 status_delivery 筛选为空，避免查询被 status_delivery 限制。
-  setFilterValue('status_delivery', '');
+    // Clicking a status card应该只应用 status_site 筛选。
+    // 保持 status_delivery 筛选为空，避免查询被 status_delivery 限制。
+    setFilterValue('status_delivery', '');
 
-  setFilterValue('status_site', targetStatus);
+    setFilterValue('status_site', targetStatus);
 
     setFilterValue('plan_mos_date', todayJakarta);
 
@@ -774,8 +774,8 @@ export function setupAdminPage(
       setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
       setFilterDropdownOptions('subcon', payload?.subcon);
       setFilterDropdownOptions('status_wh', payload?.status_wh);
-  const siteOptions = payload?.status_site;
-  setFilterDropdownOptions('status_site', siteOptions);
+      const siteOptions = payload?.status_site;
+      setFilterDropdownOptions('status_site', siteOptions);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       console.error('Failed to load DN filter options', err);
@@ -793,7 +793,7 @@ export function setupAdminPage(
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-  const st = getSingleFilterValue('status_delivery');
+      const st = getSingleFilterValue('status_delivery');
       const rk = getInputValue('remark').trim();
       const hp = hasSelect?.value;
       const hc = getSingleFilterValue('has_coordinate');
@@ -805,14 +805,14 @@ export function setupAdminPage(
       const planMosDateTokens = getFilterValues('plan_mos_date');
       const subconValues = getFilterValues('subcon');
       const statusWhValues = getFilterValues('status_wh');
-  const statusSiteValues = getFilterValues('status_site');
+      const statusSiteValues = getFilterValues('status_site');
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
       if (st === STATUS_DELIVERY_NOT_EMPTY_VALUE) {
         params.set('status_not_empty', 'true');
       } else if (st) {
-  params.set('status_delivery', st);
+        params.set('status_delivery', st);
       }
       if (rk) params.set('remark', rk);
       if (hp) params.set('has_photo', hp);
@@ -953,8 +953,8 @@ export function setupAdminPage(
         console.error(err);
       }
     }
-  const canonicalStatus = normalizeStatusDeliveryValue(item.status_delivery || item.status);
-    populateModalStatusOptions(canonicalStatus);
+    const canonicalStatus = normalizeStatusDeliveryValue(item.status_delivery || item.status);
+    populateModalStatusDeliveryOptions(canonicalStatus);
     const statusSiteRaw =
       item.status_site ||
       item.statusSite ||
@@ -985,15 +985,15 @@ export function setupAdminPage(
 
   async function openUpdateHistoryModal(dnNumber) {
     if (!dnNumber || !updateHistoryModal) return;
-    
+
     if (historyDnNumber) {
       historyDnNumber.textContent = dnNumber;
     }
-    
+
     if (historyContent) {
       historyContent.innerHTML = '<div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>';
     }
-    
+
     const wasVisible = updateHistoryModal.style.display === 'flex';
     updateHistoryModal.style.display = 'flex';
     if (!wasVisible) {
@@ -1010,11 +1010,11 @@ export function setupAdminPage(
       } catch (err) {
         console.error(err);
       }
-      
+
       if (!resp.ok) {
         throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
       }
-      
+
       const items = Array.isArray(data?.items) ? data.items : [];
       renderUpdateHistory(items);
     } catch (err) {
@@ -1041,29 +1041,29 @@ export function setupAdminPage(
     // Get Mapbox token from env
     const mapboxToken = getMapboxAccessToken();
     if (!mapboxToken || !lng || !lat) return '';
-    
+
     // Mapbox Static Images API
     // https://docs.mapbox.com/api/maps/static-images/
     const style = 'mapbox/streets-v12'; // or 'mapbox/satellite-streets-v12' for satellite view
     const marker = `pin-s+ff0000(${lng},${lat})`; // Small red pin
-    
+
     return `https://api.mapbox.com/styles/v1/${style}/static/${marker}/${lng},${lat},${zoom},0/${width}x${height}@2x?access_token=${encodeURIComponent(mapboxToken)}`;
   }
 
   function renderUpdateHistory(items) {
     if (!historyContent) return;
-    
+
     if (!items || items.length === 0) {
       const emptyMsg = i18n?.t('updateHistory.empty') || '暂无更新记录';
       historyContent.innerHTML = `<div class="empty-state">${escapeHtml(emptyMsg)}</div>`;
       return;
     }
-    
+
     const recordsHtml = items.map((item, index) => {
-  const status = i18nStatusDisplay(item.status_delivery || item.status || '');
+      const status = i18nStatusDisplay(item.status_delivery || item.status || '');
       const remark = item.remark ? escapeHtml(item.remark) : '<span class="muted">-</span>';
       const photoUrl = item.photo_url ? toAbsUrl(item.photo_url) : '';
-      
+
       // Build updated_by with phone_number
       let updatedBy = '<span class="muted">-</span>';
       if (item.updated_by) {
@@ -1072,19 +1072,19 @@ export function setupAdminPage(
           updatedBy += ` <span class="phone-number-suffix">(${escapeHtml(item.phone_number)})</span>`;
         }
       }
-      
+
       const createdAt = item.created_at ? formatTimestampToJakarta(item.created_at) : '<span class="muted">-</span>';
-      
+
       const [lat, lng] = [item.lat, item.lng];
       const hasCoords = lat && lng;
-      
+
       // Build map preview section
       let mapSection = '';
       if (hasCoords) {
         const mapImageUrl = getMapboxStaticImageUrl(lng, lat);
         const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
         const coords = `${escapeHtml(lat)}, ${escapeHtml(lng)}`;
-        
+
         if (mapImageUrl) {
           mapSection = `
             <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener" class="history-map-image-link" title="在 Google Maps 中打开">
@@ -1105,12 +1105,12 @@ export function setupAdminPage(
       } else {
         mapSection = '<span class="muted">无位置</span>';
       }
-      
+
       // Build photo section
       const photoSection = photoUrl
         ? `<img src="${escapeHtml(photoUrl)}" alt="现场照片" class="history-photo-thumbnail view-link" data-url="${escapeHtml(photoUrl)}" loading="lazy" />`
         : '<span class="muted">无照片</span>';
-      
+
       return `
         <div class="history-record ${index === 0 ? 'latest' : ''}">
           <div class="history-record-header">
@@ -1142,9 +1142,9 @@ export function setupAdminPage(
         </div>
       `;
     }).join('');
-    
+
     historyContent.innerHTML = `<div class="history-records">${recordsHtml}</div>`;
-    
+
     // Bind photo view buttons
     historyContent.querySelectorAll('.view-link').forEach((trigger) => {
       trigger.addEventListener('click', (e) => {
@@ -1170,8 +1170,8 @@ export function setupAdminPage(
   function buildFormDataForSave() {
     const perms = getCurrentPermissions();
     const form = new FormData();
-  const statusDeliveryValRaw = mStatus?.value || '';
-  const statusDeliveryVal = normalizeStatusDeliveryValue(statusDeliveryValRaw) || statusDeliveryValRaw;
+    const statusDeliveryValRaw = mStatusDelivery?.value || '';
+    const statusDeliveryVal = normalizeStatusDeliveryValue(statusDeliveryValRaw) || statusDeliveryValRaw;
     const statusSiteRaw = mStatusSite?.value || '';
     const statusSiteVal =
       normalizeStatusDeliveryValue(statusSiteRaw) || statusSiteRaw;
@@ -1187,7 +1187,7 @@ export function setupAdminPage(
     const updatedBy = (resolvedUser?.name || '').trim();
     form.set('updated_by', updatedBy);
 
-  const originalStatusRaw = currentItem?.status_delivery || currentItem?.status || '';
+    const originalStatusRaw = currentItem?.status_delivery || currentItem?.status || '';
     const originalStatus =
       normalizeStatusDeliveryValue(originalStatusRaw) || originalStatusRaw || '';
     const statusDeliveryToSubmit = statusDeliveryVal || originalStatus;
@@ -1230,7 +1230,7 @@ export function setupAdminPage(
       return false;
     }
 
-  if (perms.requireStatusSelection && !payload.statusDeliveryVal) {
+    if (perms.requireStatusDeliverySelection && !payload.statusDeliveryVal) {
       if (mMsg)
         mMsg.textContent = i18n
           ? i18n.t('modal.status_delivery.requiredHint')
@@ -1238,24 +1238,7 @@ export function setupAdminPage(
       return false;
     }
 
-    const allowedOptions = Array.isArray(perms?.statusOptions)
-  ? perms.statusOptions.map((status_delivery) => normalizeStatusDeliveryValue(status_delivery) || status_delivery)
-      : [];
-
-    if (
-  payload.statusDeliveryVal &&
-
-      allowedOptions.length &&
-  !allowedOptions.includes(payload.statusDeliveryVal)
-    ) {
-      if (mMsg)
-        mMsg.textContent = i18n
-          ? i18n.t('modal.status_delivery.invalid')
-          : '选择的状态不在当前角色的权限范围内。';
-      return false;
-    }
-
-  if (!payload.statusDeliveryToSubmit) {
+    if (!payload.statusDeliveryToSubmit) {
       if (mMsg)
         mMsg.textContent = i18n
           ? i18n.t('modal.status_delivery.requiredHint')
@@ -1264,7 +1247,7 @@ export function setupAdminPage(
     }
 
     if (
-  !payload.statusDeliveryVal &&
+      !payload.statusDeliveryVal &&
       !payload.statusSiteVal &&
       !payload.remarkVal &&
       !payload.allowPhoto
@@ -1380,7 +1363,8 @@ export function setupAdminPage(
     const preferredKeys = [
       ...DN_DETAIL_KEYS,
       'du_id',
-      'status',
+      'status_delivery',
+      'status_site',
       'remark',
       'photo_url',
       'photo',
@@ -1604,7 +1588,7 @@ export function setupAdminPage(
   });
 
   function resetAllFilters({ statusDeliveryValue = DEFAULT_STATUS_DELIVERY_VALUE } = {}) {
-  setFilterValue('status_delivery', statusDeliveryValue);
+    setFilterValue('status_delivery', statusDeliveryValue);
     setInputValue('remark', '');
     setFormControlValue(hasSelect, '');
     setFilterValue('has_coordinate', '');
@@ -1615,7 +1599,7 @@ export function setupAdminPage(
     setFilterValue('region', '');
     setFilterValue('subcon', '');
     setFilterValue('status_wh', '');
-  setFilterValue('status_site', '');
+    setFilterValue('status_site', '');
     setInputValue('du', '');
     setFormControlValue(pageSizeInput, '20');
     if (dnInput) dnInput.value = '';
@@ -1634,7 +1618,7 @@ export function setupAdminPage(
   el('btn-reset')?.addEventListener(
     'click',
     () => {
-  resetAllFilters();
+      resetAllFilters();
       q.page = 1;
       fetchList();
     },
@@ -1646,7 +1630,7 @@ export function setupAdminPage(
     (event) => {
       const detail = event?.detail || {};
       const targetValue = detail.showOnlyNonEmpty ? STATUS_DELIVERY_NOT_EMPTY_VALUE : STATUS_DELIVERY_ANY_VALUE;
-  setFilterValue('status_delivery', targetValue);
+      setFilterValue('status_delivery', targetValue);
       q.page = 1;
       fetchList();
     },
@@ -1761,7 +1745,7 @@ export function setupAdminPage(
           const baseError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
           const errorMessage = messageFromResp
             ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: messageFromResp }) ||
-              `${baseError}：${messageFromResp}`
+            `${baseError}：${messageFromResp}`
             : baseError;
           showToast(errorMessage, 'error');
           return;
@@ -1771,7 +1755,7 @@ export function setupAdminPage(
           i18n?.t('actions.syncGoogleSheetSuccess') || '已触发 Google Sheet 数据更新';
         const successMessage = messageFromResp
           ? i18n?.t('actions.syncGoogleSheetSuccessWithMsg', { msg: messageFromResp }) ||
-            `${baseSuccess}：${messageFromResp}`
+          `${baseSuccess}：${messageFromResp}`
           : baseSuccess;
         showToast(successMessage, 'success');
       } catch (err) {
@@ -1779,7 +1763,7 @@ export function setupAdminPage(
         const message = err?.message || err;
         const composed = message
           ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: message }) ||
-            `${fallbackError}：${message}`
+          `${fallbackError}：${message}`
           : fallbackError;
         showToast(composed, 'error');
       } finally {
@@ -1827,7 +1811,7 @@ export function setupAdminPage(
             i18n?.t('actions.archiveExpiredDnError') || '归档过期 DN 标记失败';
           const errorMessage = messageFromResp
             ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: messageFromResp }) ||
-              `${baseError}：${messageFromResp}`
+            `${baseError}：${messageFromResp}`
             : baseError;
           showToast(errorMessage, 'error');
           return;
@@ -1862,7 +1846,7 @@ export function setupAdminPage(
         const message = err?.message || err;
         const composed = message
           ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: message }) ||
-            `${fallbackError}：${message}`
+          `${fallbackError}：${message}`
           : fallbackError;
         showToast(composed, 'error');
       } finally {

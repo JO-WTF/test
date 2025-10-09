@@ -134,7 +134,7 @@
     "pager.prev": "Sebelumnya",
     "pager.next": "Berikutnya",
     "modal.title": "Edit Catatan",
-    "modal.status_delivery.label": "Status",
+    "modal.status_delivery.label": "Status Pengiriman",
     "modal.status_delivery.keep": "(Tidak diubah)",
     "modal.status_delivery.required": "Silakan pilih status",
     "modal.statusDelivery.label": "Status Pengiriman",

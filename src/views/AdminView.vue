@@ -370,8 +370,8 @@
         </h3>
         <div class="row-line">
           <div class="field">
-            <label data-i18n="modal.status_delivery.label">状态</label>
-            <select id="m-status">
+            <label data-i18n="modal.status_delivery.label">配送状态</label>
+            <select id="m-status-delivery">
               <option value="" data-i18n="modal.status_delivery.keep">（不修改）</option>
             </select>
           </div>
@@ -557,7 +557,7 @@ const filterSelectOption = (input, option) => {
 
 const showOnlyNonEmptyStatus = ref(false);
 const showMissingInGs = ref(false);
-let syncingFromStatusSelect = false;
+let syncingFromStatusDeliverySelect = false;
 let syncingFromSwitch = false;
 
 const statusSwitchCheckedLabel = computed(() => {
@@ -619,13 +619,13 @@ watch(
     if (syncingFromSwitch) {
       syncingFromSwitch = false;
       if (showOnlyNonEmptyStatus.value !== nextChecked) {
-        syncingFromStatusSelect = true;
+        syncingFromStatusDeliverySelect = true;
         showOnlyNonEmptyStatus.value = nextChecked;
       }
       return;
     }
     if (showOnlyNonEmptyStatus.value !== nextChecked) {
-      syncingFromStatusSelect = true;
+      syncingFromStatusDeliverySelect = true;
       showOnlyNonEmptyStatus.value = nextChecked;
     }
   },
@@ -633,8 +633,8 @@ watch(
 );
 
 watch(showOnlyNonEmptyStatus, (checked) => {
-  if (syncingFromStatusSelect) {
-    syncingFromStatusSelect = false;
+  if (syncingFromStatusDeliverySelect) {
+    syncingFromStatusDeliverySelect = false;
     return;
   }
   syncingFromSwitch = true;

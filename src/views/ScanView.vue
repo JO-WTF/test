@@ -90,7 +90,7 @@
             >
               <option value="" disabled>{{ t('choose') }}</option>
               <option
-                v-for="option in scanStatusOptions"
+                v-for="option in scanStatusDeliveryOptions"
                 :key="option.value"
                 :value="option.value"
               >
@@ -490,10 +490,10 @@ const clearPhoto = () => {
   state.photoPreview = null;
 };
 
-const scanStatusOptions = DN_SCAN_STATUS_DELIVERY_ITEMS || [];
-const scanStatusMetaMap = new Map(scanStatusOptions.map((item) => [item.value, item]));
+const scanStatusDeliveryOptions = DN_SCAN_STATUS_DELIVERY_ITEMS || [];
+const scanStatusMetaMap = new Map(scanStatusDeliveryOptions.map((item) => [item.value, item]));
 
-const STATUS_TRANSLATION_MAP = scanStatusOptions.reduce(
+const STATUS_TRANSLATION_MAP = scanStatusDeliveryOptions.reduce(
   (acc, item) => {
     acc[item.value] = item.filterLabelKey;
     return acc;

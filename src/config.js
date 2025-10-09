@@ -304,10 +304,10 @@ export const ROLE_DEFINITIONS = {
       canDelete: false,
       allowRemark: true,
       allowPhoto: true,
-      requireStatusSelection: true,
-  statusOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
+      requireStatusDeliverySelection: true,
+  statusDeliveryOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
     },
-    statusHighlights: [
+    statusDeliveryHighlights: [
       { status_delivery: STATUS_DELIVERY_VALUES.NEW_MOS },
       { status_delivery: STATUS_DELIVERY_VALUES.CANCEL_MOS },
       { status_delivery: STATUS_DELIVERY_VALUES.CLOSE_BY_RN },
@@ -324,10 +324,10 @@ export const ROLE_DEFINITIONS = {
       canDelete: true,
       allowRemark: true,
       allowPhoto: false,
-      requireStatusSelection: false,
-  statusOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
+      requireStatusDeliverySelection: false,
+  statusDeliveryOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
     },
-    statusHighlights: [
+    statusDeliveryHighlights: [
       { status_delivery: STATUS_DELIVERY_VALUES.NEW_MOS },
       { status_delivery: STATUS_DELIVERY_VALUES.POD },
     ],
@@ -342,10 +342,10 @@ export const ROLE_DEFINITIONS = {
       canDelete: true,
       allowRemark: true,
       allowPhoto: true,
-      requireStatusSelection: false,
-  statusOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
+      requireStatusDeliverySelection: false,
+  statusDeliveryOptions: [...DN_SCAN_STATUS_DELIVERY_ORDERED_LIST],
     },
-    statusHighlights: [
+    statusDeliveryHighlights: [
       { status_delivery: STATUS_DELIVERY_VALUES.NEW_MOS },
       { status_delivery: STATUS_DELIVERY_VALUES.CANCEL_MOS },
       { status_delivery: STATUS_DELIVERY_VALUES.CLOSE_BY_RN },

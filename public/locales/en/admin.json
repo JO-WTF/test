@@ -128,7 +128,7 @@
     "pager.prev": "Previous",
     "pager.next": "Next",
     "modal.title": "Edit Record",
-    "modal.status_delivery.label": "Status",
+    "modal.status_delivery.label": "Delivery Status",
     "modal.status_delivery.keep": "(Keep Unchanged)",
     "modal.status_delivery.required": "Please select a status",
     "modal.statusDelivery.label": "Delivery Status",
