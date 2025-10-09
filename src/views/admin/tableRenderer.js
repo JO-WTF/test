@@ -2,14 +2,14 @@ import { createApp, h } from 'vue';
 import { Tooltip, Input } from 'ant-design-vue';
 import {
   STATUS_DELIVERY_VALUES,
-  DN_SCAN_STATUS_DELIVERY_VALUES,
+  STATUS_SITE_VALUES,
   STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK,
   DN_DETAIL_KEYS,
   DETAIL_INPUT_FIELD_SET,
   REGION_FIELD,
   PLAN_MOS_DATE_FIELD,
   ISSUE_REMARK_FIELD,
-    STATUS_SITE_FIELD,
+  STATUS_SITE_FIELD,
   UPDATED_AT_FIELD,
   LSP_FIELD,
   LAT_FIELD,
@@ -215,13 +215,13 @@ export function createTableRenderer(options = {}) {
   const statusDelivery = normalizeStatusDelivery(statusDeliveryRaw);
     if (!site) return false;
 
-    const arrivedStatusDelivery = DN_SCAN_STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE;
-    const podStatusDelivery = DN_SCAN_STATUS_DELIVERY_VALUES.POD || 'POD';
+    const arrivedStatusDelivery = STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE;
+    const podStatusDelivery = STATUS_DELIVERY_VALUES.POD || 'POD';
 
     if (site === STATUS_DELIVERY_VALUES.ON_THE_WAY) {
       const allowedTransportStatusDelivery = [
-        DN_SCAN_STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_WH,
-        DN_SCAN_STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_XD_PM,
+        STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_WH,
+        STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_XD_PM,
       ]
         .map((value) => normalizeStatusDelivery(value))
         .filter(Boolean);

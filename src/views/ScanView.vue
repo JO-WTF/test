@@ -199,7 +199,7 @@ import { useDeviceDetection } from '../composables/useDeviceDetection';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
 import { isValidDn } from '../utils/dn.js';
-import { DN_SCAN_STATUS_DELIVERY_ITEMS } from '../config.js';
+import { STATUS_DELIVERY_ITEMS } from '../config.js';
 import { getCookie } from '../utils/cookie.js';
 
 const LICENSE_KEY = getDynamsoftLicenseKey();
@@ -490,7 +490,7 @@ const clearPhoto = () => {
   state.photoPreview = null;
 };
 
-const scanStatusDeliveryOptions = DN_SCAN_STATUS_DELIVERY_ITEMS || [];
+const scanStatusDeliveryOptions = STATUS_DELIVERY_ITEMS || [];
 const scanStatusMetaMap = new Map(scanStatusDeliveryOptions.map((item) => [item.value, item]));
 
 const STATUS_TRANSLATION_MAP = scanStatusDeliveryOptions.reduce(

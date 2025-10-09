@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
 import { STATUS_DELIVERY_NOT_EMPTY_VALUE, STATUS_DELIVERY_ANY_VALUE } from './constants.js';
-import { DN_SCAN_STATUS_DELIVERY_ITEMS } from '../../config.js';
+import { STATUS_DELIVERY_ITEMS } from '../../config.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
 const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
@@ -32,7 +32,7 @@ const STATUS_FILTER_DEFS = [
     translationKey: 'status.filter.notEmpty',
     fallback: '任意非空',
   },
-  ...DN_SCAN_STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
+  ...STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
     value,
     translationKey: filterLabelKey,
     fallback: fallbackLabel,

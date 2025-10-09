@@ -2,15 +2,15 @@
 import {
   ROLE_LIST,
   STATUS_DELIVERY_VALUES,
+  STATUS_SITE_VALUES,
   STATUS_DELIVERY_TRANSLATION_KEYS,
   STATUS_DELIVERY_ALIAS_MAP,
-  DN_SCAN_STATUS_DELIVERY_ORDERED_LIST,
-  DN_SCAN_STATUS_DELIVERY_VALUES,
+  STATUS_DELIVERY_ORDERED_LIST,
   TRANSPORT_MANAGER_ROLE_KEY,
 } from '../../config.js';
 
 // Re-export constants from config.js for use in other modules
-export { STATUS_DELIVERY_VALUES, DN_SCAN_STATUS_DELIVERY_VALUES, TRANSPORT_MANAGER_ROLE_KEY };
+export { STATUS_DELIVERY_VALUES, STATUS_SITE_VALUES, TRANSPORT_MANAGER_ROLE_KEY };
 
 // 角色相关常量
 export const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));
@@ -66,9 +66,9 @@ export const STATUS_SITE_OPTIONS = [
 ];
 
 export const DEFAULT_MODAL_STATUS_DELIVERY_ORDER =
-  Array.isArray(DN_SCAN_STATUS_DELIVERY_ORDERED_LIST) &&
-  DN_SCAN_STATUS_DELIVERY_ORDERED_LIST.length
-    ? DN_SCAN_STATUS_DELIVERY_ORDERED_LIST.map((value) =>
+  Array.isArray(STATUS_DELIVERY_ORDERED_LIST) &&
+  STATUS_DELIVERY_ORDERED_LIST.length
+    ? STATUS_DELIVERY_ORDERED_LIST.map((value) =>
         typeof value === 'string' ? value.trim() : String(value || '')
       ).filter(Boolean)
     : [

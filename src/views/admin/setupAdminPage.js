@@ -2,9 +2,9 @@ import { api as viewerApi } from 'v-viewer';
 import Toastify from 'toastify-js';
 import {
   STATUS_DELIVERY_VALUES,
-  DN_SCAN_STATUS_DELIVERY_VALUES,
+  STATUS_SITE_VALUES,
   STATUS_DELIVERY_DISPLAY_OVERRIDES,
-  DN_SCAN_STATUS_DELIVERY_ITEMS,
+  STATUS_DELIVERY_ITEMS,
 } from '../../config.js';
 import { getApiBase, getMapboxAccessToken } from '../../utils/env.js';
 
@@ -43,7 +43,7 @@ import {
 } from './constants.js';
 
 const SCAN_STATUS_META = new Map(
-  (DN_SCAN_STATUS_DELIVERY_ITEMS || []).map((item) => [item.value, item])
+  (STATUS_DELIVERY_ITEMS || []).map((item) => [item.value, item])
 );
 
 const API_BASE = getApiBase();
@@ -664,13 +664,13 @@ export function setupAdminPage(
       setFormControlValue(mStatusSite, '');
       return;
     }
-    if (canonicalStatus === DN_SCAN_STATUS_DELIVERY_VALUES.ARRIVED_AT_WH) {
+    if (canonicalStatus === STATUS_DELIVERY_VALUES.ARRIVED_AT_WH) {
       setFormControlValue(mStatusSite, '');
       return;
     }
 
-    const ARRIVED_AT_SITE = DN_SCAN_STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE;
-    const POD_STATUS = DN_SCAN_STATUS_DELIVERY_VALUES.POD || 'POD';
+    const ARRIVED_AT_SITE = STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE;
+    const POD_STATUS = STATUS_DELIVERY_VALUES.POD || 'POD';
     const podSiteValue = STATUS_DELIVERY_VALUES.POD || POD_STATUS;
 
     const statusSiteMap = {
@@ -1569,7 +1569,7 @@ export function setupAdminPage(
 
   subscribeToFilterChange('status_delivery', (values) => {
     const first = Array.isArray(values) && values.length ? values[0] : '';
-    const podValue = DN_SCAN_STATUS_DELIVERY_VALUES?.POD || 'POD';
+    const podValue = STATUS_DELIVERY_VALUES?.POD || 'POD';
     if (first === podValue) {
       const currentSite = getFilterValues('status_site');
       if (!currentSite.includes(podValue)) {
