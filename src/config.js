@@ -44,12 +44,52 @@ const STATUS_DELIVERY_DEFINITIONS = [
 
 const STATUS_SITE_DEFINITIONS = [
   {
-    key: 'WAITING_PIC_FEEDBACK',
-    value: 'Waiting PIC Feedback',
-    translationKey: 'status.waitingFeedback',
-    fallbackLabel: 'Waiting PIC Feedback',
-    displayOverride: 'Waiting PIC Feedback',
-    aliases: ['WAITING PIC FEEDBACK'],
+    key: 'PIC_NOT_CONFIRMED',
+    value: 'PIC not confirmed',
+    translationKey: 'status.picNotConfirmed',
+    fallbackLabel: 'PIC not confirmed',
+    displayOverride: 'PIC not confirmed',
+    aliases: ['PIC NOT CONFIRMED'],
+  },
+  {
+    key: 'PIC_CONFIRMED',
+    value: 'PIC confirmed',
+    translationKey: 'status.picConfirmed',
+    fallbackLabel: 'PIC confirmed',
+    displayOverride: 'PIC confirmed',
+    aliases: ['PIC CONFIRMED'],
+  },
+  {
+    key: 'PERMIT_ISSUE',
+    value: 'Permit issue',
+    translationKey: 'status.permitIssue',
+    fallbackLabel: 'Permit issue',
+    displayOverride: 'Permit issue',
+    aliases: ['PERMIT ISSUE'],
+  },
+  {
+    key: 'COMMON_CASE_ISSUE',
+    value: 'Common case issue',
+    translationKey: 'status.commonCaseIssue',
+    fallbackLabel: 'Common case issue',
+    displayOverride: 'Common case issue',
+    aliases: ['COMMON CASE ISSUE'],
+  },
+  {
+    key: 'REPLAN_MOS',
+    value: 'Replan MOS',
+    translationKey: 'status.replanMos',
+    fallbackLabel: 'Replan MOS',
+    displayOverride: 'Replan MOS',
+    aliases: ['REPLAN MOS'],
+  },
+  {
+    key: 'CANCEL_MOS',
+    value: 'Cancel MOS',
+    translationKey: 'status.cancelMos',
+    fallbackLabel: 'Cancel MOS',
+    displayOverride: 'Cancel MOS',
+    aliases: ['CANCEL MOS'],
   }
 ];
 
