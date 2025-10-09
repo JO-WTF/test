@@ -250,6 +250,7 @@ export const ROLE_DEFINITIONS = {
       allowPhoto: true,
       requireStatusDeliverySelection: true,
       statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
     statusDeliveryHighlights: [],
     users: loadRoleUsers(ROLE_USER_PREFIXES.lsp),
@@ -265,6 +266,7 @@ export const ROLE_DEFINITIONS = {
       allowPhoto: false,
       requireStatusDeliverySelection: false,
       statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
     statusDeliveryHighlights: [
       { status_delivery: STATUS_SITE_VALUES.NEW_MOS },
@@ -283,6 +285,7 @@ export const ROLE_DEFINITIONS = {
       allowPhoto: true,
       requireStatusDeliverySelection: false,
       statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
     statusDeliveryHighlights: [],
     users: loadRoleUsers(ROLE_USER_PREFIXES[TRANSPORT_MANAGER_ROLE_KEY]),

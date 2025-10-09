@@ -62,20 +62,6 @@ export const STATUS_SITE_OPTIONS = [
   STATUS_DELIVERY_VALUES.WAITING_PIC_FEEDBACK,
 ];
 
-export const DEFAULT_MODAL_STATUS_DELIVERY_ORDER =
-  Array.isArray(STATUS_DELIVERY_ORDERED_LIST) &&
-  STATUS_DELIVERY_ORDERED_LIST.length
-    ? STATUS_DELIVERY_ORDERED_LIST.map((value) =>
-        typeof value === 'string' ? value.trim() : String(value || '')
-      ).filter(Boolean)
-    : [
-        'ARRIVED AT WH',
-        'TRANSPORTING FROM WH',
-        'ARRIVED AT XD/PM',
-        'TRANSPORTING FROM XD/PM',
-        'ARRIVED AT SITE',
-      ];
-
 // DN详情展开时显示的字段及其顺序
 // 只有在此列表中的字段才会在展开详情时显示
 export const DN_DETAIL_KEYS = [

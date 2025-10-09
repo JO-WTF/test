@@ -34,7 +34,6 @@ import {
   ARCHIVE_THRESHOLD_DAYS,
   TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   STATUS_SITE_OPTIONS,
-  DEFAULT_MODAL_STATUS_DELIVERY_ORDER,
   DN_DETAIL_KEYS,
   ICON_MARKUP,
 } from './constants.js';
@@ -457,8 +456,8 @@ export function setupAdminPage(
     statusCards.updateActiveState();
     lspSummaryCards.updateActiveState();
     refreshDnEntryVisibility();
-    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
-    populateModalStatusSiteOptions(mStatusSite?.value || '');
+    populateModalStatusOptions({ type: 'delivery', selected: mStatusDelivery?.value || '' });
+    populateModalStatusOptions({ type: 'site', selected: mStatusSite?.value || '' });
     dnEntry.renderFilterPreview();
   }
 
@@ -470,8 +469,8 @@ export function setupAdminPage(
 
   function handleAuthRoleApplied(_roleKey, _role, _userInfo) {
     refreshDnEntryVisibility();
-    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
-    populateModalStatusSiteOptions(mStatusSite?.value || '');
+    populateModalStatusOptions({ type: 'delivery', selected: mStatusDelivery?.value || '' });
+    populateModalStatusOptions({ type: 'site', selected: mStatusSite?.value || '' });
     updateModalFieldVisibility();
     if (tableRenderer) {
       tableRenderer.updateActionColumnVisibility();
@@ -532,126 +531,47 @@ export function setupAdminPage(
     return canonical;
   }
 
-  function populateModalStatusDeliveryOptions(selected) {
-    if (!mStatusDelivery) return;
+  function populateModalStatusOptions({ type, selected }) {
+    const isDelivery = type === 'delivery';
+    const selectEl = isDelivery ? mStatusDelivery : mStatusSite;
+    if (!selectEl) return;
+
     const perms = getCurrentPermissions();
-    const rawAllowed = Array.isArray(perms?.statusDeliveryOptions)
-      ? perms.statusDeliveryOptions
+    const optionsAllowed = Array.isArray(perms?.[isDelivery ? 'statusDeliveryOptions' : 'statusSiteOptions'])
+      ? perms[isDelivery ? 'statusDeliveryOptions' : 'statusSiteOptions']
       : [];
-    const baseList = rawAllowed.length ? rawAllowed : DEFAULT_MODAL_STATUS_DELIVERY_ORDER;
-    const seen = new Set();
-    const normalized = [];
+    const selectedCanonical = normalizeStatusDeliveryValue(selected);
 
-    baseList.forEach((value) => {
+    selectEl.innerHTML = '';
+
+    const keepValue = '';
+    const keepLabel = isDelivery
+      ? (i18n?.t('modal.status_delivery.keep') || '（不修改）')
+      : (i18n?.t('modal.status_site.keep') || '（不修改）');
+
+    // 默认选择“不修改”
+    const createOption = (value, label, isSelected = false) => {
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = label;
+      if (isSelected) opt.selected = true;
+      selectEl.appendChild(opt);
+    };
+
+    createOption(keepValue, keepLabel, true);
+
+    optionsAllowed.forEach((value) => {
       const canonical = normalizeStatusDeliveryValue(value);
-      if (!canonical || seen.has(canonical)) return;
-      seen.add(canonical);
-      normalized.push(canonical);
-    });
-
-    const ordered = [];
-    DEFAULT_MODAL_STATUS_DELIVERY_ORDER.forEach((value) => {
-      if (seen.has(value)) {
-        ordered.push(value);
-        seen.delete(value);
-      }
-    });
-    normalized.forEach((value) => {
-      if (seen.has(value)) {
-        ordered.push(value);
-        seen.delete(value);
+      if (canonical) {
+        createOption(
+          canonical,
+          isDelivery ? getModalStatusLabel(canonical) : i18nStatusDisplay(canonical),
+          false // 其他选项不默认选中
+        );
       }
     });
 
-    if (!ordered.length) {
-      ordered.push(...DEFAULT_MODAL_STATUS_DELIVERY_ORDER);
-    }
-
-    const selectedRaw = selected || '';
-    const selectedCanonical = normalizeStatusDeliveryValue(selectedRaw);
-    if (selectedCanonical && !ordered.includes(selectedCanonical)) {
-      ordered.push(selectedCanonical);
-    }
-
-    const keepLabel = i18n?.t('modal.status_delivery.keep') || '（不修改）';
-    mStatusDelivery.innerHTML = '';
-    const keepOption = document.createElement('option');
-    keepOption.value = '';
-    keepOption.setAttribute('data-i18n', 'modal.status_delivery.keep');
-    keepOption.textContent = keepLabel;
-    mStatusDelivery.appendChild(keepOption);
-
-    const appended = new Set();
-    ordered.forEach((value) => {
-      const canonical = normalizeStatusDeliveryValue(value);
-      if (!canonical || appended.has(canonical)) return;
-      appended.add(canonical);
-      const opt = document.createElement('option');
-      opt.value = canonical;
-      opt.textContent = getModalStatusLabel(canonical);
-      if (canonical === selectedCanonical) {
-        opt.selected = true;
-      }
-      mStatusDelivery.appendChild(opt);
-    });
-
-    if (selectedCanonical && !appended.has(selectedCanonical)) {
-      const opt = document.createElement('option');
-      opt.value = selectedCanonical;
-      opt.textContent = getModalStatusLabel(selectedCanonical);
-      opt.selected = true;
-      mStatusDelivery.appendChild(opt);
-      appended.add(selectedCanonical);
-    }
-
-    if (selectedCanonical) {
-      mStatusDelivery.value = selectedCanonical;
-    } else {
-      mStatusDelivery.value = '';
-    }
-  }
-
-  function populateModalStatusSiteOptions(selected) {
-    if (!mStatusSite) return;
-    const selectedRaw = selected || '';
-    const selectedCanonical = normalizeStatusDeliveryValue(selectedRaw);
-    const keepLabel = i18n?.t('modal.statusSite.keep') || '（不修改）';
-
-    mStatusSite.innerHTML = '';
-    const keepOption = document.createElement('option');
-    keepOption.value = '';
-    keepOption.setAttribute('data-i18n', 'modal.statusSite.keep');
-    keepOption.textContent = keepLabel;
-    mStatusSite.appendChild(keepOption);
-
-    const appended = new Set();
-    STATUS_SITE_OPTIONS.forEach((value) => {
-      const canonical = normalizeStatusDeliveryValue(value);
-      if (!canonical || appended.has(canonical)) return;
-      appended.add(canonical);
-      const opt = document.createElement('option');
-      opt.value = canonical;
-      opt.textContent = getModalStatusLabel(canonical);
-      if (canonical === selectedCanonical) {
-        opt.selected = true;
-      }
-      mStatusSite.appendChild(opt);
-    });
-
-    if (selectedCanonical && !appended.has(selectedCanonical)) {
-      const opt = document.createElement('option');
-      opt.value = selectedCanonical;
-      opt.textContent = getModalStatusLabel(selectedCanonical);
-      opt.selected = true;
-      mStatusSite.appendChild(opt);
-      appended.add(selectedCanonical);
-    }
-
-    if (selectedCanonical) {
-      setFormControlValue(mStatusSite, selectedCanonical);
-    } else {
-      setFormControlValue(mStatusSite, '');
-    }
+    selectEl.value = keepValue;
   }
 
   function syncStatusSiteWithStatus() {
@@ -951,13 +871,13 @@ export function setupAdminPage(
       }
     }
     const canonicalStatus = normalizeStatusDeliveryValue(item.status_delivery || item.status);
-    populateModalStatusDeliveryOptions(canonicalStatus);
+    populateModalStatusOptions({ type: 'delivery', selected: canonicalStatus });
     const statusSiteRaw =
       item.status_site ||
       item.statusSite ||
       '';
     const canonicalStatusSite = normalizeStatusDeliveryValue(statusSiteRaw);
-    populateModalStatusSiteOptions(canonicalStatusSite);
+    populateModalStatusOptions({ type: 'site', selected: canonicalStatusSite });
     updateModalFieldVisibility();
     if (mMsg) mMsg.textContent = '';
     const wasVisible = mask && mask.style.display === 'flex';

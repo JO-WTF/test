@@ -376,9 +376,9 @@
             </select>
           </div>
           <div class="field" id="m-status-site-field">
-            <label data-i18n="modal.statusSite.label">站点状态</label>
+            <label data-i18n="modal.status_site.label">站点状态</label>
             <select id="m-status-site">
-              <option value="" data-i18n="modal.statusSite.keep">（不修改）</option>
+              <option value="" data-i18n="modal.status_site.keep">（不修改）</option>
             </select>
           </div>
           <div class="field grow" id="m-remark-field">
