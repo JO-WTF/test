@@ -161,7 +161,7 @@ export function createStatusDeliveryCardManager({
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'status-card';
-  btn.setAttribute('data-status_delivery', defItem.type === 'status' ? defItem.status_delivery : '');
+      btn.setAttribute('data-status_delivery', defItem.type === 'status' ? defItem.status_delivery : '');
       btn.setAttribute('data-card-key', defItem.key);
       btn.setAttribute('aria-pressed', 'false');
       btn.setAttribute('aria-busy', 'false');

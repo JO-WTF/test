@@ -2,7 +2,6 @@ import { api as viewerApi } from 'v-viewer';
 import Toastify from 'toastify-js';
 import {
   STATUS_DELIVERY_VALUES,
-  STATUS_SITE_VALUES,
   STATUS_DELIVERY_DISPLAY_OVERRIDES,
   STATUS_DELIVERY_ITEMS,
 } from '../../config.js';
@@ -34,7 +33,6 @@ import {
   JAKARTA_UTC_OFFSET_MINUTES,
   ARCHIVE_THRESHOLD_DAYS,
   TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
-  STATUS_SITE_OPTIONS,
   DN_DETAIL_KEYS,
   ICON_MARKUP,
 } from './constants.js';
@@ -251,8 +249,6 @@ export function setupAdminPage(
     return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
   }
 
-  // 使用 STATUS_DELIVERY_VALUES 作为 status_delivery 值，label 也使用同样的值以保持一致性
-  // 实际显示文本会通过 i18n 系统翻译
   setFilterValue('status_delivery', DEFAULT_STATUS_DELIVERY_VALUE);
 
   function getIconMarkup(name) {
@@ -585,41 +581,6 @@ export function setupAdminPage(
     });
 
     selectEl.value = keepValue;
-  }
-
-  function syncStatusSiteWithStatus() {
-    if (!mStatusDelivery || !mStatusSite) return;
-    const canonicalStatus = normalizeStatusDeliveryValue(mStatusDelivery.value);
-    if (!canonicalStatus) {
-      setFormControlValue(mStatusSite, '');
-      return;
-    }
-    if (canonicalStatus === STATUS_DELIVERY_VALUES.ARRIVED_AT_WH) {
-      setFormControlValue(mStatusSite, '');
-      return;
-    }
-
-    const ARRIVED_AT_SITE = STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE;
-    const POD_STATUS = STATUS_DELIVERY_VALUES.POD || 'POD';
-    const podSiteValue = STATUS_DELIVERY_VALUES.POD || POD_STATUS;
-
-    const statusSiteMap = {
-      [ARRIVED_AT_SITE]: STATUS_DELIVERY_VALUES.ON_SITE,
-      [POD_STATUS]: podSiteValue,
-    };
-
-    const nextValue = statusSiteMap[canonicalStatus] || STATUS_DELIVERY_VALUES.ON_THE_WAY;
-    setFormControlValue(mStatusSite, nextValue);
-  }
-
-  if (mStatusDelivery && mStatusSite) {
-    mStatusDelivery.addEventListener(
-      'change',
-      () => {
-        syncStatusSiteWithStatus();
-      },
-      { signal }
-    );
   }
 
   function refreshDnEntryVisibility() {
