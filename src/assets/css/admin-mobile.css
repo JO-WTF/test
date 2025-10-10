@@ -44,10 +44,14 @@
 
   /* Filters: 2 columns layout */
   .admin-page .filters-grid {
-    display: flex;
+    display: none;
     flex-wrap: wrap;
     gap: 8px;
     align-items: flex-end;
+  }
+
+  .admin-page .filters-grid.is-visible {
+    display: flex;
   }
 
   .admin-page .filters-grid .field {
@@ -68,21 +72,17 @@
   }
 
   /* Ant Design components */
-  .admin-page .filters-grid .field .ant-select-selector {
-    height: auto !important;
-    min-height: 30px !important;
-    padding: 3px 11px !important;
-  }
-
   .admin-page .filters-grid .field .ant-select-selection-overflow {
     flex-wrap: wrap;
     max-height: none;
   }
 
   .admin-page .filters-grid .field .ant-input,
+  .admin-page .filters-grid .field .ant-select-selector,
   .admin-page .filters-grid .field .ant-picker {
-    height: 30px;
+    height: 25px;
     width: 100%;
+    font-size: 10px;
   }
 
   /* Native form elements */
@@ -99,6 +99,33 @@
   }
 
   /* Filter actions */
+  .admin-page .filters-toggle-btn {
+    display: inline-flex;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--ant-border-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ant-text-primary);
+    font-size: 12px;
+    line-height: 1.2;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+
+  .admin-page .filters-toggle-btn:active {
+    border-color: var(--ant-primary);
+    color: var(--ant-primary);
+  }
+
+  .admin-page .filters-toggle-btn:focus-visible {
+    outline: 2px solid var(--ant-focus-ring);
+    outline-offset: 2px;
+  }
+
   .admin-page .filter-actions {
     display: flex;
     flex-wrap: wrap;
@@ -107,11 +134,8 @@
 
   .admin-page .filter-actions > div,
   .admin-page .filter-actions .btn {
-    flex: 1 1 180px;
-    min-width: 180px;
-  }
-
-  .admin-page .filter-actions .btn {
+    flex: 1 1 120px;
+    min-width: 120px;
     justify-content: center;
   }
 
@@ -257,7 +281,7 @@
     gap: 4px;
     margin-bottom: 6px;
     margin-right: 6px;
-    padding: 4px 4px;
+    padding: 4px 6px;
     white-space: nowrap;
     border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
@@ -277,7 +301,7 @@
     gap: 4px;
     margin-bottom: 6px;
     margin-right: 6px;
-    padding: 4px 4px;
+    padding: 4px 6px;
     white-space: nowrap;
     border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
@@ -550,6 +574,11 @@
     justify-content: center;
   }
 
+  .admin-page .pager__page-size input {
+    width: 96px;
+    height: 34px;
+  }
+
   .admin-page .pager button {
     flex: 1;
     min-width: 80px;
@@ -624,8 +653,8 @@
 
   /* Buttons */
   .admin-page .btn {
-    font-size: 13px;
-    padding: 10px 14px;
+    font-size: 8px;
+    padding: 6px;
   }
 
   /* Table toggle */
@@ -638,6 +667,7 @@
   /* DN preview area */
   .admin-page .du-wrap {
     min-height: 80px;
+    margin-top: 5px;
   }
 
   .admin-page .du-wrap textarea,

@@ -1,6 +1,6 @@
 {
-    "statusSite.label": "Status Site",
-    "statusSite.placeholder": "Ketik atau pilih",
+    "statusSiteLabel": "Status Site",
+    "statusSitePlaceholder": "Ketik atau pilih",
     "table.statusSite": "Status Site",
     "title": "Manajemen Catatan Pengajuan DN",
     "dn.label": "Nomor DN (mendukung baris/komma/spasi; lebih dari satu = pencarian batch)",
@@ -142,6 +142,8 @@
     "dn.toast.denied": "Peran saat ini tidak dapat melakukan entri DN",
     "dn.toast.empty": "Masukkan minimal satu nomor DN",
     "dn.toast.error": "Gagal melakukan entri DN",
+    "filters.toggle.show": "Tampilkan Filter",
+    "filters.toggle.hide": "Sembunyikan Filter",
     "actions.exporting": "Sedang mengekspor data, mohon tunggu…",
     "actions.exportNone": "Tidak ada data yang cocok untuk diekspor.",
     "actions.exportError": "Ekspor gagal",

@@ -478,7 +478,7 @@ export function useAdminFilters() {
     { placeholderRef: statusWh.placeholder, translationKey: 'statusWh.placeholder' },
     {
       placeholderRef: statusSite.placeholder,
-      translationKey: 'statusSite.placeholder',
+      translationKey: 'statusSitePlaceholder',
     },
     {
       placeholderRef: status.placeholder,

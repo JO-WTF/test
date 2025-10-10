@@ -57,7 +57,7 @@
           </div>
 
           <div class="rhs">
-            <div class="filters-grid">
+            <div class="filters-grid" id="filters-grid">
               <div class="field filter-field">
                 <label data-i18n="planMosDate.label">Plan MOS Date</label>
                 <a-select
@@ -147,7 +147,7 @@
                 ></a-select>
               </div>
               <div class="field filter-field">
-                <label data-i18n="statusSite.label">站点状态</label>
+                <label data-i18n="statusSiteLabel">站点状态</label>
                 <a-select
                   id="f-status-site"
                   v-model:value="statusSiteSelectValue"
@@ -279,6 +279,15 @@
                 </div>
               </div>
             </div>
+            <button
+              type="button"
+              id="filters-toggle"
+              class="filters-toggle-btn"
+              aria-controls="filters-grid"
+              data-i18n="filters.toggle.show"
+            >
+              显示筛选器
+            </button>
           </div>
         </div>
       </div>
@@ -360,7 +369,7 @@
     </div>
 
     <div id="modal-mask" class="modal-mask">
-      <div class="modal">
+      <div class="modal edit-modal">
         <h3>
           <span data-i18n="modal.title">编辑记录</span>
           <span id="modal-id" class="tag"></span>
@@ -380,11 +389,12 @@
           </div>
           <div class="field grow" id="m-remark-field">
             <label data-i18n="modal.remark.label">备注</label>
-              <input
-                id="m-remark"
-                data-i18n-placeholder="modal.remark.placeholder"
-                placeholder="不修改请留空（可选）"
-              />
+            <textarea
+              id="m-remark"
+              rows="4"
+              data-i18n-placeholder="modal.remark.placeholder"
+              placeholder="不修改请留空（可选）"
+            ></textarea>
           </div>
           <div class="field grow" id="m-photo-field">
             <label data-i18n="modal.photo.label">替换照片（可选）</label>

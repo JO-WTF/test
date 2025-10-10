@@ -779,9 +779,7 @@ body.admin-theme {
     gap: 6px;
     white-space: nowrap;
 }
-.admin-page .pager__page-size input {
-    margin-left: 4px;
-}
+
 .admin-page .actions {
     display: flex;
     gap: 6px
@@ -814,6 +812,9 @@ body.admin-theme {
     flex: 1 1 220px;
     max-width: 250px
     }
+.admin-page .filters-toggle-btn {
+    display: none;
+}
 html.admin-scroll-locked,
 body.admin-scroll-locked {
     overflow: hidden
@@ -888,11 +889,52 @@ body.admin-scroll-locked {
     width: 92%;
     padding: 14px
     }
+.admin-page .modal.edit-modal {
+    max-width: 640px;
+    padding: 20px;
+}
+.admin-page .modal.edit-modal h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px 0;
+}
+.admin-page .modal.edit-modal .row-line {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    align-items: start;
+    margin: 0 0 12px 0;
+}
+.admin-page .modal.edit-modal .field {
+    min-width: 0;
+}
+.admin-page .modal.edit-modal select,
+.admin-page .modal.edit-modal input,
+.admin-page .modal.edit-modal textarea {
+    width: 100%;
+    font-size: 14px;
+}
+.admin-page .modal.edit-modal textarea {
+    min-height: 96px;
+    resize: vertical;
+    line-height: 1.4;
+}
+.admin-page .modal.edit-modal .foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+.admin-page .modal.edit-modal .foot .btn {
+    min-width: 110px;
+}
 .admin-page .modal.small {
     max-width: 360px;
 }
 .admin-page .du-wrap {
-    position: relative
+    position: relative;
+    margin-top: 5px;
     }
 .admin-page .du-hilite {
     position: absolute;

@@ -605,12 +605,12 @@ export function createTableRenderer(options = {}) {
         ? `<span class="region-plan-cell__plan">${escapeHtml(planMos)}</span>`
         : '<span class="region-plan-cell__plan muted">-</span>';
       const planMosMobile = planMos ? formatPlanMosDateForMobile(planMos) : '';
-      const statusSiteCell = statusSite ? escapeHtml(statusSite).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
+      const statusSiteCell = statusSite ? escapeHtml(statusSite) : '<span class="muted">-</span>';
       const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
       const latestRecordCreatedAtRaw = latestRecordCreatedAt || '';
       const latestRecordFormatted = formatTimestamp(latestRecordCreatedAtRaw);
       const latestRecordText = latestRecordFormatted
-        ? `<span class="latest-record-text">${escapeHtml(latestRecordFormatted).replace(/\n/g, '<br>')}</span>`
+        ? `<span class="latest-record-text">${escapeHtml(latestRecordFormatted).replace(/ \n /g, '<br>')}</span>`
         : '<span class="latest-record-text"><span class="muted">-</span></span>';
       const latestRecordElements = [latestRecordText];
       if (updateCountBadge) {

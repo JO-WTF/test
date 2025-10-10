@@ -101,6 +101,8 @@ export function setupAdminPage(
   const mPhoto = el('m-photo');
   const mPhotoField = el('m-photo-field');
   const mMsg = el('m-msg');
+  const filtersGrid = el('filters-grid');
+  const filtersToggle = el('filters-toggle');
 
   const authModal = el('auth-modal');
   const authBtn = el('btn-auth');
@@ -133,6 +135,9 @@ export function setupAdminPage(
   let editingItem = null;
   let removeI18nListener = null;
   let tableRenderer = null;
+  let filtersExpanded = true;
+  let filtersMediaQuery = null;
+  let removeFiltersMediaListener = null;
   const updateHistoryRenderer = createUpdateHistoryRenderer({
     container: historyContent,
     signal,
@@ -145,6 +150,42 @@ export function setupAdminPage(
     getMapboxStaticImageUrl,
     getTableRenderer: () => tableRenderer,
   });
+
+  if (filtersToggle) {
+    filtersToggle.setAttribute('aria-expanded', 'false');
+    filtersToggle.addEventListener('click', () => {
+      setFiltersExpanded(!filtersExpanded);
+    }, { signal });
+  }
+
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    filtersMediaQuery = window.matchMedia('(max-width: 768px)');
+    const mediaHandler = (event) => {
+      handleFiltersMediaChange(event);
+    };
+    if (typeof filtersMediaQuery.addEventListener === 'function') {
+      filtersMediaQuery.addEventListener('change', mediaHandler);
+      removeFiltersMediaListener = () => {
+        try {
+          filtersMediaQuery.removeEventListener('change', mediaHandler);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+    } else if (typeof filtersMediaQuery.addListener === 'function') {
+      filtersMediaQuery.addListener(mediaHandler);
+      removeFiltersMediaListener = () => {
+        try {
+          filtersMediaQuery.removeListener(mediaHandler);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+    }
+    handleFiltersMediaChange(filtersMediaQuery);
+  } else {
+    setFiltersExpanded(true);
+  }
 
   // 初始化授权处理器
   const authHandler = createAuthHandler({
@@ -247,7 +288,7 @@ export function setupAdminPage(
     const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
     const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
 
-    return `${day} ${monthLabel}\n${hours}:${minutes}:${seconds}`;
+    return `${day} ${monthLabel} \n ${hours}:${minutes}:${seconds}`;
   }
 
   setFilterValue('status_delivery', DEFAULT_STATUS_DELIVERY_VALUE);
@@ -439,6 +480,30 @@ export function setupAdminPage(
     return fallback;
   }
 
+  function updateFiltersToggleLabel() {
+    if (!filtersToggle) return;
+    const key = filtersExpanded ? 'filters.toggle.hide' : 'filters.toggle.show';
+    const fallback = filtersExpanded ? 'Hide Filters' : 'Show Filters';
+    filtersToggle.textContent = translateInstant(key, fallback);
+  }
+
+  function setFiltersExpanded(expanded) {
+    filtersExpanded = !!expanded;
+    if (filtersGrid) {
+      filtersGrid.classList.toggle('is-visible', filtersExpanded);
+    }
+    if (filtersToggle) {
+      filtersToggle.setAttribute('aria-expanded', filtersExpanded ? 'true' : 'false');
+      filtersToggle.setAttribute('data-state', filtersExpanded ? 'expanded' : 'collapsed');
+    }
+    updateFiltersToggleLabel();
+  }
+
+  function handleFiltersMediaChange(event) {
+    const isMobile = !!event?.matches;
+    setFiltersExpanded(!isMobile);
+  }
+
   function normalizeTextValue(value) {
     if (value === null || value === undefined) return '';
     if (typeof value === 'string') return value.trim();
@@ -469,6 +534,7 @@ export function setupAdminPage(
     populateModalStatusOptions({ type: 'delivery', selected: mStatusDelivery?.value || '' });
     populateModalStatusOptions({ type: 'site', selected: mStatusSite?.value || '' });
     dnEntry.renderFilterPreview();
+    updateFiltersToggleLabel();
   }
 
   if (i18n && typeof i18n.onChange === 'function') {
@@ -1697,6 +1763,13 @@ export function setupAdminPage(
     if (removeI18nListener) {
       try {
         removeI18nListener();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    if (removeFiltersMediaListener) {
+      try {
+        removeFiltersMediaListener();
       } catch (err) {
         console.error(err);
       }
