@@ -1196,6 +1196,53 @@ export function setupAdminPage(
     return s;
   }
 
+  const TIMESTAMP_KEY_PATTERN = /(timestamp|_at|_time|time$|createdat|updatedat|createdtime|updatedtime|latestrecordcreatedat)/;
+
+  function formatTimestampForExport(value) {
+    if (value === null || value === undefined || value === '') return '';
+
+    let date;
+    if (value instanceof Date) {
+      date = value;
+    } else if (typeof value === 'number') {
+      const millis = value < 1e12 ? value * 1000 : value;
+      date = new Date(millis);
+    } else if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      const numeric = Number(trimmed);
+      if (!Number.isNaN(numeric) && trimmed.length <= 12) {
+        const millis = numeric < 1e12 ? numeric * 1000 : numeric;
+        date = new Date(millis);
+      } else {
+        date = new Date(trimmed);
+      }
+    } else {
+      return '';
+    }
+
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+
+    const offsetMinutes = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
+      ? JAKARTA_UTC_OFFSET_MINUTES
+      : 0;
+    const jakartaTime = new Date(date.getTime() + offsetMinutes * 60 * 1000);
+
+    const year = jakartaTime.getUTCFullYear();
+    const month = String(jakartaTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jakartaTime.getUTCDate()).padStart(2, '0');
+    const hours = String(jakartaTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
+
+    return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+  }
+
+  function isTimestampKey(key) {
+    if (!key) return false;
+    return TIMESTAMP_KEY_PATTERN.test(key);
+  }
+
   function toCsvRows(items) {
     const list = Array.isArray(items) ? items : [];
     if (!list.length) {
@@ -1266,6 +1313,10 @@ export function setupAdminPage(
         }
         const strValue = normalizeTextValue(value);
         const lowerKey = key.toLowerCase();
+        if (isTimestampKey(lowerKey)) {
+          const formatted = formatTimestampForExport(value);
+          if (formatted) return formatted;
+        }
         if (/photo|image|picture|attachment/.test(lowerKey) || /url/.test(lowerKey)) {
           return toAbsUrl(strValue);
         }
