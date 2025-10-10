@@ -1,5 +1,4 @@
 import { api as viewerApi } from 'v-viewer';
-import Toastify from 'toastify-js';
 import {
   STATUS_DELIVERY_VALUES,
   STATUS_DELIVERY_DISPLAY_OVERRIDES,
@@ -19,6 +18,17 @@ import {
   lockBodyScroll,
   unlockBodyScroll,
   resetBodyScrollLock,
+  fetchWithPayload,
+  bindAsyncButtonClick,
+  normalizeTextValue,
+  setSearchParamValues,
+  convertDateToOffsetIso,
+  formatTimestampWithOffset,
+  formatTimestampForExport,
+  isTimestampKey,
+  downloadCSV,
+  extractItemsFromResponse,
+  showToast,
 } from './utils.js';
 import { createTableRenderer } from './tableRenderer.js';
 import { createUpdateHistoryRenderer } from './updateHistoryRenderer.js';
@@ -38,6 +48,25 @@ import {
 } from './constants.js';
 
 const API_BASE = getApiBase();
+const JAKARTA_OFFSET = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
+  ? JAKARTA_UTC_OFFSET_MINUTES
+  : 0;
+const EXPORT_PREFERRED_KEYS = [
+  ...DN_DETAIL_KEYS,
+  'du_id',
+  'status_delivery',
+  'status_site',
+  'remark',
+  'photo_url',
+  'photo',
+  'photo_urls',
+  'lat',
+  'lng',
+  'latitude',
+  'longitude',
+  'created_at',
+  'updated_at',
+];
 
 export function setupAdminPage(
   rootEl,
@@ -216,79 +245,17 @@ export function setupAdminPage(
     }
   }
 
-  function convertDateToJakartaIso(dateString, { endOfDay = false } = {}) {
-    if (!dateString) return '';
-
-    const parts = String(dateString).split('-');
-    if (parts.length < 3) {
-      return formatDateFallback(dateString, { endOfDay });
-    }
-
-    const [yearPart, monthPart, dayPart] = parts;
-    const year = Number(yearPart);
-    const monthIndex = Number(monthPart) - 1;
-    const day = Number(dayPart);
-
-    if (
-      !Number.isFinite(year) ||
-      !Number.isFinite(monthIndex) ||
-      !Number.isFinite(day)
-    ) {
-      return formatDateFallback(dateString, { endOfDay });
-    }
-
-    // 统一将起止日期固定到雅加达中午，避免在不同时区展示或解析时日期被偏移。
-    const hours = 12;
-    const minutes = 0;
-    const seconds = 0;
-    const milliseconds = 0;
-
-    const offsetMinutes = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
-      ? JAKARTA_UTC_OFFSET_MINUTES
-      : 0;
-
-    const utcTimestamp =
-      Date.UTC(year, monthIndex, day, hours, minutes, seconds, milliseconds) -
-      offsetMinutes * 60 * 1000;
-
-    return new Date(utcTimestamp).toISOString();
-  }
-
-  function formatDateFallback(dateString, _opts = {}) {
-    const suffix = 'T12:00:00';
-    const value = new Date(`${dateString}${suffix}`);
-    if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
-    return value.toISOString();
+  function convertDateToJakartaIso(dateString, options = {}) {
+    return convertDateToOffsetIso(dateString, {
+      ...options,
+      offsetMinutes: JAKARTA_OFFSET,
+    });
   }
 
   function formatTimestampToJakarta(timestamp) {
-    if (!timestamp) return '';
-
-    let date;
-    if (timestamp instanceof Date) {
-      date = timestamp;
-    } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
-      date = new Date(timestamp);
-    } else {
-      return '';
-    }
-
-    if (Number.isNaN(date.getTime())) return '';
-
-    // 转换为雅加达时间 (UTC+7)
-    const jakartaOffset = JAKARTA_UTC_OFFSET_MINUTES || 420; // 默认 420 分钟 = 7 小时
-    const utcTime = date.getTime();
-    const jakartaTime = new Date(utcTime + jakartaOffset * 60 * 1000);
-
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthIndex = jakartaTime.getUTCMonth();
-    const monthLabel = monthNames[monthIndex] || String(monthIndex + 1).padStart(2, '0');
-    const day = String(jakartaTime.getUTCDate()).padStart(2, '0');
-    const hours = String(jakartaTime.getUTCHours()).padStart(2, '0');
-    const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
-
-    return `${day} ${monthLabel} \n ${hours}:${minutes}:${seconds}`;
+    return formatTimestampWithOffset(timestamp, {
+      offsetMinutes: JAKARTA_OFFSET,
+    });
   }
 
   setFilterValue('status_delivery', DEFAULT_STATUS_DELIVERY_VALUE);
@@ -345,23 +312,6 @@ export function setupAdminPage(
     const basePath =
       mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?';
     return `${API_BASE}${basePath}${params}`;
-  }
-
-  function showToast(text, type = 'info') {
-    const backgroundColor =
-      type === 'success'
-        ? '#16a34a'
-        : type === 'error'
-          ? '#dc2626'
-          : '#0f172a';
-    Toastify({
-      text,
-      duration: 3000,
-      gravity: 'bottom',
-      position: 'center',
-      stopOnFocus: true,
-      style: { background: backgroundColor },
-    }).showToast();
   }
 
   function getCurrentRole() {
@@ -502,20 +452,6 @@ export function setupAdminPage(
   function handleFiltersMediaChange(event) {
     const isMobile = !!event?.matches;
     setFiltersExpanded(!isMobile);
-  }
-
-  function normalizeTextValue(value) {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string') return value.trim();
-    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-    if (typeof value === 'boolean') return value ? 'true' : 'false';
-    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
-    try {
-      return String(value).trim();
-    } catch (err) {
-      console.error(err);
-    }
-    return '';
   }
 
   function applyAllTranslations() {
@@ -665,7 +601,7 @@ export function setupAdminPage(
     resetAllFilters();
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
-      JAKARTA_UTC_OFFSET_MINUTES,
+      JAKARTA_OFFSET,
       'dd MMM yy'
     );
     setFilterValue('plan_mos_date', todayJakarta);
@@ -680,52 +616,26 @@ export function setupAdminPage(
     const targetStatus = def?.type === 'status_delivery' ? canonicalStatus : '';
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
-      JAKARTA_UTC_OFFSET_MINUTES,
+      JAKARTA_OFFSET,
       'dd MMM yy'
     );
 
-    setInputValue('remark', '');
-    setFormControlValue(hasSelect, '');
-    setFilterValue('has_coordinate', '');
-    setFilterValue('date_from', '');
-    setFilterValue('date_to', '');
-    setInputValue('du', '');
-
-    setFilterValue('lsp', '');
-    setFilterValue('region', '');
-    setFilterValue('subcon', '');
-    setFilterValue('status_wh', '');
-
-    // Clicking a status card应该只应用 status_site 筛选。
-    // 保持 status_delivery 筛选为空，避免查询被 status_delivery 限制。
-    setFilterValue('status_delivery', '');
-
+    resetAllFilters({ statusDeliveryValue: '', preservePageSize: true });
     setFilterValue('status_site', targetStatus);
-
     setFilterValue('plan_mos_date', todayJakarta);
-
-    if (dnInput) {
-      dnInput.value = '';
-      dnEntry.normalizeFilterInput({ enforceFormat: false });
-    }
   }
 
   // 本地表格渲染逻辑已移除，统一由 tableRenderer 管理
 
   async function fetchFilterCandidates() {
     try {
-      const resp = await fetch(`${API_BASE}/api/dn/filters`, { signal });
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
+      const { resp, data, message } = await fetchWithPayload(
+        `${API_BASE}/api/dn/filters`,
+        { signal }
+      );
       if (!resp.ok) {
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+        throw new Error(message || `HTTP ${resp.status}`);
       }
-
       const payload = data?.data && typeof data.data === 'object' ? data.data : data;
       setFilterDropdownOptions('lsp', payload?.lsp);
       setFilterDropdownOptions('region', payload?.region);
@@ -783,36 +693,14 @@ export function setupAdminPage(
         const jakartaDateTo = convertDateToJakartaIso(dt, { endOfDay: true });
         if (jakartaDateTo) params.set('date_to', jakartaDateTo);
       }
-      if (lspValues.length === 1) {
-        params.set('lsp', lspValues[0]);
-      } else if (lspValues.length > 1) {
-        lspValues.forEach((value) => params.append('lsp', value));
-      }
-      if (regionValues.length === 1) {
-        params.set('region', regionValues[0]);
-      } else if (regionValues.length > 1) {
-        regionValues.forEach((value) => params.append('region', value));
-      }
-      if (planMosDateTokens.length === 1) {
-        params.set('date', planMosDateTokens[0]);
-      } else if (planMosDateTokens.length > 1) {
-        planMosDateTokens.forEach((token) => params.append('date', token));
-      }
-      if (subconValues.length === 1) {
-        params.set('subcon', subconValues[0]);
-      } else if (subconValues.length > 1) {
-        subconValues.forEach((value) => params.append('subcon', value));
-      }
-      if (statusWhValues.length === 1) {
-        params.set('status_wh', statusWhValues[0]);
-      } else if (statusWhValues.length > 1) {
-        statusWhValues.forEach((value) => params.append('status_wh', value));
-      }
-      if (statusSiteValues.length === 1) {
-        params.set('status_site', statusSiteValues[0]);
-      } else if (statusSiteValues.length > 1) {
-        statusSiteValues.forEach((value) => params.append('status_site', value));
-      }
+      setSearchParamValues(params, {
+        lsp: lspValues,
+        region: regionValues,
+        date: planMosDateTokens,
+        subcon: subconValues,
+        status_wh: statusWhValues,
+        status_site: statusSiteValues,
+      });
     }
 
     if (q.mode === 'single') {
@@ -841,16 +729,9 @@ export function setupAdminPage(
 
       const params = buildParamsAuto();
       const url = buildSearchUrl(params);
-      const resp = await fetch(url);
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
+      const { resp, data, message } = await fetchWithPayload(url, { signal });
       if (!resp.ok) {
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+        throw new Error(message || `HTTP ${resp.status}`);
       }
 
       const items = Array.isArray(data?.items) ? data.items : [];
@@ -960,17 +841,9 @@ export function setupAdminPage(
 
     try {
       const url = `${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`;
-      const resp = await fetch(url, { signal });
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
-
+      const { resp, data, message } = await fetchWithPayload(url, { signal });
       if (!resp.ok) {
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+        throw new Error(message || `HTTP ${resp.status}`);
       }
 
       const items = Array.isArray(data?.items) ? data.items : [];
@@ -1169,18 +1042,11 @@ export function setupAdminPage(
     if (!window.confirm(confirmMsg)) return;
     if (hint) hint.textContent = `正在删除 DN ${dnNumber} …`;
     try {
-      const resp = await fetch(`${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`, {
-        method: 'DELETE',
-      });
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
-      if (!resp.ok)
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+      const { resp, data, message } = await fetchWithPayload(
+        `${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`,
+        { method: 'DELETE', signal }
+      );
+      if (!resp.ok) throw new Error(message || `HTTP ${resp.status}`);
       if (hint) hint.textContent = i18n?.t('modal.deleteSuccess') || '删除成功';
       await fetchList();
     } catch (err) {
@@ -1189,58 +1055,8 @@ export function setupAdminPage(
     }
   }
 
-  function csvEscape(val) {
-    if (val === null || val === undefined) return '';
-    const s = String(val);
-    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
-  }
-
-  const timestampKeyPattern = /(timestamp|_at|_time|time$|createdat|updatedat|createdtime|updatedtime|latestrecordcreatedat)/;
-
-  function formatTimestampForExport(value) {
-    if (value === null || value === undefined || value === '') return '';
-
-    let date;
-    if (value instanceof Date) {
-      date = value;
-    } else if (typeof value === 'number') {
-      const millis = value < 1e12 ? value * 1000 : value;
-      date = new Date(millis);
-    } else if (typeof value === 'string') {
-      const trimmed = value.trim();
-      if (!trimmed) return '';
-      const numeric = Number(trimmed);
-      if (!Number.isNaN(numeric) && trimmed.length <= 12) {
-        const millis = numeric < 1e12 ? numeric * 1000 : numeric;
-        date = new Date(millis);
-      } else {
-        date = new Date(trimmed);
-      }
-    } else {
-      return '';
-    }
-
-    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
-
-    const offsetMinutes = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
-      ? JAKARTA_UTC_OFFSET_MINUTES
-      : 0;
-    const jakartaTime = new Date(date.getTime() + offsetMinutes * 60 * 1000);
-
-    const year = jakartaTime.getUTCFullYear();
-    const month = String(jakartaTime.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(jakartaTime.getUTCDate()).padStart(2, '0');
-    const hours = String(jakartaTime.getUTCHours()).padStart(2, '0');
-    const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
-
-    return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
-  }
-
-  function isTimestampKey(key) {
-    if (!key) return false;
-    return timestampKeyPattern.test(key);
+  function formatTimestampForJakartaExport(value) {
+    return formatTimestampForExport(value, { offsetMinutes: JAKARTA_OFFSET });
   }
 
   function toCsvRows(items) {
@@ -1259,24 +1075,7 @@ export function setupAdminPage(
       orderedKeys.push(strKey);
     };
 
-    const preferredKeys = [
-      ...DN_DETAIL_KEYS,
-      'du_id',
-      'status_delivery',
-      'status_site',
-      'remark',
-      'photo_url',
-      'photo',
-      'photo_urls',
-      'lat',
-      'lng',
-      'latitude',
-      'longitude',
-      'created_at',
-      'updated_at',
-    ];
-
-    preferredKeys.forEach((key) => {
+    EXPORT_PREFERRED_KEYS.forEach((key) => {
       if (
         list.some(
           (item) =>
@@ -1314,7 +1113,7 @@ export function setupAdminPage(
         const strValue = normalizeTextValue(value);
         const lowerKey = key.toLowerCase();
         if (isTimestampKey(lowerKey)) {
-          const formatted = formatTimestampForExport(value);
+          const formatted = formatTimestampForJakartaExport(value);
           if (formatted) return formatted;
         }
         if (/photo|image|picture|attachment/.test(lowerKey) || /url/.test(lowerKey)) {
@@ -1325,19 +1124,6 @@ export function setupAdminPage(
       rows.push(row);
     });
     return rows;
-  }
-
-  function downloadCSV(rows, filename = 'dn_all_results.csv') {
-    const bom = '\uFEFF';
-    const lines = rows.map((r) => r.map(csvEscape).join(',')).join('\n');
-    const blob = new Blob([bom + lines], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
   }
 
   function getExportSearchParams() {
@@ -1354,118 +1140,56 @@ export function setupAdminPage(
     return `${API_BASE}${basePath}${query}`;
   }
 
-  function extractItemsFromResponse(payload) {
-    const visited = new Set();
-    const keys = ['items', 'data', 'list', 'results', 'records', 'rows'];
-
-    const walk = (value) => {
-      if (!value) return [];
-      if (Array.isArray(value)) return value;
-      if (typeof value !== 'object') return [];
-      if (visited.has(value)) return [];
-      visited.add(value);
-
-      for (const key of keys) {
-        if (Object.prototype.hasOwnProperty.call(value, key)) {
-          const direct = value[key];
-          if (Array.isArray(direct)) return direct;
+  async function exportData({ basePath, prepareParams, filename }) {
+    if (!hint) return;
+    try {
+      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
+      const params = getExportSearchParams();
+      if (typeof prepareParams === 'function') {
+        try {
+          prepareParams(params);
+        } catch (err) {
+          console.error(err);
         }
       }
-
-      for (const key of keys) {
-        if (Object.prototype.hasOwnProperty.call(value, key)) {
-          const nested = walk(value[key]);
-          if (Array.isArray(nested)) return nested;
-        }
+      const url = buildExportUrl(basePath, params);
+      const { resp, data, message } = await fetchWithPayload(url);
+      if (!resp.ok) {
+        throw new Error(message || `HTTP ${resp.status}`);
       }
 
-      return [];
-    };
+      const items = extractItemsFromResponse(data);
 
-    return walk(payload);
+      if (!items.length) {
+        window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
+        hint.textContent = '';
+        return;
+      }
+
+      downloadCSV(toCsvRows(items), filename);
+      hint.textContent = '';
+    } catch (err) {
+      hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
+    }
   }
 
   async function exportAll() {
-    if (!hint) return;
-    try {
-      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
-      const params = getExportSearchParams();
-      // Request all items for export - ensure backend returns full dataset
-      try {
-        if (params && typeof params.set === 'function') params.set('page_size', 'all');
-      } catch (e) {
-        // ignore
-      }
-      const basePath =
-        q.mode === 'batch' ? '/api/dn/list/batch' : '/api/dn/list/search';
-      const url = buildExportUrl(basePath, params);
-
-      const resp = await fetch(url);
-      const raw = await resp.text();
-      let data = null;
-      try {
-        data = raw ? JSON.parse(raw) : null;
-      } catch (err) {
-        console.error(err);
-      }
-      if (!resp.ok) {
-        const message =
-          data && typeof data === 'object' && !Array.isArray(data)
-            ? data.detail || data.message
-            : '';
-        throw new Error(message || `HTTP ${resp.status}`);
-      }
-
-      const items = extractItemsFromResponse(data);
-
-      if (!items.length) {
-        window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
-        hint.textContent = '';
-        return;
-      }
-      downloadCSV(toCsvRows(items));
-      hint.textContent = '';
-    } catch (err) {
-      hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
-    }
+    const basePath = q.mode === 'batch' ? '/api/dn/list/batch' : '/api/dn/list/search';
+    await exportData({
+      basePath,
+      prepareParams: (params) => {
+        if (params && typeof params.set === 'function') {
+          params.set('page_size', 'all');
+        }
+      },
+    });
   }
 
   async function exportUpdateRecords() {
-    if (!hint) return;
-    try {
-      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
-      const params = getExportSearchParams();
-      const url = buildExportUrl('/api/dn/records', params);
-
-      const resp = await fetch(url);
-      const raw = await resp.text();
-      let data = null;
-      try {
-        data = raw ? JSON.parse(raw) : null;
-      } catch (err) {
-        console.error(err);
-      }
-      if (!resp.ok) {
-        const message =
-          data && typeof data === 'object' && !Array.isArray(data)
-            ? data.detail || data.message
-            : '';
-        throw new Error(message || `HTTP ${resp.status}`);
-      }
-
-      const items = extractItemsFromResponse(data);
-
-      if (!items.length) {
-        window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
-        hint.textContent = '';
-        return;
-      }
-
-      downloadCSV(toCsvRows(items), 'dn_update_records.csv');
-      hint.textContent = '';
-    } catch (err) {
-      hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
-    }
+    await exportData({
+      basePath: '/api/dn/records',
+      filename: 'dn_update_records.csv',
+    });
   }
 
   // 授权模态框和事件处理已移至 authHandler.js
@@ -1490,7 +1214,10 @@ export function setupAdminPage(
     lspSummaryCards.updateActiveState();
   });
 
-  function resetAllFilters({ statusDeliveryValue = DEFAULT_STATUS_DELIVERY_VALUE } = {}) {
+  function resetAllFilters({
+    statusDeliveryValue = DEFAULT_STATUS_DELIVERY_VALUE,
+    preservePageSize = false,
+  } = {}) {
     setFilterValue('status_delivery', statusDeliveryValue);
     setInputValue('remark', '');
     setFormControlValue(hasSelect, '');
@@ -1504,7 +1231,9 @@ export function setupAdminPage(
     setFilterValue('status_wh', '');
     setFilterValue('status_site', '');
     setInputValue('du', '');
-    setFormControlValue(pageSizeInput, '20');
+    if (!preservePageSize) {
+      setFormControlValue(pageSizeInput, '20');
+    }
     if (dnInput) dnInput.value = '';
     dnEntry.normalizeFilterInput({ enforceFormat: false });
   }
@@ -1587,140 +1316,73 @@ export function setupAdminPage(
   );
 
   const exportAllBtn = el('btn-export-all');
-  exportAllBtn?.addEventListener(
-    'click',
-    async () => {
-      if (!exportAllBtn) return;
-      exportAllBtn.disabled = true;
-      try {
-        await exportAll();
-      } finally {
-        exportAllBtn.disabled = false;
-      }
-    },
-    { signal }
-  );
+  bindAsyncButtonClick(exportAllBtn, exportAll, { signal });
 
   const exportRecordsBtn = el('btn-export-records');
-  exportRecordsBtn?.addEventListener(
-    'click',
-    async () => {
-      if (!exportRecordsBtn) return;
-      exportRecordsBtn.disabled = true;
-      try {
-        await exportUpdateRecords();
-      } finally {
-        exportRecordsBtn.disabled = false;
-      }
-    },
-    { signal }
-  );
+  bindAsyncButtonClick(exportRecordsBtn, exportUpdateRecords, { signal });
 
   const syncSheetBtn = el('btn-sync-google-sheet');
-  syncSheetBtn?.addEventListener(
-    'click',
-    async () => {
-      if (!syncSheetBtn) return;
-      syncSheetBtn.disabled = true;
-      try {
-        const resp = await fetch(`${API_BASE}/api/dn/sync`, { method: 'GET' });
-        const contentType = resp.headers?.get('content-type') || '';
-        let payload = null;
-        let text = '';
-        if (contentType.includes('application/json')) {
-          try {
-            payload = await resp.json();
-          } catch (err) {
-            console.error(err);
-          }
-        } else {
-          try {
-            text = await resp.text();
-          } catch (err) {
-            console.error(err);
-          }
-        }
-
-        const messageFromResp =
-          (payload && (payload.message || payload.msg || payload.detail)) || text || '';
-
-        if (!resp.ok) {
-          const baseError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
-          const errorMessage = messageFromResp
-            ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: messageFromResp }) ||
-            `${baseError}：${messageFromResp}`
-            : baseError;
-          showToast(errorMessage, 'error');
-          return;
-        }
-
-        const baseSuccess =
-          i18n?.t('actions.syncGoogleSheetSuccess') || '已触发 Google Sheet 数据更新';
-        const successMessage = messageFromResp
-          ? i18n?.t('actions.syncGoogleSheetSuccessWithMsg', { msg: messageFromResp }) ||
-          `${baseSuccess}：${messageFromResp}`
-          : baseSuccess;
-        showToast(successMessage, 'success');
-      } catch (err) {
-        const fallbackError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
-        const message = err?.message || err;
-        const composed = message
-          ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: message }) ||
-          `${fallbackError}：${message}`
-          : fallbackError;
-        showToast(composed, 'error');
-      } finally {
-        syncSheetBtn.disabled = false;
+  bindAsyncButtonClick(syncSheetBtn, async () => {
+    if (!syncSheetBtn) return;
+    try {
+      const { resp, message: responseMessage } = await fetchWithPayload(
+        `${API_BASE}/api/dn/sync`,
+        { method: 'GET' }
+      );
+      if (!resp.ok) {
+        const baseError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
+        const errorMessage = responseMessage
+          ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: responseMessage }) ||
+            `${baseError}：${responseMessage}`
+          : baseError;
+        showToast(errorMessage, 'error');
+        return;
       }
-    },
-    { signal }
-  );
 
-  archiveExpiredDnBtn?.addEventListener(
-    'click',
+      const baseSuccess =
+        i18n?.t('actions.syncGoogleSheetSuccess') || '已触发 Google Sheet 数据更新';
+      const successMessage = responseMessage
+        ? i18n?.t('actions.syncGoogleSheetSuccessWithMsg', { msg: responseMessage }) ||
+          `${baseSuccess}：${responseMessage}`
+        : baseSuccess;
+      showToast(successMessage, 'success');
+    } catch (err) {
+      const fallbackError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
+      const message = err?.message || err;
+      const composed = message
+        ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: message }) ||
+          `${fallbackError}：${message}`
+        : fallbackError;
+      showToast(composed, 'error');
+    }
+  }, { signal });
+
+  bindAsyncButtonClick(
+    archiveExpiredDnBtn,
     async () => {
-      if (!archiveExpiredDnBtn || archiveExpiredDnBtn.disabled) return;
-      archiveExpiredDnBtn.disabled = true;
+      if (!archiveExpiredDnBtn) return;
       try {
-        const resp = await fetch(`${API_BASE}/api/dn/archive/mark`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ threshold_days: ARCHIVE_THRESHOLD_DAYS }),
-        });
-
-        const contentType = resp.headers?.get('content-type') || '';
-        let payload = null;
-        let text = '';
-
-        if (contentType.includes('application/json')) {
-          try {
-            payload = await resp.json();
-          } catch (err) {
-            console.error(err);
+        const { resp, data, message: responseMessage } = await fetchWithPayload(
+          `${API_BASE}/api/dn/archive/mark`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ threshold_days: ARCHIVE_THRESHOLD_DAYS }),
           }
-        } else {
-          try {
-            text = await resp.text();
-          } catch (err) {
-            console.error(err);
-          }
-        }
+        );
 
-        const messageFromResp =
-          (payload && (payload.message || payload.msg || payload.detail)) || text || '';
-
-        if (!resp.ok || (payload && payload.ok === false)) {
+        if (!resp.ok || (data && data.ok === false)) {
           const baseError =
             i18n?.t('actions.archiveExpiredDnError') || '归档过期 DN 标记失败';
-          const errorMessage = messageFromResp
-            ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: messageFromResp }) ||
-            `${baseError}：${messageFromResp}`
+          const errorMessage = responseMessage
+            ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: responseMessage }) ||
+              `${baseError}：${responseMessage}`
             : baseError;
           showToast(errorMessage, 'error');
           return;
         }
 
-        const rawMatchedRows = payload?.data?.matched_rows;
+        const rawMatchedRows = data?.data?.matched_rows;
         let matchedCount = null;
         if (typeof rawMatchedRows === 'number' && Number.isFinite(rawMatchedRows)) {
           matchedCount = rawMatchedRows;
@@ -1736,10 +1398,10 @@ export function setupAdminPage(
           successMessage =
             i18n?.t('actions.archiveExpiredDnSuccessWithCount', { count: matchedCount }) ||
             `${baseSuccess}，匹配 ${matchedCount} 条记录`;
-        } else if (messageFromResp) {
+        } else if (responseMessage) {
           successMessage =
-            i18n?.t('actions.archiveExpiredDnSuccessWithMsg', { msg: messageFromResp }) ||
-            `${baseSuccess}：${messageFromResp}`;
+            i18n?.t('actions.archiveExpiredDnSuccessWithMsg', { msg: responseMessage }) ||
+            `${baseSuccess}：${responseMessage}`;
         }
 
         showToast(successMessage, 'success');
@@ -1749,14 +1411,19 @@ export function setupAdminPage(
         const message = err?.message || err;
         const composed = message
           ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: message }) ||
-          `${fallbackError}：${message}`
+            `${fallbackError}：${message}`
           : fallbackError;
         showToast(composed, 'error');
-      } finally {
-        archiveExpiredDnBtn.disabled = !isTransportManagerRole();
       }
     },
-    { signal }
+    {
+      signal,
+      onFinally: () => {
+        if (archiveExpiredDnBtn) {
+          archiveExpiredDnBtn.disabled = !isTransportManagerRole();
+        }
+      },
+    }
   );
 
   el('btn-trust-backend-link')?.addEventListener(
