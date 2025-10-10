@@ -201,9 +201,9 @@ export function setupAdminPage(
     showToast,
     onRoleChange,
     onRoleApplied: handleAuthRoleApplied,
-    onAuthSuccess: (role, userInfo) => {
-      // 授权成功后刷新列表
-      fetchList();
+    onAuthSuccess: () => {
+      // 授权成功后执行完整初始化逻辑
+      init();
     },
   });
 
@@ -1750,8 +1750,16 @@ export function setupAdminPage(
   hideHasAttachmentFilter();
   tableRenderer?.hideUpdatedAtColumn?.();
 
-  authHandler.restoreFromStorage();
-  init();
+  const hasAuth = authHandler.restoreFromStorage();
+  if (hasAuth) {
+    init();
+  } else {
+    try {
+      authHandler.openAuthModal?.();
+    } catch (err) {
+      console.error('Failed to open auth modal:', err);
+    }
+  }
   applyAllTranslations();
 
   return () => {

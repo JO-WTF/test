@@ -257,6 +257,10 @@ export function createStatusDeliveryCardManager({
   }
 
   async function refreshCounts() {
+    const currentRole = typeof getCurrentRole === 'function' ? getCurrentRole() : null;
+    if (!currentRole) {
+      return;
+    }
     const shouldFetchStats =
       (defs.length && refs.size) || typeof onStatsFetched === 'function';
     if (!shouldFetchStats) return;
