@@ -882,6 +882,9 @@ body.admin-scroll-locked {
 .admin-page .modal.small {
     max-width: 360px;
 }
+.admin-page .du-wrap {
+    position: relative
+    }
 .admin-page .du-hilite {
     position: absolute;
     inset: 0;
@@ -889,7 +892,14 @@ body.admin-scroll-locked {
     background: transparent;
     pointer-events: none;
     z-index: 0;
-    overflow: hidden
+    overflow: hidden;
+    padding: 10px 12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.5;
+    font: inherit;
+    border-radius: 10px;
+    box-sizing: border-box
     }
 .admin-page .du-wrap textarea {
     position: relative;
@@ -902,7 +912,10 @@ body.admin-scroll-locked {
     word-wrap: break-word;
     box-sizing: border-box;
     width: 100%;
-    resize: none
+    resize: none;
+    padding: 10px 12px;
+    line-height: 1.5;
+    font: inherit
     }
 .admin-page .hl-ok {
     background: var(--ant-success-soft);
