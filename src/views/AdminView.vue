@@ -325,17 +325,14 @@
               <th data-i18n="table.lsp">LSP</th>
               <th data-i18n="table.statusDelivery">配送状态</th>
               <th data-i18n="table.statusSite">站点状态</th>
-              <th data-i18n="table.issueRemark">ISSUE REMARK</th>
               <th data-i18n="table.remark">备注</th>
-              <th data-i18n="table.checkin">打卡</th>
               <th
-                data-i18n="table.updatedAt"
-                data-column="updatedAt"
-                style="display: none"
-                aria-hidden="true"
+                data-i18n="table.latestRecordCreatedAt"
+                data-column="latestRecordCreatedAt"
               >
                 更新时间
               </th>
+              <th data-i18n="table.checkin">打卡</th>
               <th data-i18n="table.actions" data-column="actions">操作</th>
             </tr>
           </thead>

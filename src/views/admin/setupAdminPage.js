@@ -239,14 +239,15 @@ export function setupAdminPage(
     const utcTime = date.getTime();
     const jakartaTime = new Date(utcTime + jakartaOffset * 60 * 1000);
 
-    const year = jakartaTime.getUTCFullYear();
-    const month = String(jakartaTime.getUTCMonth() + 1).padStart(2, '0');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthIndex = jakartaTime.getUTCMonth();
+    const monthLabel = monthNames[monthIndex] || String(monthIndex + 1).padStart(2, '0');
     const day = String(jakartaTime.getUTCDate()).padStart(2, '0');
     const hours = String(jakartaTime.getUTCHours()).padStart(2, '0');
     const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
     const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
 
-    return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
+    return `${day} ${monthLabel}\n${hours}:${minutes}:${seconds}`;
   }
 
   setFilterValue('status_delivery', DEFAULT_STATUS_DELIVERY_VALUE);

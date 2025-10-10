@@ -8,9 +8,9 @@ import {
   DETAIL_INPUT_FIELD_SET,
   REGION_FIELD,
   PLAN_MOS_DATE_FIELD,
-  ISSUE_REMARK_FIELD,
   STATUS_SITE_FIELD,
   UPDATED_AT_FIELD,
+  LATEST_RECORD_CREATED_AT_FIELD,
   LSP_FIELD,
   LAT_FIELD,
   LNG_FIELD,
@@ -302,10 +302,6 @@ export function createTableRenderer(options = {}) {
     return getNormalizedField(item, PLAN_MOS_DATE_FIELD);
   }
 
-  function getIssueRemarkDisplay(item) {
-    return getNormalizedField(item, ISSUE_REMARK_FIELD);
-  }
-
   function getStatusSiteCanonicalValue(item) {
     const raw = getNormalizedField(item, STATUS_SITE_FIELD);
     return normalizeStatusDelivery(raw);
@@ -317,6 +313,10 @@ export function createTableRenderer(options = {}) {
 
   function getUpdatedAtDisplay(item) {
     return getNormalizedField(item, UPDATED_AT_FIELD);
+  }
+
+  function getLatestRecordCreatedAtDisplay(item) {
+    return getNormalizedField(item, LATEST_RECORD_CREATED_AT_FIELD);
   }
 
   function getCoordinateParts(item) {
@@ -398,9 +398,7 @@ export function createTableRenderer(options = {}) {
 
     if (/timestamp|_at$|date|time/.test(lowerKey) && !/photo|image|picture|attachment|url/.test(lowerKey)) {
       const formattedTime = formatTimestamp(value);
-      if (formattedTime) {
-        return escapeHtml(formattedTime);
-      }
+      return formattedTime;
     }
 
     if (lowerKey === 'lonlat') {
@@ -579,10 +577,10 @@ export function createTableRenderer(options = {}) {
       const lsp = getLspDisplay(item);
       const region = getRegionDisplay(item);
       const planMos = getPlanMosDateDisplay(item);
-      const issueRemark = getIssueRemarkDisplay(item);
       const statusSite = getStatusSiteDisplay(item);
-  const statusSiteCanonical = getStatusSiteCanonicalValue(item);
+      const statusSiteCanonical = getStatusSiteCanonicalValue(item);
       const updatedAt = getUpdatedAtDisplay(item);
+      const latestRecordCreatedAt = getLatestRecordCreatedAtDisplay(item);
       const remarkText = normalizeText(item?.remark);
       const remarkDisplay = remarkText ? escapeHtml(remarkText).replace(/\n/g, '。') : '<span class="muted">-</span>';
       const statusDeliveryValue = normalizeStatusDelivery(item?.status_delivery);
@@ -607,9 +605,13 @@ export function createTableRenderer(options = {}) {
         ? `<span class="region-plan-cell__plan">${escapeHtml(planMos)}</span>`
         : '<span class="region-plan-cell__plan muted">-</span>';
       const planMosMobile = planMos ? formatPlanMosDateForMobile(planMos) : '';
-      const issueRemarkCell = issueRemark ? escapeHtml(issueRemark).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
-  const statusSiteCell = statusSite ? escapeHtml(statusSite).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
+      const statusSiteCell = statusSite ? escapeHtml(statusSite).replace(/\n/g, '<br>') : '<span class="muted">-</span>';
       const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
+      const latestRecordCreatedAtRaw = latestRecordCreatedAt || '';
+      const latestRecordFormatted = formatTimestamp(latestRecordCreatedAtRaw);
+      const latestRecordCreatedAtCell = latestRecordFormatted
+        ? escapeHtml(latestRecordFormatted).replace(/\n/g, '<br>')
+        : '<span class="muted">-</span>';
       const duIdRaw = normalizeText(item?.du_id);
       const duIdLabel = translate('table.duIdLabel', 'DU ID') || 'DU ID';
       const duIdMarkup = duIdRaw
@@ -619,14 +621,6 @@ export function createTableRenderer(options = {}) {
       const actionsContent = showActions ? buildActionCell(item, remarkText || '') : '';
 
       const lspAbbrev = lsp ? getLspAbbreviation(lsp) : '';
-      const firstCell = `      <td>
-          <div class="summary-cell">
-            <span class="row-toggle" aria-hidden="true"></span>
-            <div class="summary-primary" data-dn-number="${safeDnNumber}">${dnNumberDisplay}</div>
-          </div>
-          ${hint}
-        </td>`;
-
       const cells = [
           `      <td class="summary-dn-cell">
             <div class="summary-cell">
@@ -642,8 +636,8 @@ export function createTableRenderer(options = {}) {
           `      <td class="summary-lsp-cell" data-mobile-value="${escapeHtml(lspAbbrev)}">${lspCell}</td>`,
           `      <td class="summary-status-cell" data-raw-status="${escapeHtml(statusDeliveryRaw)}" data-status-site="${escapeHtml(statusSiteCanonical || '')}">${statusCellContent}</td>`,
           `      <td class="summary-status-site-cell">${statusSiteCell}</td>`,
-          `      <td class="summary-issue-remark-cell">${issueRemarkCell}</td>`,
           `      <td class="summary-remark-cell">${remarkDisplay}</td>`,
+          `      <td class="summary-latest-record-created-at-cell" data-column="latestRecordCreatedAt">${latestRecordCreatedAtCell}</td>`,
           `      <td class="summary-checkin-cell">${checkinCell}</td>`,
           `      <td class="summary-updated-cell" data-column="updatedAt" aria-hidden="true" style="display: none">${updatedCell}</td>`,
       ];

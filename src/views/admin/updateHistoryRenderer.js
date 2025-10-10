@@ -76,8 +76,9 @@ export function createUpdateHistoryRenderer({
           }
         }
 
-        const createdAt = item.created_at
-          ? formatTimestampToJakarta(item.created_at)
+        const createdAtRaw = item.created_at ? formatTimestampToJakarta(item.created_at) : '';
+        const createdAt = createdAtRaw
+          ? escapeHtml(createdAtRaw).replace(/\n/g, '<br>')
           : '<span class="muted">-</span>';
 
         const [lat, lng] = [item.lat, item.lng];

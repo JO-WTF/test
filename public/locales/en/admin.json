@@ -98,6 +98,7 @@
   "table.statusDelivery": "Delivery Status",
   "table.statusSite": "Site Status",
     "table.remark": "Remark",
+    "table.latestRecordCreatedAt": "Update Time",
     "table.checkin": "Check-in",
     "table.updatedAt": "Last Updated",
     "table.actions": "Actions",

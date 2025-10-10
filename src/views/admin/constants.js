@@ -31,11 +31,11 @@ export const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';
 export const JAKARTA_UTC_OFFSET_MINUTES = 7 * 60;
 
 // 表格列数常量
-export const SUMMARY_BASE_COLUMN_COUNT = 10;
-export const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 11;
+export const SUMMARY_BASE_COLUMN_COUNT = 8;
+export const SUMMARY_COLUMN_WITH_ACTIONS_COUNT = 9;
 
 // 归档相关常量
-export const ARCHIVE_THRESHOLD_DAYS = 10;
+export const ARCHIVE_THRESHOLD_DAYS = 2;
 
 // 状态卡片配置
 export const TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS = [
@@ -110,6 +110,7 @@ export const PLAN_MOS_DATE_FIELD = 'plan_mos_date';
 export const ISSUE_REMARK_FIELD = 'issue_remark';
 export const STATUS_SITE_FIELD = 'status_site';
 export const UPDATED_AT_FIELD = 'updated_at';
+export const LATEST_RECORD_CREATED_AT_FIELD = 'latest_record_created_at';
 export const LSP_FIELD = 'lsp';
 export const LAT_FIELD = 'lat';
 export const LNG_FIELD = 'lng';
@@ -121,7 +122,6 @@ export const SUMMARY_FIELD_KEYS = new Set([
   'lsp',
   'region',
   'plan_mos_date',
-  'issue_remark',
   'status_site',
   'status',
   'remark',

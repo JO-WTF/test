@@ -101,6 +101,7 @@
     "table.issueRemark": "问题备注",
     "table.statusDelivery": "配送状态",
     "table.remark": "备注",
+    "table.latestRecordCreatedAt": "更新时间",
     "table.checkin": "打卡",
     "table.updatedAt": "更新时间",
     "table.actions": "操作",

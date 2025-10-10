@@ -101,6 +101,7 @@
     "table.issueRemark": "Catatan Masalah",
     "table.statusDelivery": "Status Pengiriman",
     "table.remark": "Catatan",
+    "table.latestRecordCreatedAt": "Waktu Pembaruan",
     "table.checkin": "Absen",
     "table.updatedAt": "Terakhir Diperbarui",
     "table.actions": "Tindakan",
