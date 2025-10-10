@@ -592,7 +592,7 @@ export function createTableRenderer(options = {}) {
         ? `<button type="button" class="update-count-badge" data-dn-number="${escapeHtml(rawDnNumber)}" title="点击查看更新记录 (${updateCount} 次)">${updateCount}</button>`
         : '';
 
-      const statusCellContent = `<div class="status-cell-wrapper">${statusDeliveryDisplay(statusDeliveryRaw)}${updateCountBadge}</div>`;
+      const statusCellContent = `<div class="status-cell-wrapper">${statusDeliveryDisplay(statusDeliveryRaw)}</div>`;
       // 合并照片和位置为打卡列
       const photoCell = buildPhotoCell(item);
       const locationCell = buildLocationCell(item);
@@ -609,9 +609,14 @@ export function createTableRenderer(options = {}) {
       const updatedCell = updatedAt ? escapeHtml(updatedAt) : '<span class="muted">-</span>';
       const latestRecordCreatedAtRaw = latestRecordCreatedAt || '';
       const latestRecordFormatted = formatTimestamp(latestRecordCreatedAtRaw);
-      const latestRecordCreatedAtCell = latestRecordFormatted
-        ? escapeHtml(latestRecordFormatted).replace(/\n/g, '<br>')
-        : '<span class="muted">-</span>';
+      const latestRecordText = latestRecordFormatted
+        ? `<span class="latest-record-text">${escapeHtml(latestRecordFormatted).replace(/\n/g, '<br>')}</span>`
+        : '<span class="latest-record-text"><span class="muted">-</span></span>';
+      const latestRecordElements = [latestRecordText];
+      if (updateCountBadge) {
+        latestRecordElements.push(updateCountBadge);
+      }
+      const latestRecordCreatedAtCell = `<div class="latest-record-wrapper">${latestRecordElements.join(' ')}</div>`;
       const duIdRaw = normalizeText(item?.du_id);
       const duIdLabel = translate('table.duIdLabel', 'DU ID') || 'DU ID';
       const duIdMarkup = duIdRaw

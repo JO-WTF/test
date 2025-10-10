@@ -442,6 +442,15 @@ body.admin-theme {
     outline: none;
     transition: all 0.2s ease
     }
+.admin-page .latest-record-wrapper {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 6px
+    }
+.admin-page .latest-record-text {
+    display: inline-block;
+    line-height: 1.3
+    }
 .admin-page .update-count-badge:hover {
     background: var(--ant-primary-hover);
     transform: scale(1.05)
