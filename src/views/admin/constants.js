@@ -50,23 +50,10 @@ export const TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS = [
 // DN详情展开时显示的字段及其顺序
 // 只有在此列表中的字段才会在展开详情时显示
 export const DN_DETAIL_KEYS = [
-  'du_id',
-  'lsp',
-  'region',
-  'plan_mos_date',
   'area',
   'status_wh',
-  'status_site',
-  'status',
-  'update_count',
-  'issue_remark',
-  'remark',
-  'photo_url',
-  'lonlat',
   'mos_given_time',
   'expected_arrival_time_from_project',
-  'hw_tracker',
-  'lsp_tracker',
   'driver_contact_name',
   'driver_contact_number',
   'transportation_time',
@@ -76,12 +63,6 @@ export const DN_DETAIL_KEYS = [
   'estimate_arrive_sites_time_eta',
   'actual_depart_from_start_point_atd',
   'actual_arrive_time_ata',
-  'mos_attempt_1st_time',
-  'mos_attempt_2nd_time',
-  'mos_attempt_3rd_time',
-  'mos_attempt_4th_time',
-  'mos_attempt_5th_time',
-  'mos_attempt_6th_time',
   'project_request',
   'mos_type',
   'subcon',
@@ -89,8 +70,6 @@ export const DN_DETAIL_KEYS = [
   'gs_sheet',
   'gs_row',
   'created_at',
-  'last_updated_by',
-  'latest_record_created_at',
 ];
 
 export const DETAIL_INPUT_FIELD_SET = new Set(
