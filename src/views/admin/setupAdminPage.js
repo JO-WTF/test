@@ -37,10 +37,6 @@ import {
   ICON_MARKUP,
 } from './constants.js';
 
-const SCAN_STATUS_META = new Map(
-  (STATUS_DELIVERY_ITEMS || []).map((item) => [item.value, item])
-);
-
 const API_BASE = getApiBase();
 
 export function setupAdminPage(
@@ -60,6 +56,10 @@ export function setupAdminPage(
   const { signal } = controller;
 
   const el = (id) => rootEl.querySelector(`#${id}`);
+
+  const scanStatusMeta = new Map(
+    (STATUS_DELIVERY_ITEMS || []).map((item) => [item.value, item])
+  );
 
   const {
     getFilterValues,
@@ -597,7 +597,7 @@ export function setupAdminPage(
   function getModalStatusLabel(value) {
     const canonical = normalizeStatusDeliveryValue(value);
     if (!canonical) return '';
-    const meta = SCAN_STATUS_META.get(canonical);
+    const meta = scanStatusMeta.get(canonical);
     if (meta) {
       const translated = translateInstant(meta.filterLabelKey, meta.fallbackLabel || canonical);
       if (translated) return translated;
@@ -1196,7 +1196,7 @@ export function setupAdminPage(
     return s;
   }
 
-  const TIMESTAMP_KEY_PATTERN = /(timestamp|_at|_time|time$|createdat|updatedat|createdtime|updatedtime|latestrecordcreatedat)/;
+  const timestampKeyPattern = /(timestamp|_at|_time|time$|createdat|updatedat|createdtime|updatedtime|latestrecordcreatedat)/;
 
   function formatTimestampForExport(value) {
     if (value === null || value === undefined || value === '') return '';
@@ -1240,7 +1240,7 @@ export function setupAdminPage(
 
   function isTimestampKey(key) {
     if (!key) return false;
-    return TIMESTAMP_KEY_PATTERN.test(key);
+    return timestampKeyPattern.test(key);
   }
 
   function toCsvRows(items) {

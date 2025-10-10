@@ -4,9 +4,6 @@ import {
   TRANSPORT_MANAGER_ROLE_KEY,
 } from './constants.js';
 
-const STATUS_DELIVERY_CARD_MAX_COLUMNS = 13;
-const STATUS_DELIVERY_CARD_TOTAL_KEY = '__TOTAL__';
-
 export function createStatusDeliveryCardManager({
   container,
   wrapper,
@@ -126,7 +123,7 @@ export function createStatusDeliveryCardManager({
           {
             status_delivery: '',
             label: 'Total',
-            key: STATUS_DELIVERY_CARD_TOTAL_KEY,
+            key: '__TOTAL__',
             type: 'total',
           },
           ...list,
@@ -155,7 +152,8 @@ export function createStatusDeliveryCardManager({
     wrapper.style.display = '';
     wrapper.setAttribute('aria-hidden', 'false');
     container.innerHTML = '';
-    const columns = Math.max(1, Math.min(list.length, STATUS_DELIVERY_CARD_MAX_COLUMNS));
+    const maxColumns = 13;
+    const columns = Math.max(1, Math.min(list.length, maxColumns));
 
     list.forEach((defItem) => {
       const btn = document.createElement('button');

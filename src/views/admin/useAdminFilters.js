@@ -4,37 +4,6 @@ import { STATUS_DELIVERY_ITEMS } from '../../config.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
 const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
-const DATE_PRESET_DEFS = [
-  { key: 'yesterday', offset: -1 },
-  { key: 'today', offset: 0 },
-  { key: 'tomorrow', offset: 1 },
-];
-const DATE_PRESET_FALLBACK_LABELS = {
-  yesterday: 'Yesterday',
-  today: 'Today',
-  tomorrow: 'Tomorrow',
-};
-
-const HAS_COORDINATE_OPTION_DEFS = [
-  { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
-  { value: 'true', translationKey: 'hasCoord.true', fallback: '有经纬度' },
-  { value: 'false', translationKey: 'hasCoord.false', fallback: '无经纬度' },
-];
-
-const STATUS_FILTER_DEFS = [
-  { value: "", translationKey: 'status.filter.any', fallback: '任意' },
-  {
-    value: '__NOT_EMPTY__',
-    translationKey: 'status.filter.notEmpty',
-    fallback: '任意非空',
-  },
-  ...STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
-    value,
-    translationKey: filterLabelKey,
-    fallback: fallbackLabel,
-  })),
-];
-
 const translateWithFallback = (translator, key, fallback) => {
   if (typeof translator === 'function') {
     try {
@@ -515,7 +484,20 @@ export function useAdminFilters() {
   };
 
   const updateStatusSelectOptions = (translator) => {
-    const options = STATUS_FILTER_DEFS.map(({ value, translationKey, fallback }) => ({
+    const statusFilterDefs = [
+      { value: '', translationKey: 'status.filter.any', fallback: '任意' },
+      {
+        value: '__NOT_EMPTY__',
+        translationKey: 'status.filter.notEmpty',
+        fallback: '任意非空',
+      },
+      ...STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
+        value,
+        translationKey: filterLabelKey,
+        fallback: fallbackLabel,
+      })),
+    ];
+    const options = statusFilterDefs.map(({ value, translationKey, fallback }) => ({
       value,
       label: translateWithFallback(translator, translationKey, fallback),
     }));
@@ -527,7 +509,12 @@ export function useAdminFilters() {
   };
 
   const updateHasCoordinateSelectOptions = (translator) => {
-    const options = HAS_COORDINATE_OPTION_DEFS.map(({ value, translationKey, fallback }) => ({
+    const coordinateOptionDefs = [
+      { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
+      { value: 'true', translationKey: 'hasCoord.true', fallback: '有经纬度' },
+      { value: 'false', translationKey: 'hasCoord.false', fallback: '无经纬度' },
+    ];
+    const options = coordinateOptionDefs.map(({ value, translationKey, fallback }) => ({
       value,
       label: translateWithFallback(translator, translationKey, fallback),
     }));
@@ -540,11 +527,21 @@ export function useAdminFilters() {
 
   const refreshDatePresets = (translator) => {
     const base = dayjs();
-    datePresets.value = DATE_PRESET_DEFS.map(({ key, offset }) => ({
+    const presetDefs = [
+      { key: 'yesterday', offset: -1 },
+      { key: 'today', offset: 0 },
+      { key: 'tomorrow', offset: 1 },
+    ];
+    const presetFallbackLabels = {
+      yesterday: 'Yesterday',
+      today: 'Today',
+      tomorrow: 'Tomorrow',
+    };
+    datePresets.value = presetDefs.map(({ key, offset }) => ({
       label: translateWithFallback(
         translator,
         `date.presets.${key}`,
-        DATE_PRESET_FALLBACK_LABELS[key] || key
+        presetFallbackLabels[key] || key
       ),
       value: base.add(offset, 'day'),
     }));

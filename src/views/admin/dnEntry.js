@@ -2,10 +2,10 @@ import { escapeHtml, lockBodyScroll, unlockBodyScroll } from './utils.js';
 import { TRANSPORT_MANAGER_ROLE_KEY } from './constants.js';
 import { normalizeDnSoft, DN_VALID_RE } from '../../utils/dn.js';
 
-const DN_SEPARATOR_SOURCE = '[\\s,，；;、\\u3001]+';
-const DN_SEP_RE = new RegExp(DN_SEPARATOR_SOURCE, 'gu');
-const DN_SEP_CAPTURE_RE = new RegExp(`(${DN_SEPARATOR_SOURCE})`, 'gu');
-const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
+const separatorSource = '[\\s,，；;、\\u3001]+';
+const separatorSplitPattern = new RegExp(separatorSource, 'gu');
+const separatorCapturePattern = new RegExp(`(${separatorSource})`, 'gu');
+const separatorOnlyPattern = new RegExp(`^${separatorSource}$`, 'u');
 
 export function createDnEntryManager({
   dnInput,
@@ -47,7 +47,7 @@ export function createDnEntryManager({
   function splitTokens(raw) {
     const normalized = normalizeRawSoft(raw);
     return normalized
-      .split(DN_SEP_RE)
+      .split(separatorSplitPattern)
       .map((value) => value.trim())
       .filter(Boolean);
   }
@@ -55,11 +55,11 @@ export function createDnEntryManager({
   function buildHighlightHTML(raw) {
     const normalized = normalizeRawSoft(raw);
     if (!normalized) return '';
-    const parts = normalized.split(DN_SEP_CAPTURE_RE);
+    const parts = normalized.split(separatorCapturePattern);
     const out = [];
     for (const chunk of parts) {
       if (!chunk) continue;
-      if (DN_SEP_TEST_RE.test(chunk)) {
+      if (separatorOnlyPattern.test(chunk)) {
         out.push(`<span class="hl-sep">${escapeHtml(chunk)}</span>`);
         continue;
       }

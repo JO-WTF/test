@@ -1,11 +1,11 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 
-const THEME_CLASSES = ['scan-theme', 'admin-theme', 'dashboard-theme'];
+const themeClasses = ['scan-theme', 'admin-theme', 'dashboard-theme'];
 
 export function useBodyTheme(theme) {
   onMounted(() => {
     const body = document.body;
-    THEME_CLASSES.forEach((cls) => {
+    themeClasses.forEach((cls) => {
       if (cls !== theme) {
         body.classList.remove(cls);
       }

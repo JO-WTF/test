@@ -212,33 +212,7 @@ export const STATUS_DELIVERY_ALIAS_MAP = createAliasMap(
 
 export const STATUS_SITE_VALUES = buildValueMap(STATUS_SITE_DEFINITIONS);
 export const STATUS_SITE_ORDERED_LIST = buildList(STATUS_SITE_DEFINITIONS);
-export const STATUS_SITE_ITEMS = Object.freeze(
-  STATUS_SITE_DEFINITIONS.map(({ key, value, translationKey, fallbackLabel }) => {
-    const camelKey = toCamelCaseKey(key);
-    return {
-      key,
-      value,
-      translationKey,
-      fallbackLabel,
-      camelKey,
-      filterLabelKey: `status.filter.${camelKey}`,
-    };
-  })
-);
-
-export const STATUS_SITE_VALUE_TO_KEY = Object.freeze(
-  buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'translationKey')
-);
-
-export const STATUS_SITE_DISPLAY_OVERRIDES = Object.freeze(
-  buildDefinitionMap(STATUS_SITE_DEFINITIONS, 'displayOverride')
-);
-
-export const STATUS_SITE_ALIAS_MAP = createAliasMap(
-  STATUS_SITE_DEFINITIONS
-);
-
-export const ROLE_DEFINITIONS = {
+const roleDefinitions = {
   lsp: {
     key: 'lsp',
     label: 'LSP',
@@ -292,4 +266,4 @@ export const ROLE_DEFINITIONS = {
   },
 };
 
-export const ROLE_LIST = Object.values(ROLE_DEFINITIONS);
+export const ROLE_LIST = Object.values(roleDefinitions);

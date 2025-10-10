@@ -23,7 +23,7 @@ const STATUS_ORDER = [
 ];
 
 // 状态到翻译键的映射
-const STATUS_LABEL_KEYS = {
+const statusLabelKeys = {
   [STATUS_DELIVERY_VALUES.NEW_MOS]: 'status.newMos',
   [STATUS_DELIVERY_VALUES.PREPARE_VEHICLE]: 'status.prepareVehicle',
   [STATUS_DELIVERY_VALUES.ON_THE_WAY]: 'status.onTheWay',
@@ -90,7 +90,7 @@ export function setupDashboardPage(rootEl, opts = {}) {
   };
 
   const statusLabel = (status) => {
-    const key = STATUS_LABEL_KEYS[status];
+    const key = statusLabelKeys[status];
     return key ? translate(key, undefined, status) : status;
   };
 

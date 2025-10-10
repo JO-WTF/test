@@ -4,7 +4,6 @@ import {
   STATUS_DELIVERY_VALUES,
   STATUS_SITE_VALUES,
   STATUS_DELIVERY_VALUE_TO_KEY,
-  STATUS_SITE_VALUE_TO_KEY,
   STATUS_DELIVERY_ALIAS_MAP,
   STATUS_DELIVERY_ORDERED_LIST,
   TRANSPORT_MANAGER_ROLE_KEY,
@@ -21,7 +20,6 @@ export const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
 
 // 状态相关常量
 export const STATUS_DELIVERY_KNOWN_VALUES = new Set(Object.keys(STATUS_DELIVERY_VALUE_TO_KEY));
-export const STATUS_SITE_KNOWN_VALUES = new Set(Object.keys(STATUS_SITE_VALUE_TO_KEY));
 export const DEFAULT_STATUS_DELIVERY_VALUE = "";
 export const STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK =
   '配送状态(status_delivery)与司机上传的货物状态(status)不一致，请检查并更新。';
@@ -86,7 +84,6 @@ export const DETAIL_INPUT_FIELD_SET = new Set(
 
 export const REGION_FIELD = 'region';
 export const PLAN_MOS_DATE_FIELD = 'plan_mos_date';
-export const ISSUE_REMARK_FIELD = 'issue_remark';
 export const STATUS_SITE_FIELD = 'status_site';
 export const UPDATED_AT_FIELD = 'updated_at';
 export const LATEST_RECORD_CREATED_AT_FIELD = 'latest_record_created_at';

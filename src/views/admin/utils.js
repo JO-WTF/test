@@ -1,4 +1,3 @@
-const SCROLL_LOCK_CLASS = 'admin-scroll-locked';
 let scrollLockCount = 0;
 
 export function escapeHtml(input) {
@@ -97,7 +96,7 @@ export function normalizeDateControlValue(value) {
 function applyScrollLockClass(target, action) {
   if (!target || typeof target.classList?.[action] !== 'function') return;
   try {
-    target.classList[action](SCROLL_LOCK_CLASS);
+    target.classList[action]('admin-scroll-locked');
   } catch (err) {
     console.error(err);
   }
