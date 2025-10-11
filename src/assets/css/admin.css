@@ -815,10 +815,6 @@ body.admin-theme {
 .admin-page .filters-toggle-btn {
     display: none;
 }
-html.admin-scroll-locked,
-body.admin-scroll-locked {
-    overflow: hidden
-    }
 .admin-page .filters-grid .field input, .admin-page .filters-grid .field select {
     width: 100%;
     background-color: var(--ant-surface);
@@ -872,65 +868,61 @@ body.admin-scroll-locked {
 .admin-page .w120 {
     width: 120px
     }
-.admin-page .modal-mask {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 999
-    }
-.admin-page .modal {
+.admin-modal-wrap .modal {
     background: var(--ant-surface-muted);
     border: 1px solid var(--ant-border-strong);
     border-radius: 14px;
-    max-width: 520px;
     width: 92%;
     padding: 14px
     }
-.admin-page .modal.edit-modal {
-    max-width: 640px;
-    padding: 20px;
+
+.admin-modal-wrap .ant-modal-content {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
 }
-.admin-page .modal.edit-modal h3 {
+.admin-modal-wrap .ant-modal-footer {
+    display: none;
+}
+.admin-modal-wrap .modal.edit-modal {
+    padding: 20px;
+    margin:0 auto;
+}
+.admin-modal-wrap .modal.edit-modal h3 {
     display: flex;
     align-items: center;
     gap: 8px;
     margin: 0 0 16px 0;
 }
-.admin-page .modal.edit-modal .row-line {
+.admin-modal-wrap .modal.edit-modal .row-line {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px;
     align-items: start;
     margin: 0 0 12px 0;
 }
-.admin-page .modal.edit-modal .field {
+.admin-modal-wrap .modal.edit-modal .field {
     min-width: 0;
 }
-.admin-page .modal.edit-modal select,
-.admin-page .modal.edit-modal input,
-.admin-page .modal.edit-modal textarea {
+.admin-modal-wrap .modal.edit-modal select,
+.admin-modal-wrap .modal.edit-modal input,
+.admin-modal-wrap .modal.edit-modal textarea {
     width: 100%;
     font-size: 14px;
 }
-.admin-page .modal.edit-modal textarea {
+.admin-modal-wrap .modal.edit-modal textarea {
     min-height: 96px;
     resize: vertical;
     line-height: 1.4;
 }
-.admin-page .modal.edit-modal .foot {
+.admin-modal-wrap .modal.edit-modal .foot {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 8px;
 }
-.admin-page .modal.edit-modal .foot .btn {
+.admin-modal-wrap .modal.edit-modal .foot .btn {
     min-width: 110px;
-}
-.admin-page .modal.small {
-    max-width: 360px;
 }
 .admin-page .du-wrap {
     position: relative;
@@ -992,24 +984,24 @@ body.admin-scroll-locked {
     border-radius: 4px;
     padding: 0 2px
     }
-.admin-page .dn-modal {
+.admin-page .dn-modal,
+.admin-modal-wrap .dn-modal {
     background: var(--ant-surface-muted);
     border: 1px solid var(--ant-border-strong);
     border-radius: 16px;
-    width: min(720px, 90vw);
     height: 50vh;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px
     }
-.admin-page .dn-modal__header {
+.admin-modal-wrap .dn-modal__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px
     }
-.admin-page .dn-modal__header button {
+.admin-modal-wrap .dn-modal__header button {
     border: 0;
     background: transparent;
     color: var(--ant-text-muted);
@@ -1017,20 +1009,20 @@ body.admin-scroll-locked {
     font-size: 16px;
     line-height: 1
     }
-.admin-page .dn-modal__body {
+.admin-modal-wrap .dn-modal__body {
     display: grid;
     grid-template-rows: 1fr 1fr;
     gap: 12px;
     flex: 1;
     min-height: 0
     }
-.admin-page .dn-modal__body textarea {
+.admin-modal-wrap .dn-modal__body textarea {
     width: 100%;
     height: 100%;
     resize: none;
     overflow: auto
     }
-.admin-page .dn-preview {
+.admin-modal-wrap .dn-preview {
     border: 1px dashed var(--ant-border-subtle);
     border-radius: 12px;
     padding: 10px;
@@ -1042,11 +1034,11 @@ body.admin-scroll-locked {
     align-content: flex-start;
     min-height: 0
     }
-.admin-page .dn-preview .placeholder {
+.admin-modal-wrap .dn-preview .placeholder {
     color: var(--ant-text-muted);
     font-size: 12px
     }
-.admin-page .dn-token {
+.admin-modal-wrap .dn-token {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1057,19 +1049,19 @@ body.admin-scroll-locked {
     color: var(--ant-text-primary);
     border: 1px solid rgba(0, 0, 0, 0.1)
     }
-.admin-page .dn-token.ok {
+.admin-modal-wrap .dn-token.ok {
     background: var(--ant-success-softer);
     border-color: rgba(82, 196, 26, 0.4)
     }
-.admin-page .dn-token.bad {
+.admin-modal-wrap .dn-token.bad {
     background: var(--ant-danger-soft);
     border-color: rgba(255, 77, 79, 0.45)
     }
-.admin-page .dn-modal__foot {
+.admin-modal-wrap .dn-modal__foot {
     justify-content: flex-end;
     gap: 12px
     }
-.admin-page .dn-modal__foot .btn {
+.admin-modal-wrap .dn-modal__foot .btn {
     min-width: 120px
     }
 .admin-page .lang-switch {
@@ -1097,60 +1089,56 @@ body.admin-scroll-locked {
     height: 12px;
     border-radius: 2px
     }
-.admin-page .modal.large {
-    max-width: 900px;
-    width: 90vw
-    }
-.admin-page .modal-header {
+.admin-modal-wrap .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px
     }
-.admin-page .modal-header h3 {
+.admin-modal-wrap .modal-header h3 {
     display: flex;
     align-items: center;
     gap: 8px;
     margin: 0
     }
-.admin-page .modal-header .ghost.icon-only {
+.admin-modal-wrap .modal-header .ghost.icon-only {
     padding: 4px 8px;
     font-size: 18px;
     line-height: 1
     }
-.admin-page .modal-body {
+.admin-modal-wrap .modal-body {
     max-height: 60vh;
     overflow-y: auto;
     margin-bottom: 16px
     }
-.admin-page .loading-state,
-.admin-page .error-state,
-.admin-page .empty-state {
+.admin-modal-wrap .loading-state,
+.admin-modal-wrap .error-state,
+.admin-modal-wrap .empty-state {
     text-align: center;
     padding: 40px 20px;
     color: var(--ant-text-muted)
     }
-.admin-page .error-state {
+.admin-modal-wrap .error-state {
     color: var(--ant-danger)
     }
-.admin-page .history-records {
+.admin-modal-wrap .history-records {
     display: flex;
     flex-direction: column;
     gap: 16px
     }
-.admin-page .history-record {
+.admin-modal-wrap .history-record {
     border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
     padding: 16px;
     background: var(--ant-surface-alt);
     transition: all 0.2s ease
     }
-.admin-page .history-record.latest {
+.admin-modal-wrap .history-record.latest {
     border-color: var(--ant-primary);
     background: var(--ant-primary-pale);
     box-shadow: 0 2px 8px var(--ant-shadow-primary)
     }
-.admin-page .history-record-header {
+.admin-modal-wrap .history-record-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1158,40 +1146,40 @@ body.admin-scroll-locked {
     padding-bottom: 12px;
     border-bottom: 1px solid var(--ant-divider)
     }
-.admin-page .history-record-index {
+.admin-modal-wrap .history-record-index {
     font-size: 14px;
     font-weight: 600;
     color: var(--ant-primary)
     }
-.admin-page .history-record.latest .history-record-index {
+.admin-modal-wrap .history-record.latest .history-record-index {
     color: var(--ant-primary-strong)
     }
-.admin-page .history-record-time {
+.admin-modal-wrap .history-record-time {
     font-size: 13px;
     color: var(--ant-text-muted)
     }
-.admin-page .history-record-main {
+.admin-modal-wrap .history-record-main {
     display: flex;
     flex-direction: column;
     gap: 12px
     }
-.admin-page .history-record-info {
+.admin-modal-wrap .history-record-info {
     display: flex;
     flex-direction: column;
     gap: 10px
     }
-.admin-page .history-info-row {
+.admin-modal-wrap .history-info-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px
     }
-.admin-page .history-record-media {
+.admin-modal-wrap .history-record-media {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     max-height: 180px
     }
-.admin-page .history-media-item {
+.admin-modal-wrap .history-media-item {
     position: relative;
     border-radius: 8px;
     overflow: hidden;
@@ -1202,47 +1190,47 @@ body.admin-scroll-locked {
     align-items: center;
     justify-content: center
     }
-.admin-page .history-field {
+.admin-modal-wrap .history-field {
     display: flex;
     flex-direction: column;
     gap: 4px
     }
-.admin-page .history-field-label {
+.admin-modal-wrap .history-field-label {
     font-size: 12px;
     color: var(--ant-text-muted);
     font-weight: 500
     }
-.admin-page .history-field-value {
+.admin-modal-wrap .history-field-value {
     font-size: 14px;
     color: var(--ant-text-primary);
     line-height: 1.5
     }
-.admin-page .history-field-value .phone-number-suffix {
+.admin-modal-wrap .history-field-value .phone-number-suffix {
     color: var(--ant-text-secondary);
     font-size: 13px;
     margin-left: 4px
     }
-.admin-page .history-status {
+.admin-modal-wrap .history-status {
     font-size: 15px
     }
-.admin-page .history-map-image-link {
+.admin-modal-wrap .history-map-image-link {
     display: block;
     position: relative;
     cursor: pointer;
     width: 100%;
     height: 100%
     }
-.admin-page .history-map-image {
+.admin-modal-wrap .history-map-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
     transition: transform 0.2s ease
     }
-.admin-page .history-map-image-link:hover .history-map-image {
+.admin-modal-wrap .history-map-image-link:hover .history-map-image {
     transform: scale(1.05)
     }
-.admin-page .history-map-overlay {
+.admin-modal-wrap .history-map-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1259,15 +1247,15 @@ body.admin-scroll-locked {
     width: 40px;
     height: 40px
     }
-.admin-page .history-map-image-link:hover .history-map-overlay {
+.admin-modal-wrap .history-map-image-link:hover .history-map-overlay {
     opacity: 1
     }
-.admin-page .history-map-overlay .icon-svg {
+.admin-modal-wrap .history-map-overlay .icon-svg {
     width: 20px;
     height: 20px;
     fill: white
     }
-.admin-page .history-map-link-compact {
+.admin-modal-wrap .history-map-link-compact {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1278,14 +1266,14 @@ body.admin-scroll-locked {
     width: 100%;
     transition: all 0.2s ease
     }
-.admin-page .history-map-link-compact:hover {
+.admin-modal-wrap .history-map-link-compact:hover {
     background: var(--ant-primary-tint-faint)
     }
-.admin-page .history-map-link-compact .icon-svg {
+.admin-modal-wrap .history-map-link-compact .icon-svg {
     width: 20px;
     height: 20px
     }
-.admin-page .history-photo-thumbnail {
+.admin-modal-wrap .history-photo-thumbnail {
     width: 100%;
     height: 100%;
     object-fit: cover;

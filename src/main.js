@@ -7,6 +7,7 @@ import {
   Radio,
   RadioGroup,
   RadioButton,
+  Modal,
 } from 'ant-design-vue';
 import Viewer from 'v-viewer';
 import App from './App.vue';
@@ -27,6 +28,7 @@ app.use(DatePicker);
 app.use(Radio);
 app.use(RadioGroup);
 app.use(RadioButton);
+app.use(Modal);
 
 app.use(Viewer);
 app.mount('#app');

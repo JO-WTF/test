@@ -15,9 +15,6 @@ import { getTodayDateStringInTimezone } from './dateUtils.js';
 import {
   escapeHtml,
   setFormControlValue,
-  lockBodyScroll,
-  unlockBodyScroll,
-  resetBodyScrollLock,
   fetchWithPayload,
   bindAsyncButtonClick,
   normalizeTextValue,
@@ -77,6 +74,7 @@ export function setupAdminPage(
     filterSelects,
     filterInputs,
     onRoleChange,
+    modalControllers = {},
   } = {}
 ) {
   if (!rootEl) return () => { };
@@ -84,7 +82,15 @@ export function setupAdminPage(
   const controller = new AbortController();
   const { signal } = controller;
 
-  const el = (id) => rootEl.querySelector(`#${id}`);
+  const el = (id) => {
+    if (!id) return null;
+    try {
+      return document.getElementById(id);
+    } catch (err) {
+      console.error(`Failed to query element #${id}`, err);
+      return null;
+    }
+  };
 
   const scanStatusMeta = new Map(
     (STATUS_DELIVERY_ITEMS || []).map((item) => [item.value, item])
@@ -120,7 +126,6 @@ export function setupAdminPage(
   const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
   const pageSizeInput = el('f-ps2');
 
-  const mask = el('modal-mask');
   const mId = el('modal-id');
   const mStatusDelivery = el('m-status-delivery');
   const mStatusSite = el('m-status-site');
@@ -133,7 +138,6 @@ export function setupAdminPage(
   const filtersGrid = el('filters-grid');
   const filtersToggle = el('filters-toggle');
 
-  const authModal = el('auth-modal');
   const authBtn = el('btn-auth');
   const authCancel = el('auth-cancel');
   const authConfirm = el('auth-confirm');
@@ -147,7 +151,6 @@ export function setupAdminPage(
   const lspSummaryContainer = el('lsp-summary-card-container');
 
   const dnBtn = el('btn-dn-entry');
-  const dnModal = el('dn-modal');
   const dnEntryInput = el('dn-input');
   const dnEntryPreview = el('dn-preview-modal');
   const dnClose = el('dn-close');
@@ -155,10 +158,14 @@ export function setupAdminPage(
   const dnConfirm = el('dn-confirm');
   const archiveExpiredDnBtn = el('btn-archive-expired-dn');
 
-  const updateHistoryModal = el('update-history-modal');
   const historyDnNumber = el('history-dn-number');
   const historyContent = el('history-content');
   const historyOk = el('history-ok');
+
+  const editModalController = modalControllers?.edit || null;
+  const authModalController = modalControllers?.auth || null;
+  const dnModalController = modalControllers?.dn || null;
+  const updateHistoryModalController = modalControllers?.updateHistory || null;
 
   let editingId = 0;
   let editingItem = null;
@@ -218,13 +225,13 @@ export function setupAdminPage(
 
   // 初始化授权处理器
   const authHandler = createAuthHandler({
-    authModal,
     authBtn,
     authCancel,
     authConfirm,
     authInput,
     authMsg,
     authRoleTag,
+    authModalController,
     signal,
     i18n,
     showToast,
@@ -331,7 +338,6 @@ export function setupAdminPage(
     dnInput,
     dnPreview,
     dnBtn,
-    dnModal,
     dnEntryInput,
     dnEntryPreview,
     dnClose,
@@ -344,6 +350,7 @@ export function setupAdminPage(
     getCurrentPermissions,
     getCurrentRoleKey: () => authHandler.getCurrentRoleKey(),
     fetchList,
+    dnModalController,
   });
 
   const lspSummaryCards = createLspSummaryCardManager({
@@ -802,18 +809,14 @@ export function setupAdminPage(
     populateModalStatusOptions({ type: 'site', selected: canonicalStatusSite });
     updateModalFieldVisibility();
     if (mMsg) mMsg.textContent = '';
-    const wasVisible = mask && mask.style.display === 'flex';
-    if (mask) mask.style.display = 'flex';
-    if (!wasVisible) {
-      lockBodyScroll();
+    if (editModalController?.open) {
+      editModalController.open();
     }
   }
 
   function closeModal() {
-    const wasVisible = mask && mask.style.display === 'flex';
-    if (mask) mask.style.display = 'none';
-    if (wasVisible) {
-      unlockBodyScroll();
+    if (editModalController?.close) {
+      editModalController.close();
     }
     editingId = 0;
     editingItem = null;
@@ -823,7 +826,7 @@ export function setupAdminPage(
   }
 
   async function openUpdateHistoryModal(dnNumber) {
-    if (!dnNumber || !updateHistoryModal) return;
+    if (!dnNumber) return;
 
     if (historyDnNumber) {
       historyDnNumber.textContent = dnNumber;
@@ -833,10 +836,8 @@ export function setupAdminPage(
       historyContent.innerHTML = '<div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>';
     }
 
-    const wasVisible = updateHistoryModal.style.display === 'flex';
-    updateHistoryModal.style.display = 'flex';
-    if (!wasVisible) {
-      lockBodyScroll();
+    if (updateHistoryModalController?.open) {
+      updateHistoryModalController.open();
     }
 
     try {
@@ -859,12 +860,8 @@ export function setupAdminPage(
   }
 
   function closeUpdateHistoryModal() {
-    if (updateHistoryModal) {
-      const wasVisible = updateHistoryModal.style.display === 'flex';
-      updateHistoryModal.style.display = 'none';
-      if (wasVisible) {
-        unlockBodyScroll();
-      }
+    if (updateHistoryModalController?.close) {
+      updateHistoryModalController.close();
     }
   }
 
@@ -884,14 +881,6 @@ export function setupAdminPage(
   if (historyOk) {
     historyOk.addEventListener('click', closeUpdateHistoryModal, { signal });
   }
-  if (updateHistoryModal) {
-    updateHistoryModal.addEventListener('click', (e) => {
-      if (e.target === updateHistoryModal) {
-        closeUpdateHistoryModal();
-      }
-    }, { signal });
-  }
-
   function buildFormDataForSave() {
     const perms = getCurrentPermissions();
     const form = new FormData();
@@ -1507,6 +1496,5 @@ export function setupAdminPage(
       console.error(err);
     }
     if (tableRenderer) tableRenderer.cleanup();
-    resetBodyScrollLock();
   };
 }

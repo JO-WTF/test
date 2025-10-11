@@ -368,7 +368,17 @@
       </div>
     </div>
 
-    <div id="modal-mask" class="modal-mask">
+    <a-modal
+      :open="editModalOpen"
+      :maskClosable="false"
+      :closable="false"
+      :footer="null"
+      :force-render="true"
+      :keyboard="false"
+      :centered="true"
+      width="600px"
+      wrap-class-name="admin-modal-wrap admin-edit-modal-wrap"
+    >
       <div class="modal edit-modal">
         <h3>
           <span data-i18n="modal.title">编辑记录</span>
@@ -407,9 +417,18 @@
         </div>
         <div class="muted" id="m-msg" style="margin-top: 6px"></div>
       </div>
-    </div>
+    </a-modal>
 
-    <div id="auth-modal" class="modal-mask">
+    <a-modal
+      :open="authModalOpen"
+      :maskClosable="false"
+      :closable="false"
+      :footer="null"
+      :force-render="true"
+      :keyboard="false"
+      :centered="true"
+      wrap-class-name="admin-modal-wrap admin-auth-modal-wrap"
+    >
       <div class="modal small">
         <h3 data-i18n="auth.modal.title">授权登录</h3>
         <div class="field" style="margin-top: 12px">
@@ -428,9 +447,19 @@
         </div>
         <div class="muted" id="auth-msg" aria-live="polite"></div>
       </div>
-    </div>
+    </a-modal>
 
-    <div id="dn-modal" class="modal-mask">
+    <a-modal
+      :open="dnModalOpen"
+      :maskClosable="false"
+      :closable="false"
+      :footer="null"
+      :force-render="true"
+      :keyboard="false"
+      :centered="true"
+      width="800px"
+      wrap-class-name="admin-modal-wrap admin-dn-modal-wrap"
+    >
       <div class="dn-modal">
         <div class="dn-modal__header">
           <h3 data-i18n="dn.title">DN 录入</h3>
@@ -451,9 +480,19 @@
           <button class="btn" id="dn-confirm" data-i18n="dn.confirm">确认</button>
         </div>
       </div>
-    </div>
+    </a-modal>
 
-    <div id="update-history-modal" class="modal-mask">
+    <a-modal
+      :open="updateHistoryModalOpen"
+      :maskClosable="false"
+      :closable="false"
+      :footer="null"
+      :force-render="true"
+      :keyboard="false"
+      :centered="true"
+      width="1000px"
+      wrap-class-name="admin-modal-wrap admin-history-modal-wrap"
+    >
       <div class="modal large">
         <div class="modal-header">
           <h3>
@@ -468,7 +507,7 @@
           <button class="btn" id="history-ok" data-i18n="updateHistory.close">关闭</button>
         </div>
       </div>
-    </div>
+    </a-modal>
   </div>
 </template>
 
@@ -565,6 +604,50 @@ const showOnlyNonEmptyStatus = ref(false);
 const showMissingInGs = ref(false);
 let syncingFromStatusDeliverySelect = false;
 let syncingFromSwitch = false;
+
+const editModalOpen = ref(false);
+const authModalOpen = ref(false);
+const dnModalOpen = ref(false);
+const updateHistoryModalOpen = ref(false);
+
+const modalControllers = {
+  edit: {
+    open: () => {
+      editModalOpen.value = true;
+    },
+    close: () => {
+      editModalOpen.value = false;
+    },
+    isOpen: () => editModalOpen.value,
+  },
+  auth: {
+    open: () => {
+      authModalOpen.value = true;
+    },
+    close: () => {
+      authModalOpen.value = false;
+    },
+    isOpen: () => authModalOpen.value,
+  },
+  dn: {
+    open: () => {
+      dnModalOpen.value = true;
+    },
+    close: () => {
+      dnModalOpen.value = false;
+    },
+    isOpen: () => dnModalOpen.value,
+  },
+  updateHistory: {
+    open: () => {
+      updateHistoryModalOpen.value = true;
+    },
+    close: () => {
+      updateHistoryModalOpen.value = false;
+    },
+    isOpen: () => updateHistoryModalOpen.value,
+  },
+};
 
 const statusSwitchCheckedLabel = computed(() => {
   // ensure reactivity on language change
@@ -697,6 +780,7 @@ onMounted(async () => {
     onRoleChange: (roleKey) => {
       currentRoleKey.value = roleKey || '';
     },
+    modalControllers,
   });
 
   i18nInstance.onChange((lang) => {

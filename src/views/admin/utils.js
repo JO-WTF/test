@@ -1,7 +1,5 @@
 import Toastify from 'toastify-js';
 
-let scrollLockCount = 0;
-
 export function escapeHtml(input) {
   return String(input)
     .replace(/&/g, '&amp;')
@@ -93,44 +91,6 @@ export function normalizeDateControlValue(value) {
     console.error(err);
   }
   return '';
-}
-
-function applyScrollLockClass(target, action) {
-  if (!target || typeof target.classList?.[action] !== 'function') return;
-  try {
-    target.classList[action]('admin-scroll-locked');
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-function setScrollLockClasses(action) {
-  if (typeof document === 'undefined') return;
-  applyScrollLockClass(document.body, action);
-  applyScrollLockClass(document.documentElement, action);
-}
-
-export function lockBodyScroll() {
-  if (typeof document === 'undefined') return;
-  scrollLockCount += 1;
-  if (scrollLockCount === 1) {
-    setScrollLockClasses('add');
-  }
-}
-
-export function unlockBodyScroll() {
-  if (typeof document === 'undefined') return;
-  if (scrollLockCount > 0) {
-    scrollLockCount -= 1;
-  }
-  if (scrollLockCount === 0) {
-    setScrollLockClasses('remove');
-  }
-}
-
-export function resetBodyScrollLock() {
-  scrollLockCount = 0;
-  setScrollLockClasses('remove');
 }
 
 export function showToast(text, type = 'info') {

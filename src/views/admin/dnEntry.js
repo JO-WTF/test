@@ -1,4 +1,4 @@
-import { escapeHtml, lockBodyScroll, unlockBodyScroll } from './utils.js';
+import { escapeHtml } from './utils.js';
 import { TRANSPORT_MANAGER_ROLE_KEY } from './constants.js';
 import { normalizeDnSoft, DN_VALID_RE } from '../../utils/dn.js';
 
@@ -11,13 +11,13 @@ export function createDnEntryManager({
   dnInput,
   dnPreview,
   dnBtn,
-  dnModal,
   dnEntryInput,
   dnEntryPreview,
   dnClose,
   dnCancel,
   dnConfirm,
   signal,
+  dnModalController,
   i18n,
   API_BASE,
   showToast,
@@ -148,7 +148,6 @@ export function createDnEntryManager({
   }
 
   function openModal() {
-    if (!dnModal) return;
     const perms = getCurrentPermissions?.();
     if (!perms?.canEdit) {
       showToast(
@@ -157,10 +156,8 @@ export function createDnEntryManager({
       );
       return;
     }
-    const wasVisible = dnModal.style.display === 'flex';
-    dnModal.style.display = 'flex';
-    if (!wasVisible) {
-      lockBodyScroll();
+    if (dnModalController?.open) {
+      dnModalController.open();
     }
     if (dnEntryPreview) {
       dnEntryPreview.innerHTML = '';
@@ -179,12 +176,8 @@ export function createDnEntryManager({
   }
 
   function closeModal() {
-    if (dnModal) {
-      const wasVisible = dnModal.style.display === 'flex';
-      dnModal.style.display = 'none';
-      if (wasVisible) {
-        unlockBodyScroll();
-      }
+    if (dnModalController?.close) {
+      dnModalController.close();
     }
   }
 
@@ -274,13 +267,6 @@ export function createDnEntryManager({
     dnClose?.addEventListener('click', () => closeModal(), { signal });
     dnCancel?.addEventListener('click', () => closeModal(), { signal });
     dnConfirm?.addEventListener('click', () => handleConfirm(), { signal });
-    dnModal?.addEventListener(
-      'click',
-      (event) => {
-        if (event.target === dnModal) closeModal();
-      },
-      { signal }
-    );
     dnEntryInput?.addEventListener('input', () => renderModalPreview(), {
       signal,
     });
