@@ -376,7 +376,6 @@
       :force-render="true"
       :keyboard="false"
       :centered="true"
-      width="600px"
       wrap-class-name="admin-modal-wrap admin-edit-modal-wrap"
     >
       <div class="modal edit-modal">
@@ -457,7 +456,6 @@
       :force-render="true"
       :keyboard="false"
       :centered="true"
-      width="800px"
       wrap-class-name="admin-modal-wrap admin-dn-modal-wrap"
     >
       <div class="dn-modal">
@@ -490,7 +488,6 @@
       :force-render="true"
       :keyboard="false"
       :centered="true"
-      width="1000px"
       wrap-class-name="admin-modal-wrap admin-history-modal-wrap"
     >
       <div class="modal large">
