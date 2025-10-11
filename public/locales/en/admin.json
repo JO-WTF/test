@@ -163,5 +163,6 @@
   "updateHistory.noLocation": "No location",
   "updateHistory.noPhoto": "No photo",
   "updateHistory.mapAlt": "Location map",
-  "updateHistory.photoAlt": "Site photo"
+  "updateHistory.photoAlt": "Site photo",
+  "details.save": "保存"
 }

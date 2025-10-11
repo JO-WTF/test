@@ -163,5 +163,6 @@
   "updateHistory.noLocation": "Tidak ada lokasi",
   "updateHistory.noPhoto": "Tidak ada foto",
   "updateHistory.mapAlt": "Peta lokasi",
-  "updateHistory.photoAlt": "Foto lokasi"
+  "updateHistory.photoAlt": "Foto lokasi",
+  "details.save": "Simpan"
 }

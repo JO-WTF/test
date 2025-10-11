@@ -670,7 +670,7 @@
     margin-top: 5px;
   }
 
-  .admin-page .du-wrap textarea,
+  .admin-page .admin-textarea,
   .admin-page .du-wrap .du-hilite {
     min-height: 80px;
     font-size: 13px;

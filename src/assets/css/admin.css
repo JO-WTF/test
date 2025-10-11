@@ -1038,7 +1038,7 @@ body.admin-theme {
     border-radius: 10px;
     box-sizing: border-box
     }
-.admin-page .du-wrap textarea {
+.admin-page .admin-textarea {
     position: relative;
     background: transparent;
     border: 1px solid var(--ant-border-subtle);
@@ -1052,8 +1052,8 @@ body.admin-theme {
     resize: none;
     padding: 10px 12px;
     line-height: 1.5;
-    font: inherit
-    }
+    font: inherit;
+}
 .admin-page .hl-ok {
     background: var(--ant-success-soft);
     border-radius: 4px;

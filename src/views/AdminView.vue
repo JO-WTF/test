@@ -47,6 +47,7 @@
               <div id="dn-preview" class="du-hilite" aria-hidden="true"></div>
               <textarea
                 id="f-dn"
+                class="admin-textarea"
                 data-i18n-placeholder="dn.placeholder"
                 placeholder="示例：&#10;DN123...&#10;DN456..."
               ></textarea>
@@ -401,6 +402,7 @@
             <textarea
               id="m-remark"
               rows="4"
+              class="admin-textarea"
               data-i18n-placeholder="modal.remark.placeholder"
               placeholder="不修改请留空（可选）"
             ></textarea>
@@ -465,6 +467,7 @@
         <div class="dn-modal__body">
           <textarea
             id="dn-input"
+            class="admin-textarea"
             data-i18n-placeholder="dn.placeholder"
             placeholder="请输入或粘贴 DN 号"
           ></textarea>
