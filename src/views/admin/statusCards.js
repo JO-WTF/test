@@ -70,12 +70,12 @@ export function createStatusDeliveryCardManager({
     button.addEventListener(
       'click',
       () => {
-        if (!def || (def.type !== 'status' && def.type !== 'total')) return;
+        if (!def || (def.type !== 'status_delivery' && def.type !== 'total')) return;
         const canonical =
-          def.type === 'status'
+          def.type === 'status_delivery'
             ? normalizeStatusDeliveryValue(def.status_delivery) || def.status_delivery || ''
             : '';
-        if (def.type === 'status' && !canonical) return;
+        if (def.type === 'status_delivery' && !canonical) return;
         onApplyFilter?.(def, canonical);
         updateActiveState();
       },
@@ -99,7 +99,7 @@ export function createStatusDeliveryCardManager({
       } else {
         list = getRoleStatusDeliveryHighlights(role);
       }
-
+      console.log(list);
       list = list.map((defItem, index) => {
         const canonical = normalizeStatusDeliveryValue(defItem.status_delivery);
         const status_delivery = canonical || defItem.status_delivery || '';
@@ -112,11 +112,11 @@ export function createStatusDeliveryCardManager({
           ...defItem,
           status_delivery,
           key,
-          type: 'status',
+          type: 'status_delivery',
         };
       });
 
-      list = list.filter((defItem) => defItem.type !== 'status' || defItem.status_delivery);
+      list = list.filter((defItem) => defItem.type !== 'status_delivery' || defItem.status_delivery);
 
       if (role?.key === TRANSPORT_MANAGER_ROLE_KEY && list.length) {
         list = [
@@ -152,14 +152,11 @@ export function createStatusDeliveryCardManager({
     wrapper.style.display = '';
     wrapper.setAttribute('aria-hidden', 'false');
     container.innerHTML = '';
-    const maxColumns = 13;
-    const columns = Math.max(1, Math.min(list.length, maxColumns));
-
     list.forEach((defItem) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'status-card';
-      btn.setAttribute('data-status_delivery', defItem.type === 'status' ? defItem.status_delivery : '');
+      btn.setAttribute('data-status_delivery', defItem.type === 'status_delivery' ? defItem.status_delivery : '');
       btn.setAttribute('data-card-key', defItem.key);
       btn.setAttribute('aria-pressed', 'false');
       btn.setAttribute('aria-busy', 'false');
@@ -211,8 +208,8 @@ export function createStatusDeliveryCardManager({
       const defItem = ref.def;
       if (!defItem) return;
       const isActive =
-        defItem.type === 'status'
-          ? hasStatus && defItem.status === canonical
+        defItem.type === 'status_delivery'
+          ? hasStatus && defItem.status_delivery === canonical
           : defItem.type === 'total'
           ? !hasStatus
           : false;
@@ -330,36 +327,25 @@ export function createStatusDeliveryCardManager({
     }
 
     const counts = stats?.counts ?? Object.create(null);
-    let totalCount = 0;
 
     refs.forEach((ref) => {
       const defItem = ref.def;
       if (!defItem) return;
-      if (defItem.type === 'status') {
+      if (defItem.type === 'status_delivery') {
         const rawCount = counts?.[defItem.status_delivery];
         const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
-        totalCount += displayCount;
         ref.countEl.textContent = String(displayCount);
         ref.button.classList.remove('loading');
         ref.button.setAttribute('aria-busy', 'false');
         const label = getStatusDeliveryCardLabel(defItem);
         ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
-      }
-    });
-
-    refs.forEach((ref) => {
-      const defItem = ref.def;
-      if (!defItem) return;
-      if (defItem.type !== 'status') {
+      } else {
         const displayCount = stats?.total;
-        const safeCount = Number.isFinite(displayCount)
-          ? displayCount
-          : totalCount;
-        ref.countEl.textContent = String(safeCount);
+        ref.countEl.textContent = String(displayCount);
         ref.button.classList.remove('loading');
         ref.button.setAttribute('aria-busy', 'false');
         const label = getStatusDeliveryCardLabel(defItem);
-        ref.button.setAttribute('aria-label', `${label} ${safeCount}`.trim());
+        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
       }
     });
   }

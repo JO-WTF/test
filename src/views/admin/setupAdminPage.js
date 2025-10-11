@@ -620,8 +620,8 @@ export function setupAdminPage(
       'dd MMM yy'
     );
 
-    resetAllFilters({ statusDeliveryValue: '', preservePageSize: true });
-    setFilterValue('status_site', targetStatus);
+    resetAllFilters({ preservePageSize: true });
+    setFilterValue('status_delivery', targetStatus);
     setFilterValue('plan_mos_date', todayJakarta);
   }
 

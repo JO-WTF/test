@@ -119,12 +119,12 @@
                 ></a-select>
               </div>
               <div class="field filter-field">
-                <label data-i18n="status.label">状态</label>
+                <label data-i18n="statusDelivery.label">配送状态</label>
                 <a-select
-                  id="f-status"
-                  v-model:value="statusSelectValue"
-                  :options="statusSelectOptions"
-                  :placeholder="statusSelectPlaceholder"
+                  id="f-status-delivery"
+                  v-model:value="statusDeliverySelectValue"
+                  :options="statusDeliverySelectOptions"
+                  :placeholder="statusDeliverySelectPlaceholder"
                   :filter-option="filterSelectOption"
                   allow-clear
                   show-search
@@ -509,7 +509,6 @@ const {
   regionSelectOptions,
   regionSelectValue,
   regionSelectPlaceholder,
-  regionSelectBridge,
   lspSelectOptions,
   lspSelectValue,
   lspSelectPlaceholder,
@@ -522,9 +521,9 @@ const {
   statusSiteSelectOptions,
   statusSiteSelectValue,
   statusSiteSelectPlaceholder,
-  statusSelectOptions,
-  statusSelectValue,
-  statusSelectPlaceholder,
+  statusDeliverySelectOptions,
+  statusDeliverySelectValue: statusDeliverySelectValue,
+  statusDeliverySelectPlaceholder,
   hasCoordinateSelectOptions,
   hasCoordinateSelectValue,
   hasCoordinateSelectPlaceholder,
@@ -618,7 +617,7 @@ const normalizeStatusSelection = (raw) => {
 };
 
 watch(
-  statusSelectValue,
+  statusDeliverySelectValue,
   (val) => {
     const normalized = normalizeStatusSelection(val);
     const nextChecked =
