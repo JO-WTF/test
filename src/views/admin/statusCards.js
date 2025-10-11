@@ -70,7 +70,8 @@ export function createStatusDeliveryCardManager({
     button.addEventListener(
       'click',
       () => {
-        if (!def || (def.type !== 'status_delivery' && def.type !== 'total')) return;
+        console.log(def)
+        if (!def || (def.type !== 'status_delivery')) return;
         const canonical =
           def.type === 'status_delivery'
             ? normalizeStatusDeliveryValue(def.status_delivery) || def.status_delivery || ''
@@ -99,7 +100,6 @@ export function createStatusDeliveryCardManager({
       } else {
         list = getRoleStatusDeliveryHighlights(role);
       }
-      console.log(list);
       list = list.map((defItem, index) => {
         const canonical = normalizeStatusDeliveryValue(defItem.status_delivery);
         const status_delivery = canonical || defItem.status_delivery || '';

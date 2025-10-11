@@ -1,8 +1,6 @@
 import { getApiBase } from '../../utils/env.js';
 import { 
   STATUS_DELIVERY_VALUES, 
-  STATUS_TRANSLATION_KEYS,
-  STATUS_ALIAS_MAP 
 } from '../../config.js';
 
 // Dashboard 页面状态顺序定义

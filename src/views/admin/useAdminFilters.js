@@ -412,7 +412,7 @@ export function useAdminFilters() {
   const subcon = createSelectState();
   const statusWh = createSelectState();
   const statusSite = createSelectState();
-  const status = createSingleSelectState('Any');
+  const statusDelivery = createSingleSelectState('Any');
   const hasCoordinate = createSingleSelectState('Any');
   const remark = createTextInputState('模糊匹配');
   const du = createTextInputState('精确匹配');
@@ -428,7 +428,7 @@ export function useAdminFilters() {
     subcon: subcon.bridge,
     status_wh: statusWh.bridge,
     status_site: statusSite.bridge,
-    status: status.bridge,
+    status_delivery: statusDelivery.bridge,
     has_coordinate: hasCoordinate.bridge,
     date_from: fromDate.bridge,
     date_to: toDate.bridge,
@@ -450,8 +450,8 @@ export function useAdminFilters() {
       translationKey: 'statusSitePlaceholder',
     },
     {
-      placeholderRef: status.placeholder,
-      translationKey: 'status.filter.any',
+      placeholderRef: statusDelivery.placeholder,
+      translationKey: 'statusDelivery.filter.any',
       fallback: 'Any',
     },
     {
@@ -485,10 +485,10 @@ export function useAdminFilters() {
 
   const updateStatusSelectOptions = (translator) => {
     const statusFilterDefs = [
-      { value: '', translationKey: 'status.filter.any', fallback: '任意' },
+      { value: '', translationKey: 'statusDelivery.filter.any', fallback: '任意' },
       {
         value: '__NOT_EMPTY__',
-        translationKey: 'status.filter.notEmpty',
+        translationKey: 'statusDelivery.filter.notEmpty',
         fallback: '任意非空',
       },
       ...STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
@@ -502,7 +502,7 @@ export function useAdminFilters() {
       label: translateWithFallback(translator, translationKey, fallback),
     }));
     try {
-      status.bridge.setOptions(options);
+      statusDelivery.bridge.setOptions(options);
     } catch (err) {
       console.error(err);
     }
@@ -549,7 +549,7 @@ export function useAdminFilters() {
 
   const setDefaultStatusFilter = () => {
     try {
-  status.bridge.setValue("");
+      statusDelivery.bridge.setValue('');
     } catch (err) {
       console.error(err);
     }
@@ -581,10 +581,10 @@ export function useAdminFilters() {
     statusSiteSelectValue: statusSite.value,
     statusSiteSelectPlaceholder: statusSite.placeholder,
     statusSiteSelectBridge: statusSite.bridge,
-    statusDeliverySelectOptions: status.options,
-    statusDeliverySelectValue: status.value,
-    statusDeliverySelectPlaceholder: status.placeholder,
-    statusSelectBridge: status.bridge,
+    statusDeliverySelectOptions: statusDelivery.options,
+    statusDeliverySelectValue: statusDelivery.value,
+    statusDeliverySelectPlaceholder: statusDelivery.placeholder,
+    statusSelectBridge: statusDelivery.bridge,
     hasCoordinateSelectOptions: hasCoordinate.options,
     hasCoordinateSelectValue: hasCoordinate.value,
     hasCoordinateSelectPlaceholder: hasCoordinate.placeholder,
