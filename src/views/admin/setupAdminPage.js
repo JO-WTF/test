@@ -153,7 +153,6 @@ export function setupAdminPage(
   const dnBtn = el('btn-dn-entry');
   const dnEntryInput = el('dn-input');
   const dnEntryPreview = el('dn-preview-modal');
-  const dnClose = el('dn-close');
   const dnCancel = el('dn-cancel');
   const dnConfirm = el('dn-confirm');
   const archiveExpiredDnBtn = el('btn-archive-expired-dn');
@@ -340,7 +339,6 @@ export function setupAdminPage(
     dnBtn,
     dnEntryInput,
     dnEntryPreview,
-    dnClose,
     dnCancel,
     dnConfirm,
     signal,

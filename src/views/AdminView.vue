@@ -369,13 +369,13 @@
     </div>
 
     <a-modal
-      :open="editModalOpen"
-      :maskClosable="false"
-      :closable="false"
+      v-model:open="editModalOpen"
       :footer="null"
+      :closable="false"
+      :maskClosable="true"
       :force-render="true"
-      :keyboard="false"
       :centered="true"
+      width="600px"
       wrap-class-name="admin-modal-wrap admin-edit-modal-wrap"
     >
       <div class="modal edit-modal">
@@ -419,13 +419,13 @@
     </a-modal>
 
     <a-modal
-      :open="authModalOpen"
-      :maskClosable="false"
-      :closable="false"
+      v-model:open="authModalOpen"
       :footer="null"
+      :closable="false"
+      :maskClosable="true"
       :force-render="true"
-      :keyboard="false"
       :centered="true"
+      width="400px"
       wrap-class-name="admin-modal-wrap admin-auth-modal-wrap"
     >
       <div class="modal small">
@@ -449,21 +449,18 @@
     </a-modal>
 
     <a-modal
-      :open="dnModalOpen"
-      :maskClosable="false"
-      :closable="false"
+      v-model:open="dnModalOpen"
       :footer="null"
+      :closable="false"
+      :maskClosable="true"
       :force-render="true"
-      :keyboard="false"
       :centered="true"
+      width="800px"
       wrap-class-name="admin-modal-wrap admin-dn-modal-wrap"
     >
       <div class="dn-modal">
         <div class="dn-modal__header">
           <h3 data-i18n="dn.title">DN 录入</h3>
-          <button class="ghost" id="dn-close" aria-label="关闭">
-            ✕
-          </button>
         </div>
         <div class="dn-modal__body">
           <textarea
@@ -481,13 +478,13 @@
     </a-modal>
 
     <a-modal
-      :open="updateHistoryModalOpen"
-      :maskClosable="false"
-      :closable="false"
+      v-model:open="updateHistoryModalOpen"
       :footer="null"
+      :closable="false"
+      :maskClosable="true"
       :force-render="true"
-      :keyboard="false"
       :centered="true"
+      width="1000px"
       wrap-class-name="admin-modal-wrap admin-history-modal-wrap"
     >
       <div class="modal large">

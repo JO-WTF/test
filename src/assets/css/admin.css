@@ -873,7 +873,8 @@ body.admin-theme {
     border: 1px solid var(--ant-border-strong);
     border-radius: 14px;
     width: 92%;
-    padding: 14px
+    padding: 14px;
+    margin: 0 auto;
     }
 
 .admin-modal-wrap .ant-modal-content {
@@ -883,6 +884,99 @@ body.admin-theme {
 }
 .admin-modal-wrap .ant-modal-footer {
     display: none;
+}
+.admin-modal-wrap .field label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ant-text-secondary);
+}
+.admin-modal-wrap .field select,
+.admin-modal-wrap .field textarea,
+.admin-modal-wrap .field input[type="text"],
+.admin-modal-wrap .field input[type="password"],
+.admin-modal-wrap .field input[type="number"],
+.admin-modal-wrap .field input[type="search"],
+.admin-modal-wrap .field input[type="file"] {
+    width: 100%;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 8px;
+    background: var(--ant-surface);
+    color: var(--ant-text-primary);
+    padding: 8px 11px;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+.admin-modal-wrap .field input[type="file"] {
+    padding: 7px;
+}
+.admin-modal-wrap .field textarea {
+    resize: vertical;
+    min-height: 96px;
+}
+.admin-modal-wrap .field select:focus,
+.admin-modal-wrap .field textarea:focus,
+.admin-modal-wrap .field input[type="text"]:focus,
+.admin-modal-wrap .field input[type="password"]:focus,
+.admin-modal-wrap .field input[type="number"]:focus,
+.admin-modal-wrap .field input[type="search"]:focus,
+.admin-modal-wrap .field input[type="file"]:focus {
+    outline: none;
+    border-color: var(--ant-primary);
+    box-shadow: 0 0 0 2px var(--ant-primary-tint-faint);
+}
+.admin-modal-wrap .field select:disabled,
+.admin-modal-wrap .field textarea:disabled,
+.admin-modal-wrap .field input:disabled {
+    cursor: not-allowed;
+    background: var(--ant-disabled-surface);
+    color: var(--ant-text-muted);
+}
+.admin-modal-wrap .foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+.admin-modal-wrap .foot .btn {
+    min-width: 108px;
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.admin-modal-wrap .foot .btn:not(.ghost) {
+    background: var(--ant-primary);
+    border-color: var(--ant-primary);
+    color: var(--ant-text-inverse);
+}
+.admin-modal-wrap .foot .btn:not(.ghost):hover {
+    background: var(--ant-primary-hover);
+    border-color: var(--ant-primary-hover);
+    box-shadow: 0 2px 6px rgba(22, 119, 255, 0.28);
+}
+.admin-modal-wrap .foot .btn:not(.ghost):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ant-primary-tint-soft);
+}
+.admin-modal-wrap .foot .btn.ghost {
+    background: #fff;
+    color: var(--ant-primary);
+    border-color: var(--ant-border-subtle);
+}
+.admin-modal-wrap .foot .btn.ghost:hover {
+    border-color: var(--ant-primary);
+    color: var(--ant-primary-strong);
+    background: var(--ant-primary-tint-faint);
+}
+.admin-modal-wrap .foot .btn:disabled,
+.admin-modal-wrap .foot .btn[disabled] {
+    background: var(--ant-disabled-surface);
+    border-color: var(--ant-disabled-surface);
+    color: var(--ant-text-muted);
+    box-shadow: none;
 }
 .admin-modal-wrap .modal.edit-modal {
     padding: 20px;
