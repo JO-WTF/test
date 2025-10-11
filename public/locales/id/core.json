@@ -1,0 +1,19 @@
+{
+  "statusDelivery.arrivedAtWh": "Tiba di WH",
+  "statusDelivery.transportingFromWh": "Dikirim dari WH",
+  "statusDelivery.arrivedAtXdPm": "Tiba di XD/PM",
+  "statusDelivery.transportingFromXdPm": "Dikirim dari XD/PM",
+  "statusDelivery.arrivedAtSite": "Tiba di Site",
+  "statusDelivery.pod": "POD",
+  "statusDelivery.inTransit": "On the way",
+  "statusDelivery.prepareVehicle": "Prepare Vehicle",
+  "statusDelivery.cancelMos": "Batalkan MOS",
+  "statusDelivery.arrived": "Sudah Tiba",
+  "statusDelivery.newMos": "MOS Baru",
+  "statusDelivery.onSite": "On Site",
+  "statusDelivery.waitingFeedback": "Waiting PIC Feedback",
+  "statusDelivery.total": "Total",
+  "inTransit": "Pengiriman Dimulai",
+  "arrived": "Tiba",
+  "overnight": "Menginap (tunda)"
+}

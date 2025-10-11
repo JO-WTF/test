@@ -1,7 +1,6 @@
 import { api as viewerApi } from 'v-viewer';
 import {
   STATUS_DELIVERY_VALUES,
-  STATUS_DELIVERY_DISPLAY_OVERRIDES,
   STATUS_DELIVERY_ITEMS,
 } from '../../config.js';
 import { getApiBase, getMapboxAccessToken } from '../../utils/env.js';
@@ -408,10 +407,6 @@ export function setupAdminPage(
 
   function i18nStatusDisplay(value) {
     const canonical = normalizeStatusDeliveryValue(value);
-    const override =
-      (STATUS_DELIVERY_DISPLAY_OVERRIDES && STATUS_DELIVERY_DISPLAY_OVERRIDES[canonical]) ||
-      (STATUS_DELIVERY_DISPLAY_OVERRIDES && STATUS_DELIVERY_DISPLAY_OVERRIDES[value]);
-    if (override) return override;
     const key = STATUS_DELIVERY_VALUE_TO_KEY[canonical] || STATUS_DELIVERY_VALUE_TO_KEY[value];
     if (key && i18n) {
       try {
@@ -540,7 +535,7 @@ export function setupAdminPage(
     if (!canonical) return '';
     const meta = scanStatusMeta.get(canonical);
     if (meta) {
-      const translated = translateInstant(meta.filterLabelKey, meta.fallbackLabel || canonical);
+      const translated = translateInstant(meta.filterLabelKey, canonical);
       if (translated) return translated;
     }
     const label = i18nStatusDisplay(canonical);

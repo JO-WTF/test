@@ -1,44 +1,23 @@
 const STATUS_DELIVERY_DEFINITIONS = [
-  // {
-  //   key: 'ARRIVED_AT_WH',
-  //   value: 'ARRIVED AT WH',
-  //   translationKey: 'statusDelivery.arrivedAtWh',
-  //   fallbackLabel: '到达仓库',
-  //   aliases: ['Arrived at WH'],
-  // },
+  {
+    key: 'ARRIVED_AT_WH',
+    value: 'ARRIVED AT WH',
+    translationKey: 'statusDelivery.arrivedAtWh',
+  },
   {
     key: 'TRANSPORTING_FROM_WH',
     value: 'TRANSPORTING FROM WH',
     translationKey: 'statusDelivery.transportingFromWh',
-    fallbackLabel: '从仓库发出',
-    aliases: ['Transporting from WH'],
-  },
-  {
-    key: 'ARRIVED_AT_XD_PM',
-    value: 'ARRIVED AT XD/PM',
-    translationKey: 'statusDelivery.arrivedAtXdPm',
-    fallbackLabel: '到达XD/PM',
-    aliases: ['Arrived at XD/PM'],
-  },
-  {
-    key: 'TRANSPORTING_FROM_XD_PM',
-    value: 'TRANSPORTING FROM XD/PM',
-    translationKey: 'statusDelivery.transportingFromXdPm',
-    fallbackLabel: '从XD/PM发出',
-    aliases: ['Transporting from XD/PM'],
   },
   {
     key: 'ARRIVED_AT_SITE',
     value: 'ARRIVED AT SITE',
     translationKey: 'statusDelivery.arrivedAtSite',
-    fallbackLabel: '到达站点',
-    aliases: ['Arrived at Site'],
   },
   {
     key: 'POD',
     value: 'POD',
     translationKey: 'statusDelivery.pod',
-    fallbackLabel: 'POD',
   },
 ];
 
@@ -47,61 +26,33 @@ const STATUS_SITE_DEFINITIONS = [
     key: 'PIC_NOT_CONFIRMED',
     value: 'PIC not confirmed',
     translationKey: 'statusSite.picNotConfirmed',
-    fallbackLabel: 'PIC not confirmed',
-    displayOverride: 'PIC not confirmed',
-    aliases: ['PIC NOT CONFIRMED'],
   },
   {
     key: 'PIC_CONFIRMED',
     value: 'PIC confirmed',
     translationKey: 'statusSite.picConfirmed',
-    fallbackLabel: 'PIC confirmed',
-    displayOverride: 'PIC confirmed',
-    aliases: ['PIC CONFIRMED'],
   },
   {
     key: 'PERMIT_ISSUE',
     value: 'Permit issue',
     translationKey: 'statusSite.permitIssue',
-    fallbackLabel: 'Permit issue',
-    displayOverride: 'Permit issue',
-    aliases: ['PERMIT ISSUE'],
   },
   {
     key: 'COMMON_CASE_ISSUE',
     value: 'Common case issue',
     translationKey: 'statusSite.commonCaseIssue',
-    fallbackLabel: 'Common case issue',
-    displayOverride: 'Common case issue',
-    aliases: ['COMMON CASE ISSUE'],
   },
   {
     key: 'REPLAN_MOS',
     value: 'Replan MOS',
     translationKey: 'statusSite.replanMos',
-    fallbackLabel: 'Replan MOS',
-    displayOverride: 'Replan MOS',
-    aliases: ['REPLAN MOS'],
   },
   {
     key: 'CANCEL_MOS',
     value: 'Cancel MOS',
     translationKey: 'statusSite.cancelMos',
-    fallbackLabel: 'Cancel MOS',
-    displayOverride: 'Cancel MOS',
-    aliases: ['CANCEL MOS'],
   }
 ];
-
-const toCamelCaseKey = (raw) =>
-  String(raw || '')
-    .toLowerCase()
-    .split('_')
-    .filter(Boolean)
-    .map((segment, index) =>
-      index === 0 ? segment : segment.charAt(0).toUpperCase() + segment.slice(1)
-    )
-    .join('');
 
 const buildValueMap = (definitions) =>
   Object.freeze(
@@ -179,15 +130,12 @@ const ROLE_USER_PREFIXES = {
 export const STATUS_DELIVERY_VALUES = buildValueMap(STATUS_DELIVERY_DEFINITIONS);
 export const STATUS_DELIVERY_ORDERED_LIST = buildList(STATUS_DELIVERY_DEFINITIONS);
 export const STATUS_DELIVERY_ITEMS = Object.freeze(
-  STATUS_DELIVERY_DEFINITIONS.map(({ key, value, translationKey, fallbackLabel }) => {
-    const camelKey = toCamelCaseKey(key);
+  STATUS_DELIVERY_DEFINITIONS.map(({ key, value, translationKey }) => {
     return {
       key,
       value,
       translationKey,
-      fallbackLabel,
-      camelKey,
-      filterLabelKey: `statusDelivery.filter.${camelKey}`,
+      filterLabelKey: translationKey,
     };
   })
 );
@@ -196,15 +144,6 @@ export const STATUS_DELIVERY_VALUE_TO_KEY = Object.freeze({
   ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'translationKey'),
 });
 
-
-export const STATUS_DELIVERY_DISPLAY_OVERRIDES = Object.freeze(
-  STATUS_SITE_DEFINITIONS.reduce((acc, { value, displayOverride }) => {
-    if (displayOverride) {
-      acc[value] = displayOverride;
-    }
-    return acc;
-  }, {})
-);
 
 export const STATUS_DELIVERY_ALIAS_MAP = createAliasMap(
   STATUS_DELIVERY_DEFINITIONS

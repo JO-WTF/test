@@ -491,10 +491,10 @@ export function useAdminFilters() {
         translationKey: 'statusDelivery.filter.notEmpty',
         fallback: '任意非空',
       },
-      ...STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
+      ...STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey }) => ({
         value,
         translationKey: filterLabelKey,
-        fallback: fallbackLabel,
+        fallback: value,
       })),
     ];
     const options = statusFilterDefs.map(({ value, translationKey, fallback }) => ({

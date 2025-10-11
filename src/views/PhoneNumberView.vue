@@ -76,7 +76,7 @@ const formatAsYouType = (value) => {
 };
 
 const i18n = createI18n({
-  namespaces: ['index'],
+  namespaces: ['core', 'index'],
   fallbackLang: 'id',
   defaultLang: 'id',
 });

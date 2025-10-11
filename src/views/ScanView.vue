@@ -212,7 +212,7 @@ if (LICENSE_KEY && window?.Dynamsoft?.DBR?.BarcodeScanner) {
 }
 
 const i18n = createI18n({
-  namespaces: ['index'],
+  namespaces: ['core', 'index'],
   fallbackLang: 'id',
   defaultLang: 'id',
 });
@@ -514,7 +514,6 @@ const statusLabel = (v) => {
       const translated = t(key);
       if (translated && translated !== key) return translated;
     }
-    if (meta.fallbackLabel) return meta.fallbackLabel;
   } else {
     const key = STATUS_TRANSLATION_MAP[v];
     if (key) {
