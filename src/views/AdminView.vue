@@ -327,45 +327,164 @@
           </div>
         </div>
         <div id="hint" class="muted" data-i18n="hint.ready">输入条件后点击查询。</div>
-        <table id="tbl" style="display: none">
-          <thead>
-            <tr>
-              <th data-i18n="table.dn">DN 号</th>
-              <th data-i18n="table.regionPlan">区域/MOS 计划</th>
-              <th data-i18n="table.lsp">LSP</th>
-              <th data-i18n="table.statusDelivery">配送状态</th>
-              <th data-i18n="table.statusSite">站点状态</th>
-              <th data-i18n="table.remark">备注</th>
-              <th
-                data-i18n="table.latestRecordCreatedAt"
-                data-column="latestRecordCreatedAt"
-              >
-                更新时间
-              </th>
-              <th data-i18n="table.checkin">打卡</th>
-              <th data-i18n="table.actions" data-column="actions">操作</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div class="pager" id="pager" style="display: none">
-          <label class="pager__page-size">
-            <span data-i18n="perPage.label">每页数量</span>
-            <input
-              id="f-ps2"
-              type="number"
-              min="1"
-              max="1000"
-              value="20"
-              class="w120"
-              data-i18n-placeholder="perPage.placeholder"
-              placeholder="请输入数量"
-            />
-          </label>
-          <button class="ghost" id="prev" data-i18n="pager.prev">上一页</button>
-          <span id="pginfo" class="muted"></span>
-          <button class="ghost" id="next" data-i18n="pager.next">下一页</button>
-        </div>
+        <a-table
+          class="admin-table"
+          :data-source="tableRows"
+          :columns="tableColumns"
+          :loading="tableLoading"
+          :pagination="tablePaginationConfig"
+          :row-key="resolveRowKey"
+          :row-class-name="resolveRowClassName"
+          v-model:expandedRowKeys="expandedRowKeys"
+          :expandable="tableExpandableConfig"
+          bordered
+          @change="handleTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'dn'">
+              <div class="summary-cell">
+                <button
+                  type="button"
+                  class="summary-primary"
+                  :data-dn-number="record.dnNumber"
+                  @click="copyDnNumber(record)"
+                >
+                  {{ record.dnNumber || '—' }}
+                </button>
+                <div class="summary-hint summary-du-id">
+                  <template v-if="record.duId">
+                    <button
+                      type="button"
+                      class="summary-du-id-value"
+                      :data-du-id="record.duId"
+                      :title="record.duId"
+                      @click="copyDuId(record)"
+                    >
+                      {{ record.duId }}
+                    </button>
+                  </template>
+                  <span v-else class="muted">-</span>
+                </div>
+              </div>
+            </template>
+            <template v-else-if="column.key === 'regionPlan'">
+              <div class="region-plan-cell">
+                <span class="region-plan-cell__region">{{ record.region || '—' }}</span>
+                <span class="region-plan-cell__plan">{{ record.planMosDate || '—' }}</span>
+              </div>
+            </template>
+            <template v-else-if="column.key === 'lsp'">
+              <span class="summary-lsp-text">{{ record.lsp || '—' }}</span>
+            </template>
+            <template v-else-if="column.key === 'statusDelivery'">
+              <div class="status-cell-wrapper">
+                <span class="status-text">{{ record.statusDeliveryDisplay || '—' }}</span>
+                <template v-if="record.statusMismatch">
+                  <Tooltip :title="record.statusMismatchTooltip">
+                    <span class="status-mismatch" role="img" aria-hidden="false">!</span>
+                  </Tooltip>
+                </template>
+              </div>
+            </template>
+            <template v-else-if="column.key === 'statusSite'">
+              <span>{{ record.statusSiteDisplay || '—' }}</span>
+            </template>
+            <template v-else-if="column.key === 'remark'">
+              <span class="summary-remark-text">{{ record.remark || '—' }}</span>
+            </template>
+            <template v-else-if="column.key === 'latestRecordCreatedAt'">
+              <div class="latest-record-wrapper">
+                <span class="latest-record-text">{{ record.latestRecordCreatedAt || '—' }}</span>
+                <template v-if="record.hasUpdateBadge">
+                  <button
+                    type="button"
+                    class="update-count-badge"
+                    :data-dn-number="record.dnNumber"
+                    @click.stop.prevent="handleViewHistory(record)"
+                    title="显示更新记录"
+                  >
+                    {{ record.updateCount }}
+                  </button>
+                </template>
+              </div>
+            </template>
+            <template v-else-if="column.key === 'checkin'">
+              <div class="checkin-cell">
+                <template v-if="record.hasPhoto">
+                  <Tooltip :title="translate('table.photoIconLabel') || 'View photo'">
+                    <button
+                      type="button"
+                      class="icon-link view-link"
+                      v-html="iconMarkup.photo"
+                      @click="handleOpenPhoto(record)"
+                    ></button>
+                  </Tooltip>
+                </template>
+                <template v-if="record.hasLocation">
+                  <Tooltip :title="translate('table.mapIconLabel') || 'Open in Google Maps'">
+                    <a
+                      :href="record.mapUrl"
+                      class="icon-link map-link"
+                      target="_blank"
+                      rel="noopener"
+                      v-html="iconMarkup.map"
+                    ></a>
+                  </Tooltip>
+                </template>
+                <span v-if="!record.hasPhoto && !record.hasLocation" class="muted">-</span>
+              </div>
+            </template>
+            <template v-else-if="column.key === 'actions'">
+              <div class="actions">
+                <template v-if="canEdit">
+                  <button type="button" class="icon-btn" @click="handleEditRecord(record)">
+                    <span v-html="iconMarkup.edit"></span>
+                  </button>
+                </template>
+                <template v-if="canDelete">
+                  <button
+                    type="button"
+                    class="icon-btn danger"
+                    @click="handleDeleteRecord(record)"
+                  >
+                    <span v-html="iconMarkup.delete"></span>
+                  </button>
+                </template>
+                <span v-if="!canEdit && !canDelete" class="muted">-</span>
+              </div>
+            </template>
+          </template>
+          <template #expandedRowRender="{ record }">
+            <div class="detail-row">
+              <div class="detail-content">
+                <div class="detail-title">{{ detailTitle }}</div>
+                <div v-if="!record.detailEntries.length" class="muted">
+                  {{ detailEmpty }}
+                </div>
+                <div v-else class="detail-grid">
+                  <div
+                    v-for="entry in record.detailEntries"
+                    :key="entry.key"
+                    class="detail-item"
+                  >
+                    <div class="detail-key">{{ entry.key }}</div>
+                    <div class="detail-value">
+                      <template v-if="entry.type === 'link'">
+                        <a :href="entry.href" target="_blank" rel="noopener">{{ entry.display }}</a>
+                      </template>
+                      <template v-else-if="entry.type === 'json'">
+                        <pre class="detail-json">{{ entry.display }}</pre>
+                      </template>
+                      <template v-else>
+                        {{ entry.display }}
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+  </a-table>
       </div>
     </div>
 
@@ -509,8 +628,8 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Switch } from 'ant-design-vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue';
+import { Switch, Tooltip } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useRouter } from 'vue-router';
@@ -518,12 +637,29 @@ import { createI18n } from '../i18n/core';
 import { applyI18n } from '../i18n/dom';
 import { setupAdminPage } from './admin/setupAdminPage';
 import { useAdminFilters } from './admin/useAdminFilters';
-import { TRANSPORT_MANAGER_ROLE_KEY } from './admin/constants';
+import {
+  TRANSPORT_MANAGER_ROLE_KEY,
+  STATUS_DELIVERY_VALUES,
+  STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK,
+  DN_DETAIL_KEYS,
+  SUMMARY_FIELD_KEYS,
+  HIDDEN_DETAIL_FIELDS,
+  LSP_FIELD,
+  REGION_FIELD,
+  PLAN_MOS_DATE_FIELD,
+  STATUS_SITE_FIELD,
+  LATEST_RECORD_CREATED_AT_FIELD,
+  LAT_FIELD,
+  LNG_FIELD,
+  PHOTO_FIELD,
+  ICON_MARKUP,
+} from './admin/constants';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
 import 'dayjs/locale/zh-cn';
 import 'dayjs/locale/id';
+import { normalizeTextValue, showToast, isTimestampKey } from './admin/utils.js';
 
 dayjs.extend(customParseFormat);
 
@@ -579,6 +715,591 @@ const {
 } = useAdminFilters();
 
 useBodyTheme('admin-theme');
+
+const tableLoading = ref(false);
+const rawTableItems = ref([]);
+const tablePaginationState = reactive({
+  current: 1,
+  pageSize: 20,
+  total: 0,
+});
+const expandedRowKeys = ref([]);
+const transportManagerMode = ref(false);
+const currentPermissionsState = ref({});
+const normalizeStatusFn = shallowRef((value) => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.trim();
+  try {
+    return String(value || '').trim();
+  } catch (err) {
+    console.error(err);
+  }
+  return '';
+});
+const statusDisplayFn = shallowRef((value) => {
+  if (value === null || value === undefined) return '';
+  try {
+    return String(value);
+  } catch (err) {
+    console.error(err);
+  }
+  return '';
+});
+const toAbsUrlFn = shallowRef((value) => (value ? String(value) : ''));
+const formatTimestampFn = shallowRef((value) => (value ? String(value) : ''));
+const translationVersion = ref(0);
+
+const actionHandlers = reactive({
+  onEdit: null,
+  onDelete: null,
+  onViewHistory: null,
+  onOpenPhoto: null,
+});
+
+const paginationHandlers = reactive({
+  onPageChange: null,
+});
+
+const iconMarkup = ICON_MARKUP;
+
+const defaultNormalizeStatus = (value) => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.trim();
+  try {
+    return String(value || '').trim();
+  } catch (err) {
+    console.error(err);
+    return '';
+  }
+};
+
+const getRowKey = (item, index) => {
+  if (item && typeof item === 'object') {
+    if (item.id !== undefined && item.id !== null) return `id:${item.id}`;
+    if (item.dn_id !== undefined && item.dn_id !== null) return `dnid:${item.dn_id}`;
+    if (item.uuid) return `uuid:${item.uuid}`;
+    if (item.dn_number) return `dn:${item.dn_number}`;
+  }
+  return `idx:${index}`;
+};
+
+const getLspDisplay = (item) => {
+  const raw = normalizeTextValue(item?.[LSP_FIELD] ?? item?.lsp);
+  if (!raw) return '';
+  const match = raw.match(/HTM\.\s*(.*?)\s*-IDN/);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  return raw;
+};
+
+const getLspAbbreviation = (lspName) => {
+  if (!lspName) return '';
+  const map = {
+    'HTM.SCHENKER-IDN': 'SCK',
+    'HTM.KAMADJAJA-IDN': 'KAMA',
+    'HTM.XPRESINDO-IDN': 'XP',
+    'HTM.SINOTRANS-IDN': 'SINO',
+  };
+  return map[lspName] || lspName;
+};
+
+const formatPlanMosDateForMobile = (dateString) => {
+  if (!dateString) return '';
+  try {
+    const ddMmmYyMatch = dateString.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+\d{2}$/);
+    if (ddMmmYyMatch) {
+      return `${ddMmmYyMatch[2]} ${ddMmmYyMatch[1]}`;
+    }
+    const isoMatch = dateString.match(/^\d{4}-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+      const month = parseInt(isoMatch[1], 10);
+      const day = parseInt(isoMatch[2], 10);
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${monthNames[month - 1]} ${day}`;
+    }
+    const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/\d{4}$/);
+    if (usMatch) {
+      const month = parseInt(usMatch[1], 10);
+      const day = parseInt(usMatch[2], 10);
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${monthNames[month - 1]} ${day}`;
+    }
+    if (dateString.match(/^[A-Za-z]{3}\s+\d{1,2}$/)) {
+      return dateString;
+    }
+    return dateString;
+  } catch (err) {
+    console.error('Error formatting date for mobile:', err);
+    return dateString;
+  }
+};
+
+const createGoogleMapsLink = (lat, lng) =>
+  `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+
+const createGoogleMapsLinkFromString = (value) => {
+  if (!value) return '';
+  const parts = String(value).split(',');
+  if (parts.length >= 2) {
+    const lng = parts[0].trim();
+    const lat = parts[1].trim();
+    return createGoogleMapsLink(lat, lng);
+  }
+  return `https://www.google.com/maps?q=${encodeURIComponent(value)}`;
+};
+
+const collectDetailEntries = (item) => {
+  if (!item || typeof item !== 'object') return [];
+
+  const latValue = item?.lat ?? item?.latitude;
+  const lngValue = item?.lng ?? item?.longitude;
+  const hasCoordinates =
+    latValue !== undefined &&
+    latValue !== null &&
+    lngValue !== undefined &&
+    lngValue !== null;
+
+  const itemWithLonlat = { ...item };
+  if (hasCoordinates && !itemWithLonlat.lonlat) {
+    itemWithLonlat.lonlat = `${lngValue},${latValue}`;
+  }
+
+  const entries = [];
+  DN_DETAIL_KEYS.forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(itemWithLonlat, key)) return;
+    const value = itemWithLonlat[key];
+    if (value === undefined || value === null || value === '') return;
+    entries.push([key, value]);
+  });
+  return entries;
+};
+
+const formatDetailEntry = (key, value) => {
+  const entry = {
+    key: String(key),
+    type: 'text',
+    display: '',
+  };
+  if (value === undefined || value === null || value === '') {
+    entry.display = '-';
+    return entry;
+  }
+  if (Array.isArray(value) || (typeof value === 'object' && !(value instanceof Date))) {
+    entry.type = 'json';
+    try {
+      entry.display = JSON.stringify(value, null, 2);
+    } catch (err) {
+      console.error(err);
+      entry.display = String(value);
+    }
+    return entry;
+  }
+  const text = normalizeTextValue(value);
+  if (!text) {
+    entry.display = '-';
+    return entry;
+  }
+  const lowerKey = entry.key.toLowerCase();
+  if (isTimestampKey(lowerKey)) {
+    const formatted = formatTimestampFn.value(text);
+    entry.display = formatted || text;
+    return entry;
+  }
+  if (/(photo|image|picture|attachment)/.test(lowerKey) || /url/.test(lowerKey)) {
+    const href = toAbsUrlFn.value(text);
+    entry.type = 'link';
+    entry.href = href;
+    entry.display = href;
+    return entry;
+  }
+  if (lowerKey.includes('lonlat')) {
+    const href = createGoogleMapsLinkFromString(text);
+    entry.type = 'link';
+    entry.href = href;
+    entry.display = href;
+    return entry;
+  }
+  entry.display = text;
+  return entry;
+};
+
+const shouldShowStatusDeliveryMismatch = (statusSiteRaw, statusDeliveryRaw, normalize) => {
+  const normalizeFn = typeof normalize === 'function' ? normalize : defaultNormalizeStatus;
+  const site = normalizeFn(statusSiteRaw);
+  const statusDelivery = normalizeFn(statusDeliveryRaw);
+  if (!site) return false;
+
+  const arrivedStatusDelivery = normalizeFn(STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE);
+  const podStatusDelivery = normalizeFn(STATUS_DELIVERY_VALUES.POD || 'POD');
+
+  if (site === STATUS_DELIVERY_VALUES.ON_THE_WAY) {
+    const allowedTransportStatusDelivery = [
+      STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_WH,
+      STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_XD_PM,
+    ]
+      .map((value) => normalizeFn(value))
+      .filter(Boolean);
+    const isAllowed = allowedTransportStatusDelivery.includes(statusDelivery);
+    return !isAllowed;
+  }
+  if (site === STATUS_DELIVERY_VALUES.ON_SITE) {
+    return statusDelivery !== arrivedStatusDelivery && statusDelivery !== podStatusDelivery;
+  }
+  if (site === STATUS_DELIVERY_VALUES.POD) {
+    return statusDelivery !== podStatusDelivery && statusDelivery !== arrivedStatusDelivery;
+  }
+  return false;
+};
+
+const tablePaginationConfig = computed(() => ({
+  current: tablePaginationState.current,
+  pageSize: tablePaginationState.pageSize,
+  total: tablePaginationState.total,
+  showSizeChanger: true,
+  pageSizeOptions: ['10', '20', '50', '100', '200'],
+  showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}`,
+}));
+
+const tableExpandableConfig = computed(() => ({
+  expandRowByClick: true,
+  rowExpandable: (record) => Boolean(record?.hasDetails),
+}));
+
+const adminTableBridge = {
+  setLoading(value) {
+    tableLoading.value = !!value;
+  },
+  setItems(items, meta = {}) {
+    rawTableItems.value = Array.isArray(items) ? items : [];
+    const total = Number(meta.total ?? rawTableItems.value.length);
+    tablePaginationState.total = Number.isFinite(total) && total >= 0 ? total : rawTableItems.value.length;
+    const nextPage = Number(meta.page ?? tablePaginationState.current);
+    tablePaginationState.current = Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1;
+    const nextSize = Number(meta.pageSize ?? tablePaginationState.pageSize);
+    tablePaginationState.pageSize =
+      Number.isFinite(nextSize) && nextSize > 0 ? nextSize : tablePaginationState.pageSize;
+    expandedRowKeys.value = [];
+  },
+  setTransportManager(value) {
+    transportManagerMode.value = !!value;
+  },
+  setPermissions(perms) {
+    currentPermissionsState.value = perms || {};
+  },
+  setNormalizeStatusDelivery(fn) {
+    normalizeStatusFn.value = typeof fn === 'function' ? fn : defaultNormalizeStatus;
+    translationVersion.value += 1;
+  },
+  setStatusDisplay(fn) {
+    statusDisplayFn.value = typeof fn === 'function' ? fn : ((value) => (value === null || value === undefined ? '' : String(value)));
+    translationVersion.value += 1;
+  },
+  setUtilities({ toAbsUrl, formatTimestampToJakarta } = {}) {
+    toAbsUrlFn.value = typeof toAbsUrl === 'function' ? toAbsUrl : (value) => (value ? String(value) : '');
+    formatTimestampFn.value =
+      typeof formatTimestampToJakarta === 'function'
+        ? formatTimestampToJakarta
+        : (value) => (value ? String(value) : '');
+    translationVersion.value += 1;
+  },
+  notifyTranslations() {
+    translationVersion.value += 1;
+  },
+  registerActionHandlers(handlers = {}) {
+    if (typeof handlers.onEdit === 'function') actionHandlers.onEdit = handlers.onEdit;
+    if (typeof handlers.onDelete === 'function') actionHandlers.onDelete = handlers.onDelete;
+    if (typeof handlers.onViewHistory === 'function') actionHandlers.onViewHistory = handlers.onViewHistory;
+    if (typeof handlers.onOpenPhoto === 'function') actionHandlers.onOpenPhoto = handlers.onOpenPhoto;
+  },
+  registerPaginationHandlers(handlers = {}) {
+    if (typeof handlers.onPageChange === 'function') {
+      paginationHandlers.onPageChange = handlers.onPageChange;
+    }
+  },
+  clear() {
+    rawTableItems.value = [];
+    tablePaginationState.total = 0;
+    expandedRowKeys.value = [];
+  },
+};
+
+const handleTableChange = (paginationInfo) => {
+  const nextPage = Number(paginationInfo?.current) || tablePaginationState.current;
+  const nextPageSize = Number(paginationInfo?.pageSize) || tablePaginationState.pageSize;
+  tablePaginationState.current = nextPage;
+  tablePaginationState.pageSize = nextPageSize;
+  if (paginationHandlers.onPageChange) {
+    paginationHandlers.onPageChange(nextPage, nextPageSize);
+  }
+};
+
+const resolveRowKey = (record) => record?.rowKey || record?.key;
+
+const resolveRowClassName = (record, index) => {
+  if (!record) return '';
+  const key = record.rowKey || record.key || getRowKey(record.original, index);
+  const classes = ['summary-row'];
+  if (record.hasDetails) {
+    classes.push('expandable');
+  }
+  if (record.statusMismatch) {
+    classes.push('status-mismatch-row');
+  }
+  if (expandedRowKeys.value.includes(key)) {
+    classes.push('expanded');
+  }
+  return classes.join(' ');
+};
+
+const copyTextToClipboard = async (text) => {
+  const value = typeof text === 'string' ? text : String(text || '');
+  if (!value) return false;
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (err) {
+      console.error('Clipboard API copy failed', err);
+    }
+  }
+
+  if (typeof document === 'undefined' || !document.body) {
+    return false;
+  }
+
+  let textarea = null;
+  try {
+    textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+
+    const selection = document.getSelection();
+    const originalRange =
+      selection && selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+
+    textarea.select();
+    const copied = document.execCommand('copy');
+
+    if (selection) {
+      selection.removeAllRanges();
+      if (originalRange) {
+        selection.addRange(originalRange);
+      }
+    }
+    return copied;
+  } catch (err) {
+    console.error('Fallback clipboard copy failed', err);
+    return false;
+  } finally {
+    if (textarea && textarea.parentNode) {
+      textarea.parentNode.removeChild(textarea);
+    }
+  }
+};
+
+const copyDnNumber = async (record) => {
+  if (!record?.dnNumber) return;
+  const copied = await copyTextToClipboard(record.dnNumber);
+  const successMsg = translate('toast.copyDnSuccess', '已复制 DN Number') || '已复制 DN Number';
+  const failMsg = translate('toast.copyDnFail', '复制 DN Number 失败') || '复制 DN Number 失败';
+  showToast(copied ? successMsg : failMsg, copied ? 'success' : 'error');
+};
+
+const copyDuId = async (record) => {
+  if (!record?.duId) return;
+  const copied = await copyTextToClipboard(record.duId);
+  const successMsg = translate('toast.copyDuIdSuccess', '已复制 DU ID') || '已复制 DU ID';
+  const failMsg = translate('toast.copyDuIdFail', '复制 DU ID 失败') || '复制 DU ID 失败';
+  showToast(copied ? successMsg : failMsg, copied ? 'success' : 'error');
+};
+
+const handleEditRecord = (record) => {
+  if (typeof actionHandlers.onEdit === 'function' && record?.original) {
+    actionHandlers.onEdit(record.original);
+  }
+};
+
+const handleDeleteRecord = (record) => {
+  if (typeof actionHandlers.onDelete === 'function' && record?.original) {
+    actionHandlers.onDelete(record.original);
+  }
+};
+
+const handleViewHistory = (record) => {
+  if (typeof actionHandlers.onViewHistory === 'function' && record?.dnNumber) {
+    actionHandlers.onViewHistory(record.dnNumber);
+  }
+};
+
+const handleOpenPhoto = (record) => {
+  if (typeof actionHandlers.onOpenPhoto === 'function' && record?.absolutePhotoUrl) {
+    actionHandlers.onOpenPhoto(record.absolutePhotoUrl);
+  }
+};
+
+const tableRows = computed(() => {
+  translationVersion.value;
+  const mismatchTooltip = translate('table.statusMismatchTooltip') || STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK;
+  const normalize = normalizeStatusFn.value || defaultNormalizeStatus;
+  const statusDisplay = statusDisplayFn.value || ((val) => (val === null || val === undefined ? '' : String(val)));
+  return rawTableItems.value.map((item, index) => {
+    const rowKey = getRowKey(item, index);
+    const dnNumber = normalizeTextValue(item?.dn_number ?? item?.dnNumber);
+    const duId = normalizeTextValue(item?.du_id);
+    const region = normalizeTextValue(item?.[REGION_FIELD] ?? item?.region);
+    const planMos = normalizeTextValue(item?.[PLAN_MOS_DATE_FIELD] ?? item?.plan_mos_date);
+    const lsp = getLspDisplay(item);
+    const statusDeliveryRaw = item?.status_delivery ?? item?.status ?? '';
+    const statusDeliveryDisplay =
+      statusDisplay(statusDeliveryRaw) || statusDisplay(normalize(statusDeliveryRaw));
+    const statusSiteRaw = item?.[STATUS_SITE_FIELD] ?? item?.status_site ?? item?.statusSite ?? '';
+    const statusSiteDisplay = normalizeTextValue(statusSiteRaw);
+    const remark = normalizeTextValue(item?.remark);
+    const latestRecordRaw = normalizeTextValue(
+      item?.[LATEST_RECORD_CREATED_AT_FIELD] ?? item?.latest_record_created_at
+    );
+    // Use the project's formatter (may include date and time separated by newline).
+    // Take the first line as the short date display.
+    const latestRecordFormatted = (function (raw) {
+      try {
+        const formatted = formatTimestampFn.value(raw || '');
+        if (!formatted) return raw || '';
+        // Normalize formatter output: replace newline with space
+        let s = String(formatted).replace(/\r?\n/, ' ').trim();
+        // Convert "DD MMM" -> "DD-MMM" (e.g. "5 Oct" -> "5-Oct") so final becomes "DD-MMM HH:MM:SS"
+        s = s.replace(/(\b\d{1,2})\s+([A-Za-z]{3}\b)/, '$1-$2');
+        return s;
+      } catch (err) {
+        return raw || '';
+      }
+    })(latestRecordRaw);
+    const photoRaw = item?.[PHOTO_FIELD] ?? item?.photo_url;
+    const photoUrl = normalizeTextValue(photoRaw);
+    const lat = normalizeTextValue(item?.[LAT_FIELD] ?? item?.lat ?? item?.latitude);
+    const lng = normalizeTextValue(item?.[LNG_FIELD] ?? item?.lng ?? item?.longitude);
+    const mapUrl = lat && lng ? createGoogleMapsLink(lat, lng) : '';
+    const detailEntries = collectDetailEntries(item)
+      .filter(([key]) => !HIDDEN_DETAIL_FIELDS.has(String(key)))
+      .map(([key, value]) => formatDetailEntry(key, value));
+    const hasDetails =
+      detailEntries.length > 0 &&
+      detailEntries.some((entry) => !SUMMARY_FIELD_KEYS.has(String(entry.key)));
+    const updateCount = Number(item?.update_count) || 0;
+    const hasUpdateBadge = transportManagerMode.value && updateCount > 0;
+
+    return {
+      key: rowKey,
+      rowKey,
+      dnNumber,
+      duId,
+      region,
+      planMosDate: planMos,
+      planMosDateMobile: formatPlanMosDateForMobile(planMos),
+      lsp,
+      lspAbbrev: getLspAbbreviation(item?.[LSP_FIELD] ?? item?.lsp),
+      statusDeliveryDisplay,
+      statusDeliveryRaw,
+      statusSiteDisplay,
+  remark,
+  latestRecordCreatedAt: latestRecordFormatted,
+      statusMismatch: shouldShowStatusDeliveryMismatch(statusSiteRaw, statusDeliveryRaw, normalize),
+      statusMismatchTooltip: mismatchTooltip,
+      hasPhoto: Boolean(photoUrl),
+      photoUrl,
+      absolutePhotoUrl: photoUrl ? toAbsUrlFn.value(photoUrl) : '',
+      hasLocation: Boolean(mapUrl),
+      mapUrl,
+      detailEntries,
+      hasDetails,
+      updateCount,
+      hasUpdateBadge,
+      original: item,
+    };
+  });
+});
+
+const showActionColumn = computed(() => {
+  const perms = currentPermissionsState.value || {};
+  return Boolean(perms.canEdit || perms.canDelete);
+});
+
+const canEdit = computed(() => Boolean(currentPermissionsState.value?.canEdit));
+const canDelete = computed(() => Boolean(currentPermissionsState.value?.canDelete));
+
+const tableColumns = computed(() => {
+  translationVersion.value;
+  const columns = [
+    {
+      title: translate('table.dn', 'DN 号') || 'DN 号',
+      dataIndex: 'dnNumber',
+      key: 'dn',
+      width: 150,
+    },
+    {
+      title: translate('table.regionPlan', '区域/MOS 计划') || '区域/MOS 计划',
+      dataIndex: 'region',
+      key: 'regionPlan',
+      width: 120,
+    },
+    {
+      title: translate('table.lsp', 'LSP') || 'LSP',
+      dataIndex: 'lsp',
+      key: 'lsp',
+      width: 100,
+    },
+    {
+      title: translate('table.statusDelivery', '配送状态') || '配送状态',
+      dataIndex: 'statusDeliveryDisplay',
+      key: 'statusDelivery',
+      width: 100,
+    },
+    {
+      title: translate('table.statusSite', '站点状态') || '站点状态',
+      dataIndex: 'statusSiteDisplay',
+      key: 'statusSite',
+      width: 100,
+    },
+    {
+      title: translate('table.remark', '备注') || '备注',
+      dataIndex: 'remark',
+      key: 'remark',
+      width: 220,
+    },
+    {
+      title: translate('table.latestRecordCreatedAt', '更新时间') || '更新时间',
+      dataIndex: 'latestRecordCreatedAt',
+      key: 'latestRecordCreatedAt',
+      width: 60,
+    },
+    {
+      title: translate('table.checkin', '打卡') || '打卡',
+      dataIndex: 'checkin',
+      key: 'checkin',
+      className: 'col-checkin',
+      width: 60,
+      align: 'center',
+    },
+  ];
+  if (showActionColumn.value) {
+    columns.push({
+      title: translate('table.actions', '操作') || '操作',
+      dataIndex: 'actions',
+      key: 'actions',
+      className: 'col-actions',
+      width: 60,
+      align: 'center',
+    });
+  }
+  return columns;
+});
+
+const detailTitle = computed(() => translate('details.title', '全部字段') || '全部字段');
+const detailEmpty = computed(() => translate('details.empty', '暂无更多字段。') || '暂无更多字段。');
 
 const openMapView = () => {
   const resolved = router.resolve({ name: 'map' });
@@ -687,6 +1408,7 @@ const applyTranslations = () => {
   updateStatusSelectOptions(translator);
   updateHasCoordinateSelectOptions(translator);
   refreshDatePresets(translator);
+  adminTableBridge.notifyTranslations?.();
 };
 
 const normalizeStatusSelection = (raw) => {
@@ -778,7 +1500,10 @@ onMounted(async () => {
       currentRoleKey.value = roleKey || '';
     },
     modalControllers,
+    tableBridge: adminTableBridge,
   });
+
+  // 列 className 已在 tableColumns 中声明，交由 CSS 控制宽度与省略
 
   i18nInstance.onChange((lang) => {
     currentLang.value = lang;
@@ -790,6 +1515,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   pageCleanup?.();
+  adminTableBridge.clear?.();
 });
 </script>
 

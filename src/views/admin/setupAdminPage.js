@@ -26,7 +26,6 @@ import {
   extractItemsFromResponse,
   showToast,
 } from './utils.js';
-import { createTableRenderer } from './tableRenderer.js';
 import { createUpdateHistoryRenderer } from './updateHistoryRenderer.js';
 
 import {
@@ -74,6 +73,7 @@ export function setupAdminPage(
     filterInputs,
     onRoleChange,
     modalControllers = {},
+    tableBridge = null,
   } = {}
 ) {
   if (!rootEl) return () => { };
@@ -113,17 +113,10 @@ export function setupAdminPage(
 
   const dnInput = el('f-dn');
   const dnPreview = el('dn-preview');
-  const tbl = el('tbl');
-  const tbody = tbl?.querySelector('tbody');
-  const actionsHeader = tbl?.querySelector('thead th[data-column="actions"]');
-  const updatedAtHeader = tbl?.querySelector('thead th[data-column="updatedAt"]');
   const hint = el('hint');
-  const pager = el('pager');
-  const pginfo = el('pginfo');
 
   const hasSelect = el('f-has');
   const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
-  const pageSizeInput = el('f-ps2');
 
   const mId = el('modal-id');
   const mStatusDelivery = el('m-status-delivery');
@@ -168,7 +161,6 @@ export function setupAdminPage(
   let editingId = 0;
   let editingItem = null;
   let removeI18nListener = null;
-  let tableRenderer = null;
   let filtersExpanded = true;
   let filtersMediaQuery = null;
   let removeFiltersMediaListener = null;
@@ -182,7 +174,9 @@ export function setupAdminPage(
     toAbsUrl,
     getIconMarkup,
     getMapboxStaticImageUrl,
-    getTableRenderer: () => tableRenderer,
+    getTableRenderer: () => ({
+      openViewerWithUrl: openPhotoViewer,
+    }),
   });
 
   if (filtersToggle) {
@@ -294,15 +288,14 @@ export function setupAdminPage(
 
   function getNormalizedPageSize() {
     const fallback = 20;
-    if (!pageSizeInput) return fallback;
-    const raw = Number(pageSizeInput.value);
+    const raw = Number(q.page_size);
     if (!Number.isFinite(raw) || raw <= 0) {
-      setFormControlValue(pageSizeInput, String(fallback));
+      q.page_size = fallback;
       return fallback;
     }
     const normalized = Math.min(1000, Math.max(1, Math.floor(raw)));
-    if (String(normalized) !== String(pageSizeInput.value)) {
-      setFormControlValue(pageSizeInput, String(normalized));
+    if (normalized !== q.page_size) {
+      q.page_size = normalized;
     }
     return normalized;
   }
@@ -458,10 +451,7 @@ export function setupAdminPage(
     if (typeof applyTranslations === 'function') {
       applyTranslations();
     }
-    if (tableRenderer) {
-      tableRenderer.translateStatusCells();
-      tableRenderer.updateDetailSaveButtonLabels();
-    }
+    tableBridge?.notifyTranslations?.();
     authHandler.refreshLabels();
     statusCards.updateLabels();
     statusCards.updateActiveState();
@@ -484,10 +474,9 @@ export function setupAdminPage(
     populateModalStatusOptions({ type: 'delivery', selected: mStatusDelivery?.value || '' });
     populateModalStatusOptions({ type: 'site', selected: mStatusSite?.value || '' });
     updateModalFieldVisibility();
-    if (tableRenderer) {
-      tableRenderer.updateActionColumnVisibility();
-      tableRenderer.rerenderTableActions();
-    }
+    tableBridge?.setPermissions?.(getCurrentPermissions());
+    tableBridge?.setTransportManager?.(isTransportManagerRole());
+    tableBridge?.notifyTranslations?.();
     statusCards.render();
     statusCards.refreshCounts();
     lspSummaryCards.updateActiveState();
@@ -625,7 +614,6 @@ export function setupAdminPage(
     setFilterValue('plan_mos_date', todayJakarta);
   }
 
-  // 本地表格渲染逻辑已移除，统一由 tableRenderer 管理
 
   async function fetchFilterCandidates() {
     try {
@@ -721,11 +709,11 @@ export function setupAdminPage(
   }
 
   async function fetchList() {
-    if (!hint || !tbl || !pager || !pginfo) return;
+    if (!hint) return;
     try {
       hint.textContent = i18n?.t('hint.loading') || '加载中…';
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
+      tableBridge?.setLoading?.(true);
+      q.page_size = getNormalizedPageSize();
 
       const params = buildParamsAuto();
       const url = buildSearchUrl(params);
@@ -783,37 +771,67 @@ export function setupAdminPage(
         console.error('Failed to process stats from list response', err);
       }
 
-      tableRenderer.renderRows(items);
-      tableRenderer.bindRowActions();
+      tableBridge?.setItems?.(items, {
+        total: Number(data?.total) || 0,
+        page: q.page,
+        pageSize: q.page_size,
+      });
       applyAllTranslations();
 
-      tbl.style.display = '';
       hint.textContent = items.length
         ? ''
         : i18n?.t('hint.empty') || '没有数据';
-
-      const total = data?.total || 0;
-      const pages = Math.max(1, Math.ceil(total / q.page_size));
-      const pageLabel = i18n?.t('pager.info');
-      if (pageLabel && pageLabel !== 'pager.info') {
-        pginfo.textContent = pageLabel
-          .replace('{page}', q.page)
-          .replace('{pages}', pages)
-          .replace('{total}', total);
-      } else {
-        pginfo.textContent = `第 ${q.page} / ${pages} 页，共 ${total} 条`;
-      }
-      pager.style.display = pages > 1 ? '' : 'none';
-      const prev = el('prev');
-      const next = el('next');
-      if (prev) prev.disabled = q.page <= 1;
-      if (next) next.disabled = q.page >= pages;
     } catch (err) {
       hint.textContent = `${i18n?.t('hint.error') || '查询失败'}：${err?.message || err}`;
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
+      tableBridge?.setItems?.([], {
+        total: 0,
+        page: q.page,
+        pageSize: q.page_size,
+      });
     } finally {
       // no-op here because refreshCounts is invoked when stats exist above; keep finally for parity
+    }
+  }
+
+  let photoViewerInstance = null;
+
+  function cleanupPhotoViewer() {
+    if (!photoViewerInstance) return;
+    try {
+      if (typeof photoViewerInstance.destroy === 'function') {
+        photoViewerInstance.destroy();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    photoViewerInstance = null;
+  }
+
+  function openPhotoViewer(url) {
+    if (!url || !viewerApi) return;
+
+    cleanupPhotoViewer();
+
+    try {
+      photoViewerInstance = viewerApi({
+        options: {
+          navbar: false,
+          title: false,
+          toolbar: false,
+          fullscreen: false,
+          movable: true,
+          zoomRatio: 0.4,
+          loading: true,
+          backdrop: true,
+          hidden() {
+            cleanupPhotoViewer();
+          },
+        },
+        images: [url],
+      });
+    } catch (err) {
+      console.error(err);
+      cleanupPhotoViewer();
     }
   }
 
@@ -1262,7 +1280,7 @@ export function setupAdminPage(
     setFilterValue('status_site', '');
     setInputValue('du', '');
     if (!preservePageSize) {
-      setFormControlValue(pageSizeInput, '20');
+      q.page_size = 20;
     }
     if (dnInput) dnInput.value = '';
     dnEntry.normalizeFilterInput({ enforceFormat: false });
@@ -1307,39 +1325,6 @@ export function setupAdminPage(
       if (q.show_deleted === nextValue) return;
       q.show_deleted = nextValue;
       q.page = 1;
-      fetchList();
-    },
-    { signal }
-  );
-
-  el('prev')?.addEventListener(
-    'click',
-    () => {
-      if (q.page > 1) {
-        q.page--;
-        fetchList();
-      }
-    },
-    { signal }
-  );
-
-  el('next')?.addEventListener(
-    'click',
-    () => {
-      q.page++;
-      fetchList();
-    },
-    { signal }
-  );
-
-  pageSizeInput?.addEventListener(
-    'keydown',
-    (event) => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      const ps = getNormalizedPageSize();
-      q.page = 1;
-      q.page_size = ps;
       fetchList();
     },
     { signal }
@@ -1471,32 +1456,42 @@ export function setupAdminPage(
     await fetchList();
   }
 
-  tableRenderer = createTableRenderer({
-    tbody,
-    tableEl: tbl,
-    actionsHeader,
-    updatedAtHeader,
-    i18n,
-    signal,
-    showToast,
-    openModalEdit,
-    onDelete,
-    openUpdateHistoryModal,
-    getCurrentPermissions,
-    isTransportManagerRole,
-    translateInstant,
-    normalizeStatusDeliveryValue,
-    normalizeTextValue,
-    i18nStatusDisplay,
+  hideHasAttachmentFilter();
+
+  tableBridge?.setNormalizeStatusDelivery?.(normalizeStatusDeliveryValue);
+  tableBridge?.setStatusDisplay?.(i18nStatusDisplay);
+  tableBridge?.setUtilities?.({
     toAbsUrl,
     formatTimestampToJakarta,
-    getCurrentRoleKey: () => authHandler.getCurrentRoleKey(),
-    viewerApi,
   });
-
-  tableRenderer?.updateActionColumnVisibility?.();
-  hideHasAttachmentFilter();
-  tableRenderer?.hideUpdatedAtColumn?.();
+  tableBridge?.setPermissions?.(getCurrentPermissions());
+  tableBridge?.setTransportManager?.(isTransportManagerRole());
+  tableBridge?.registerActionHandlers?.({
+    onEdit: openModalEdit,
+    onDelete,
+    onViewHistory: openUpdateHistoryModal,
+    onOpenPhoto: openPhotoViewer,
+  });
+  tableBridge?.registerPaginationHandlers?.({
+    onPageChange(page, pageSize) {
+      const normalizedPage = Math.max(1, Number(page) || 1);
+      const normalizedSize = Math.max(1, Math.min(1000, Number(pageSize) || q.page_size));
+      let shouldFetch = false;
+      if (q.page !== normalizedPage) {
+        q.page = normalizedPage;
+        shouldFetch = true;
+      }
+      if (q.page_size !== normalizedSize) {
+        q.page_size = normalizedSize;
+        shouldFetch = true;
+      }
+      if (shouldFetch) {
+        fetchList();
+      } else {
+        tableBridge?.notifyTranslations?.();
+      }
+    },
+  });
 
   const hasAuth = authHandler.restoreFromStorage();
   if (hasAuth) {
@@ -1531,11 +1526,6 @@ export function setupAdminPage(
       }
     }
     cleanupFilterSubscriptions();
-    try {
-      tableRenderer?.closeViewer?.();
-    } catch (err) {
-      console.error(err);
-    }
-    if (tableRenderer) tableRenderer.cleanup();
+    cleanupPhotoViewer();
   };
 }
