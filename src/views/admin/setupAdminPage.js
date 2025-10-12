@@ -741,10 +741,20 @@ export function setupAdminPage(
         const rawStats = data?.stats ?? null;
         if (rawStats && typeof rawStats === 'object') {
           const sd = rawStats.status_delivery || rawStats.statusDelivery || {};
+          // status_site may be returned separately by the backend; merge it into the
+          // unified counts object so statusCards can find counts for both delivery
+          // and site-type status cards.
+          const ss = rawStats.status_site || rawStats.statusSite || {};
           const counts = Object.create(null);
           Object.keys(sd || {}).forEach((k) => {
             const n = Number(sd[k]);
             counts[k] = Number.isFinite(n) ? n : 0;
+          });
+          // Merge site stats, summing with any existing delivery counts if keys collide
+          Object.keys(ss || {}).forEach((k) => {
+            const n = Number(ss[k]);
+            const prev = Number.isFinite(Number(counts[k])) ? Number(counts[k]) : 0;
+            counts[k] = prev + (Number.isFinite(n) ? n : 0);
           });
           const totalFromStats = Number.isFinite(Number(rawStats.total)) ? Number(rawStats.total) : null;
           const total = totalFromStats !== null ? totalFromStats : (data?.total || Object.values(counts).reduce((s, v) => s + (Number.isFinite(Number(v)) ? Number(v) : 0), 0));

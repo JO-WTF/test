@@ -217,6 +217,23 @@ body.admin-theme {
         )
     )
     }
+
+/* New: group-level layout for delivery and site card groups */
+.admin-page .status-card-group {
+    --status-card-columns: 10;
+    --status-card-min-width: 60px;
+    display: grid;
+    gap: 6px;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(
+            max(var(--status-card-min-width), calc(100% / var(--status-card-columns))),
+            1fr
+        )
+    );
+    margin-bottom: 8px;
+}
+
 .admin-page .status-card {
     appearance: none;
     border: 1px solid var(--ant-border-subtle);

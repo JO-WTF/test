@@ -20,6 +20,7 @@ export function createStatusDeliveryCardManager({
   onLoadingChange,
 }) {
   let defs = [];
+  let siteDefs = [];
   const refs = new Map();
   let abortController = null;
   let requestId = 0;
@@ -86,6 +87,7 @@ export function createStatusDeliveryCardManager({
     if (!container || !wrapper) return;
     const role = getCurrentRole();
     let list = [];
+    let siteList = [];
 
     if (role?.key === 'lsp') {
       list = [];
@@ -115,12 +117,24 @@ export function createStatusDeliveryCardManager({
       });
 
       list = list.filter((defItem) => defItem.type !== 'status_delivery' || defItem.status_delivery);
+    // Build site cards from role permissions if available
+    try {
+      const perms = role?.permissions || {};
+      const allowedSites = Array.isArray(perms.statusSiteOptions) ? perms.statusSiteOptions : [];
+      siteList = allowedSites.map((v, idx) => {
+        const status_site = normalizeStatusDeliveryValue(v) || v || '';
+        const key = status_site || `status_site:${idx}`;
+        return { status_site, label: v, key, type: 'status_site' };
+      }).filter((d) => d.status_site);
+    } catch (err) {
+      siteList = [];
+    }
     }
 
     defs = list;
     refs.clear();
 
-    if (!list.length) {
+    if (!list.length && !siteList.length) {
       container.innerHTML = '';
       wrapper.style.display = 'none';
       wrapper.setAttribute('aria-hidden', 'true');
@@ -138,6 +152,14 @@ export function createStatusDeliveryCardManager({
     wrapper.style.display = '';
     wrapper.setAttribute('aria-hidden', 'false');
     container.innerHTML = '';
+
+    // Delivery cards container
+    const deliveryGroup = document.createElement('div');
+    deliveryGroup.className = 'status-card-group status-card-group--delivery';
+    // Site cards container
+    const siteGroup = document.createElement('div');
+    siteGroup.className = 'status-card-group status-card-group--site';
+
     list.forEach((defItem) => {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -160,9 +182,40 @@ export function createStatusDeliveryCardManager({
 
       attachCardHandler(btn, defItem);
 
-      container.appendChild(btn);
+      deliveryGroup.appendChild(btn);
       refs.set(defItem.key, { def: defItem, button: btn, countEl, labelEl });
     });
+
+    // Render site cards (if any)
+    siteList.forEach((defItem) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'status-card status-card--site';
+      btn.setAttribute('data-status_site', defItem.type === 'status_site' ? defItem.status_site : '');
+      btn.setAttribute('data-card-key', defItem.key);
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-busy', 'false');
+
+      const countEl = document.createElement('div');
+      countEl.className = 'status-card__count';
+      countEl.textContent = '…';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'status-card__label';
+      labelEl.textContent = defItem.label || defItem.status_site || '';
+
+      btn.appendChild(countEl);
+      btn.appendChild(labelEl);
+
+      attachCardHandler(btn, defItem);
+
+      siteGroup.appendChild(btn);
+      refs.set(defItem.key, { def: defItem, button: btn, countEl, labelEl });
+    });
+
+    // Append groups in order: delivery then site
+    container.appendChild(deliveryGroup);
+    if (siteList.length) container.appendChild(siteGroup);
 
     updateLabels();
     updateActiveState();
@@ -196,6 +249,8 @@ export function createStatusDeliveryCardManager({
       const isActive =
         defItem.type === 'status_delivery'
           ? hasStatus && defItem.status_delivery === canonical
+          : defItem.type === 'status_site'
+          ? canonicalSite && defItem.status_site === canonicalSite
           : defItem.type === 'total'
           ? !hasStatus
           : false;
@@ -336,6 +391,14 @@ export function createStatusDeliveryCardManager({
         ref.button.classList.remove('loading');
         ref.button.setAttribute('aria-busy', 'false');
         const label = getStatusDeliveryCardLabel(defItem);
+        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
+      } else if (defItem.type === 'status_site') {
+        const rawCount = findCountForStatus(counts, defItem.status_site);
+        const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
+        ref.countEl.textContent = String(displayCount);
+        ref.button.classList.remove('loading');
+        ref.button.setAttribute('aria-busy', 'false');
+        const label = defItem.label || defItem.status_site || '';
         ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
       } else {
         const displayCount = stats?.total;

@@ -147,6 +147,18 @@
     grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   }
 
+  /* Grouped status cards: delivery and site groups stack on mobile */
+  .admin-page .status-card-group {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    margin-bottom: 8px;
+  }
+
+  .admin-page .status-card-group--site {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
   .admin-page .status-card {
     padding: 10px 12px;
     min-height: 80px;
