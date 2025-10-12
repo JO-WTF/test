@@ -440,11 +440,11 @@ export function useAdminFilters() {
   };
 
   const selectPlaceholderBindings = [
-    { placeholderRef: planMosDate.placeholder, translationKey: 'planMosDate.placeholder' },
-    { placeholderRef: region.placeholder, translationKey: 'region.placeholder' },
-    { placeholderRef: area.placeholder, translationKey: 'area.placeholder' },
-    { placeholderRef: lsp.placeholder, translationKey: 'lsp.placeholder' },
-    { placeholderRef: subcon.placeholder, translationKey: 'subcon.placeholder' },
+    { placeholderRef: planMosDate.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: region.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: area.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: lsp.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: subcon.placeholder, translationKey: 'select.placeholder' },
     {
       placeholderRef: statusSite.placeholder,
       translationKey: 'statusSitePlaceholder',
