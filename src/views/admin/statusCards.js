@@ -1,4 +1,3 @@
-import { STATUS_DELIVERY_VALUES } from '../../config.js';
 import {
   TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   TRANSPORT_MANAGER_ROLE_KEY,
@@ -70,7 +69,6 @@ export function createStatusDeliveryCardManager({
     button.addEventListener(
       'click',
       () => {
-        console.log(def)
         if (!def || (def.type !== 'status_delivery')) return;
         const canonical =
           def.type === 'status_delivery'
@@ -117,18 +115,6 @@ export function createStatusDeliveryCardManager({
       });
 
       list = list.filter((defItem) => defItem.type !== 'status_delivery' || defItem.status_delivery);
-
-      if (role?.key === TRANSPORT_MANAGER_ROLE_KEY && list.length) {
-        list = [
-          {
-            status_delivery: '',
-            label: 'Total',
-            key: '__TOTAL__',
-            type: 'total',
-          },
-          ...list,
-        ];
-      }
     }
 
     defs = list;
@@ -218,40 +204,7 @@ export function createStatusDeliveryCardManager({
     });
   }
 
-  async function fetchStatusDeliveryCardStats(signal) {
-    const url = `${API_BASE}/api/dn/status-delivery/stats`;
-    const resp = await fetch(url, { signal });
-    const text = await resp.text();
-    let data = null;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch (err) {
-      console.error(err);
-    }
-    if (!resp.ok) {
-      throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
-    }
-    const list = Array.isArray(data?.data) ? data.data : [];
-    const counts = Object.create(null);
-    list.forEach((item) => {
-      if (!item || typeof item !== 'object') return;
-      const statusDeliveryRaw = item.status_delivery ?? '';
-      const status_delivery = normalizeStatusDeliveryValue(statusDeliveryRaw);
-      if (!status_delivery) return;
-      const countRaw = Number(
-        item.count ?? item.total ?? 0
-      );
-      const countValue = Number.isFinite(countRaw) ? countRaw : 0;
-      const existing = Number.isFinite(counts[status_delivery]) ? counts[status_delivery] : 0;
-      counts[status_delivery] = existing + countValue;
-    });
-    const totalRaw = Number(data?.total ?? data?.count);
-    const total = Number.isFinite(totalRaw) ? totalRaw : null;
-    const lspSummary = Array.isArray(data?.lsp_summary) ? data.lsp_summary : [];
-    return { counts, total, lspSummary };
-  }
-
-  async function refreshCounts() {
+  async function refreshCounts(passedStats) {
     const currentRole = typeof getCurrentRole === 'function' ? getCurrentRole() : null;
     if (!currentRole) {
       return;
@@ -289,14 +242,17 @@ export function createStatusDeliveryCardManager({
       }
     }
 
+    // Use provided stats (from search API). If none provided, use empty stats (no network calls).
     let stats = null;
     try {
-      stats = await fetchStatusDeliveryCardStats(cardSignal);
-    } catch (err) {
-      if (cardSignal.aborted || currentRequestId !== requestId) return;
-      if (err?.name !== 'AbortError') {
-        console.error(err);
+      if (typeof passedStats === 'object' && passedStats !== null) {
+        stats = passedStats;
+      } else {
+        stats = { counts: Object.create(null), total: null, lspSummary: [] };
       }
+    } catch (err) {
+      console.error('Error preparing stats', err);
+      stats = { counts: Object.create(null), total: null, lspSummary: [] };
     }
 
     if (cardSignal.aborted || currentRequestId !== requestId) {
@@ -328,11 +284,53 @@ export function createStatusDeliveryCardManager({
 
     const counts = stats?.counts ?? Object.create(null);
 
+    function findCountForStatus(countsObj, statusKey) {
+      if (!countsObj || !statusKey) return 0;
+      if (Object.prototype.hasOwnProperty.call(countsObj, statusKey)) {
+        const v = countsObj[statusKey];
+        return Number.isFinite(Number(v)) ? Number(v) : 0;
+      }
+      try {
+        for (const k of Object.keys(countsObj)) {
+          try {
+            const nk = normalizeStatusDeliveryValue(k) || String(k || '');
+            if (nk && nk === statusKey) {
+              const vv = countsObj[k];
+              return Number.isFinite(Number(vv)) ? Number(vv) : 0;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.error('Error iterating counts for match', err);
+      }
+
+      const normalizeLoose = (s) =>
+        String(s || '')
+          .toLowerCase()
+          .replace(/[\u2013\u2014\/-]/g, ' ')
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      const targetLoose = normalizeLoose(statusKey);
+      if (!targetLoose) return 0;
+      for (const k of Object.keys(countsObj)) {
+        const kk = normalizeLoose(k);
+        if (kk === targetLoose) {
+          const vv = countsObj[k];
+          return Number.isFinite(Number(vv)) ? Number(vv) : 0;
+        }
+      }
+
+      return 0;
+    }
+
     refs.forEach((ref) => {
       const defItem = ref.def;
       if (!defItem) return;
       if (defItem.type === 'status_delivery') {
-        const rawCount = counts?.[defItem.status_delivery];
+        const rawCount = findCountForStatus(counts, defItem.status_delivery);
         const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
         ref.countEl.textContent = String(displayCount);
         ref.button.classList.remove('loading');

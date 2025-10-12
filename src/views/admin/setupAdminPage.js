@@ -735,6 +735,44 @@ export function setupAdminPage(
       }
 
       const items = Array.isArray(data?.items) ? data.items : [];
+
+      // 如果 search 接口返回了 stats，就把它传递给 statusCards 与 lspSummaryCards
+      try {
+        const rawStats = data?.stats ?? null;
+        if (rawStats && typeof rawStats === 'object') {
+          const sd = rawStats.status_delivery || rawStats.statusDelivery || {};
+          const counts = Object.create(null);
+          Object.keys(sd || {}).forEach((k) => {
+            const n = Number(sd[k]);
+            counts[k] = Number.isFinite(n) ? n : 0;
+          });
+          const totalFromStats = Number.isFinite(Number(rawStats.total)) ? Number(rawStats.total) : null;
+          const total = totalFromStats !== null ? totalFromStats : (data?.total || Object.values(counts).reduce((s, v) => s + (Number.isFinite(Number(v)) ? Number(v) : 0), 0));
+          const lspSummary = Array.isArray(rawStats.lsp_summary) ? rawStats.lsp_summary : Array.isArray(rawStats.lspSummary) ? rawStats.lspSummary : [];
+          const statsObj = { counts, total, lspSummary };
+          try {
+            statusCards.refreshCounts(statsObj);
+          } catch (err) {
+            console.error('Error calling statusCards.refreshCounts with stats', err);
+          }
+          try {
+            lspSummaryCards.setData(lspSummary);
+            lspSummaryCards.updateActiveState();
+          } catch (err) {
+            console.error('Error updating lspSummaryCards from stats', err);
+          }
+        } else {
+          // no stats returned, still trigger refresh (will be no-op or fetch nothing)
+          try {
+            statusCards.refreshCounts();
+          } catch (err) {
+            console.error('Error calling statusCards.refreshCounts', err);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to process stats from list response', err);
+      }
+
       tableRenderer.renderRows(items);
       tableRenderer.bindRowActions();
       applyAllTranslations();
@@ -765,7 +803,7 @@ export function setupAdminPage(
       tbl.style.display = 'none';
       pager.style.display = 'none';
     } finally {
-      statusCards.refreshCounts();
+      // no-op here because refreshCounts is invoked when stats exist above; keep finally for parity
     }
   }
 

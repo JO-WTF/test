@@ -19,6 +19,11 @@ const STATUS_DELIVERY_DEFINITIONS = [
     value: 'POD',
     translationKey: 'statusDelivery.pod',
   },
+  {
+    key: 'NO_STATUS',
+    value: 'No Status',
+    translationKey: 'statusDelivery.noStatus',
+  }
 ];
 
 const STATUS_SITE_DEFINITIONS = [
