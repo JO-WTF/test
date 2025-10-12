@@ -627,9 +627,9 @@ export function setupAdminPage(
       const payload = data?.data && typeof data.data === 'object' ? data.data : data;
       setFilterDropdownOptions('lsp', payload?.lsp);
       setFilterDropdownOptions('region', payload?.region);
+      setFilterDropdownOptions('area', payload?.area);
       setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
       setFilterDropdownOptions('subcon', payload?.subcon);
-      setFilterDropdownOptions('status_wh', payload?.status_wh);
       const siteOptions = payload?.status_site;
       setFilterDropdownOptions('status_site', siteOptions);
     } catch (err) {
@@ -658,9 +658,10 @@ export function setupAdminPage(
       const du = getInputValue('du').trim();
       const lspValues = getFilterValues('lsp');
       const regionValues = getFilterValues('region');
+  const areaValues = getFilterValues('area');
       const planMosDateTokens = getFilterValues('plan_mos_date');
       const subconValues = getFilterValues('subcon');
-      const statusWhValues = getFilterValues('status_wh');
+      
       const statusSiteValues = getFilterValues('status_site');
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
@@ -684,9 +685,10 @@ export function setupAdminPage(
       setSearchParamValues(params, {
         lsp: lspValues,
         region: regionValues,
+  area: areaValues,
         date: planMosDateTokens,
         subcon: subconValues,
-        status_wh: statusWhValues,
+        
         status_site: statusSiteValues,
       });
     }
@@ -1272,8 +1274,8 @@ export function setupAdminPage(
     setFilterValue('plan_mos_date', '');
     setFilterValue('lsp', '');
     setFilterValue('region', '');
+  setFilterValue('area', '');
     setFilterValue('subcon', '');
-    setFilterValue('status_wh', '');
     setFilterValue('status_site', '');
     setInputValue('du', '');
     if (!preservePageSize) {

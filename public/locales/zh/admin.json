@@ -36,8 +36,7 @@
   "planMosDate.placeholder": "输入或选择",
   "subcon.label": "分包商",
   "subcon.placeholder": "输入或选择",
-  "statusWh.label": "仓库状态",
-  "statusWh.placeholder": "输入或选择",
+  
   "actions.label": "操作",
   "actions.query": "查询",
   "actions.reset": "重置",

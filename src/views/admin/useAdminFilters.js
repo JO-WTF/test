@@ -408,6 +408,7 @@ const createDatePickerState = () => {
 export function useAdminFilters() {
   const planMosDate = createSelectState();
   const region = createSelectState();
+  const area = createSelectState();
   const lsp = createSelectState();
   const subcon = createSelectState();
   const statusWh = createSelectState();
@@ -424,9 +425,9 @@ export function useAdminFilters() {
   const filterSelectBridges = {
     plan_mos_date: planMosDate.bridge,
     region: region.bridge,
+    area: area.bridge,
     lsp: lsp.bridge,
     subcon: subcon.bridge,
-    status_wh: statusWh.bridge,
     status_site: statusSite.bridge,
     status_delivery: statusDelivery.bridge,
     has_coordinate: hasCoordinate.bridge,
@@ -442,9 +443,9 @@ export function useAdminFilters() {
   const selectPlaceholderBindings = [
     { placeholderRef: planMosDate.placeholder, translationKey: 'planMosDate.placeholder' },
     { placeholderRef: region.placeholder, translationKey: 'region.placeholder' },
+    { placeholderRef: area.placeholder, translationKey: 'area.placeholder' },
     { placeholderRef: lsp.placeholder, translationKey: 'lsp.placeholder' },
     { placeholderRef: subcon.placeholder, translationKey: 'subcon.placeholder' },
-    { placeholderRef: statusWh.placeholder, translationKey: 'statusWh.placeholder' },
     {
       placeholderRef: statusSite.placeholder,
       translationKey: 'statusSitePlaceholder',
@@ -565,6 +566,10 @@ export function useAdminFilters() {
     regionSelectOptions: region.options,
     regionSelectValue: region.value,
     regionSelectPlaceholder: region.placeholder,
+    areaSelectOptions: area.options,
+    areaSelectValue: area.value,
+    areaSelectPlaceholder: area.placeholder,
+    areaSelectBridge: area.bridge,
     lspSelectOptions: lsp.options,
     lspSelectValue: lsp.value,
     lspSelectPlaceholder: lsp.placeholder,
@@ -573,10 +578,6 @@ export function useAdminFilters() {
     subconSelectValue: subcon.value,
     subconSelectPlaceholder: subcon.placeholder,
     subconSelectBridge: subcon.bridge,
-    statusWhSelectOptions: statusWh.options,
-    statusWhSelectValue: statusWh.value,
-    statusWhSelectPlaceholder: statusWh.placeholder,
-    statusWhSelectBridge: statusWh.bridge,
     statusSiteSelectOptions: statusSite.options,
     statusSiteSelectValue: statusSite.value,
     statusSiteSelectPlaceholder: statusSite.placeholder,

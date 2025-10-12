@@ -90,6 +90,21 @@
                 ></a-select>
               </div>
               <div class="field filter-field">
+                <label data-i18n="area.label">Area</label>
+                <a-select
+                  id="f-area"
+                  v-model:value="areaSelectValue"
+                  :options="areaSelectOptions"
+                  :placeholder="areaSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field">
                 <label data-i18n="lsp.label">LSP</label>
                 <a-select
                   id="f-lsp"
@@ -133,19 +148,6 @@
                 ></a-select>
               </div>
               <div class="field filter-field">
-                <label data-i18n="statusWh.label">仓库状态</label>
-                <a-select
-                  id="f-status-wh"
-                  v-model:value="statusWhSelectValue"
-                  :options="statusWhSelectOptions"
-                  :placeholder="statusWhSelectPlaceholder"
-                  :filter-option="filterSelectOption"
-                  mode="multiple"
-                  max-tag-count="responsive"
-                  allow-clear
-                  show-search
-                  style="width: 100%"
-                ></a-select>
               </div>
               <div class="field filter-field">
                 <label data-i18n="statusSiteLabel">站点状态</label>
@@ -673,7 +675,7 @@ const showMapViewButton = computed(
 let pageCleanup = () => {};
 let i18nInstance = null;
 
-const {
+  const {
   planMosDateSelectOptions,
   planMosDateSelectValue,
   planMosDatePlaceholder,
@@ -681,15 +683,15 @@ const {
   regionSelectOptions,
   regionSelectValue,
   regionSelectPlaceholder,
+  areaSelectOptions,
+  areaSelectValue,
+  areaSelectPlaceholder,
   lspSelectOptions,
   lspSelectValue,
   lspSelectPlaceholder,
   subconSelectOptions,
   subconSelectValue,
   subconSelectPlaceholder,
-  statusWhSelectOptions,
-  statusWhSelectValue,
-  statusWhSelectPlaceholder,
   statusSiteSelectOptions,
   statusSiteSelectValue,
   statusSiteSelectPlaceholder,
