@@ -1247,15 +1247,7 @@ export function setupAdminPage(
 
   // 授权模态框和事件处理已移至 authHandler.js
 
-  subscribeToFilterChange('status_delivery', (values) => {
-    const first = Array.isArray(values) && values.length ? values[0] : '';
-    const podValue = STATUS_DELIVERY_VALUES?.POD || 'POD';
-    if (first === podValue) {
-      const currentSite = getFilterValues('status_site');
-      if (!currentSite.includes(podValue)) {
-        setFilterValue('status_site', podValue);
-      }
-    }
+  subscribeToFilterChange('status_delivery', () => {
     statusCards.updateActiveState();
   });
 
