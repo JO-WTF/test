@@ -1,6 +1,6 @@
 {
   "statusDelivery.arrivedAtWh": "到达仓库",
-  "statusDelivery.transportingFromWh": "从仓库发出",
+  "statusDelivery.departedFromWh": "从仓库发出",
   "statusDelivery.arrivedAtXdPm": "到达XD/PM",
   "statusDelivery.transportingFromXdPm": "从XD/PM发出",
   "statusDelivery.arrivedAtSite": "到达站点",

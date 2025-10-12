@@ -935,7 +935,7 @@ const shouldShowStatusDeliveryMismatch = (statusSiteRaw, statusDeliveryRaw, norm
 
   if (site === STATUS_DELIVERY_VALUES.ON_THE_WAY) {
     const allowedTransportStatusDelivery = [
-      STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_WH,
+      STATUS_DELIVERY_VALUES.DEPARTED_FROM_WH,
       STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_XD_PM,
     ]
       .map((value) => normalizeFn(value))

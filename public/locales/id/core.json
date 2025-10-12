@@ -1,6 +1,6 @@
 {
   "statusDelivery.arrivedAtWh": "Tiba di WH",
-  "statusDelivery.transportingFromWh": "Dikirim dari WH",
+  "statusDelivery.departedFromWh": "Dikirim dari WH",
   "statusDelivery.arrivedAtXdPm": "Tiba di XD/PM",
   "statusDelivery.transportingFromXdPm": "Dikirim dari XD/PM",
   "statusDelivery.arrivedAtSite": "Tiba di Site",

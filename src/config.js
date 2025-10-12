@@ -5,9 +5,9 @@ const STATUS_DELIVERY_DEFINITIONS = [
     translationKey: 'statusDelivery.arrivedAtWh',
   },
   {
-    key: 'TRANSPORTING_FROM_WH',
-    value: 'TRANSPORTING FROM WH',
-    translationKey: 'statusDelivery.transportingFromWh',
+    key: 'DEPARTED_FROM_WH',
+    value: 'DEPARTED FROM WH',
+    translationKey: 'statusDelivery.departedFromWh',
   },
   {
     key: 'ARRIVED_AT_SITE',
@@ -39,13 +39,13 @@ const STATUS_SITE_DEFINITIONS = [
   },
   {
     key: 'PERMIT_ISSUE',
-    value: 'Permit issue',
+    value: 'Permit Issue',
     translationKey: 'statusSite.permitIssue',
   },
   {
-    key: 'COMMON_CASE_ISSUE',
-    value: 'Common case issue',
-    translationKey: 'statusSite.commonCaseIssue',
+    key: 'COMCASE_ISSUE',
+    value: 'Comcase Issue',
+    translationKey: 'statusSite.comcaseIssue',
   },
   {
     key: 'REPLAN_MOS',
