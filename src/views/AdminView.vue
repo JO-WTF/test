@@ -349,7 +349,7 @@
                   :data-dn-number="record.dnNumber"
                   @click="copyDnNumber(record)"
                 >
-                  {{ record.dnNumber || '—' }}
+                  {{ record.dnNumber || '-' }}
                 </button>
                 <div class="summary-hint summary-du-id">
                   <template v-if="record.duId">
@@ -369,16 +369,16 @@
             </template>
             <template v-else-if="column.key === 'regionPlan'">
               <div class="region-plan-cell">
-                <span class="region-plan-cell__region">{{ record.region || '—' }}</span>
-                <span class="region-plan-cell__plan">{{ record.planMosDate || '—' }}</span>
+                <span class="region-plan-cell__region">{{ record.region || '-' }}</span>
+                <span class="region-plan-cell__plan">{{ record.planMosDate || '-' }}</span>
               </div>
             </template>
             <template v-else-if="column.key === 'lsp'">
-              <span class="summary-lsp-text">{{ record.lsp || '—' }}</span>
+              <span class="summary-lsp-text">{{ record.lsp || '-' }}</span>
             </template>
             <template v-else-if="column.key === 'statusDelivery'">
               <div class="status-cell-wrapper">
-                <span class="status-text">{{ record.statusDeliveryDisplay || '—' }}</span>
+                <span class="status-text">{{ record.statusDeliveryDisplay || '-' }}</span>
                 <template v-if="record.statusMismatch">
                   <Tooltip :title="record.statusMismatchTooltip">
                     <span class="status-mismatch" role="img" aria-hidden="false">!</span>
@@ -387,14 +387,14 @@
               </div>
             </template>
             <template v-else-if="column.key === 'statusSite'">
-              <span>{{ record.statusSiteDisplay || '—' }}</span>
+              <span>{{ record.statusSiteDisplay || '-' }}</span>
             </template>
             <template v-else-if="column.key === 'remark'">
-              <span class="summary-remark-text">{{ record.remark || '—' }}</span>
+              <span class="summary-remark-text">{{ record.remark || '-' }}</span>
             </template>
             <template v-else-if="column.key === 'latestRecordCreatedAt'">
               <div class="latest-record-wrapper">
-                <span class="latest-record-text">{{ record.latestRecordCreatedAt || '—' }}</span>
+                <span class="latest-record-text">{{ record.latestRecordCreatedAt || '-' }}</span>
                 <template v-if="record.hasUpdateBadge">
                   <button
                     type="button"

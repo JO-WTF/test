@@ -222,6 +222,7 @@ body.admin-theme {
 }
 .admin-page .status-card__label {
   font-size: 14px;
+  font-weight: 800;
   color: var(--ant-text-secondary);
   line-height: 1.4;
 }
@@ -365,11 +366,9 @@ body.admin-theme {
 .admin-page tr.summary-row .summary-hint {
   font-size: 11px;
   color: var(--ant-text-muted);
-  margin-top: 4px;
 }
 .admin-page .summary-hint.summary-du-id {
   display: block;
-  margin-top: 2px;
   color: var(--ant-text-secondary);
 }
 .admin-page .summary-du-id-value {
@@ -436,15 +435,14 @@ body.admin-theme {
 }
 .admin-page .latest-record-wrapper {
   display: inline-flex;
-  flex-direction: row;
   align-items: flex-start;
   gap: 6px;
   justify-content: center;
 }
-.admin-page .latest-record-text {
+.latest-record-text {
   display: inline-block;
   line-height: 1.3;
-  font-size: 12px;
+  max-width: 60px;
   color: var(--ant-text-secondary);
 }
 .admin-page .update-count-badge:hover {
@@ -461,7 +459,7 @@ body.admin-theme {
 .admin-page .checkin-cell,
 .admin-page .actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 12px;
   justify-content: center;
   align-items: center;
@@ -511,7 +509,6 @@ body.admin-theme {
 }
 .admin-page .region-plan-cell .region-plan-cell__plan {
   display: block;
-  margin-top: 4px;
   font-size: 12px;
   color: var(--ant-text-muted);
 }
