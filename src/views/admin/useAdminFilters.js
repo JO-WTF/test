@@ -411,7 +411,6 @@ export function useAdminFilters() {
   const area = createSelectState();
   const lsp = createSelectState();
   const subcon = createSelectState();
-  const statusWh = createSelectState();
   const statusSite = createSelectState();
   const statusDelivery = createSingleSelectState('Any');
   const hasCoordinate = createSingleSelectState('Any');

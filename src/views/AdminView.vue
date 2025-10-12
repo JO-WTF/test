@@ -90,7 +90,7 @@
                 ></a-select>
               </div>
               <div class="field filter-field">
-                <label data-i18n="area.label">Area</label>
+                <label>Area</label>
                 <a-select
                   id="f-area"
                   v-model:value="areaSelectValue"
@@ -146,8 +146,6 @@
                   show-search
                   style="width: 100%"
                 ></a-select>
-              </div>
-              <div class="field filter-field">
               </div>
               <div class="field filter-field">
                 <label data-i18n="statusSiteLabel">站点状态</label>
