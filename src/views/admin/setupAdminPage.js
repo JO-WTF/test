@@ -789,7 +789,12 @@ export function setupAdminPage(
         pageSize: q.page_size,
       });
     } finally {
-      // no-op here because refreshCounts is invoked when stats exist above; keep finally for parity
+      // Ensure any loading indicator is cleared regardless of outcome.
+      try {
+        tableBridge?.setLoading?.(false);
+      } catch (err) {
+        console.error('Failed to clear table loading state', err);
+      }
     }
   }
 
