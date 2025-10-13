@@ -2,7 +2,7 @@
   "statusDelivery.arrivedAtWh": "Arrived at WH",
   "statusDelivery.departedFromWh": "Departed From WH",
   "statusDelivery.arrivedAtXdPm": "Arrived at XD/PM",
-  "statusDelivery.transportingFromXdPm": "Transporting from XD/PM",
+  "statusDelivery.departedFromXdPm": "Departed from XD/PM",
   "statusDelivery.arrivedAtSite": "Arrived at Site",
   "statusDelivery.pod": "POD",
   "statusDelivery.inTransit": "On the way",

@@ -2,7 +2,7 @@
   "statusDelivery.arrivedAtWh": "到达仓库",
   "statusDelivery.departedFromWh": "从仓库发出",
   "statusDelivery.arrivedAtXdPm": "到达XD/PM",
-  "statusDelivery.transportingFromXdPm": "从XD/PM发出",
+  "statusDelivery.departedFromXdPm": "从XD/PM发出",
   "statusDelivery.arrivedAtSite": "到达站点",
   "statusDelivery.pod": "POD",
   "statusDelivery.inTransit": "开始运输",

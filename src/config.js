@@ -10,6 +10,16 @@ const STATUS_DELIVERY_DEFINITIONS = [
     translationKey: 'statusDelivery.departedFromWh',
   },
   {
+    key: 'ARRIVED_AT_XD_PM',
+    value: 'ARRIVED AT XD/PM',
+    translationKey: 'statusDelivery.arrivedAtXdPm',
+  },
+  {
+    key: 'DEPARTED_FROM_XD_PM',
+    value: 'DEPARTED FROM XD/PM',
+    translationKey: 'statusDelivery.departedFromXdPm',
+  },
+  {
     key: 'ARRIVED_AT_SITE',
     value: 'ARRIVED AT SITE',
     translationKey: 'statusDelivery.arrivedAtSite',
