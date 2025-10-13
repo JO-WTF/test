@@ -9,7 +9,7 @@
   "restart": "Restart",
   "result": "Result",
   "updateStatusDelivery": "Update Delivery Status",
-  "updateStatusSite": "Update Site Status",
+  "updateStatusSite": "Update Site Status (optional)",
   "choose": "Please select",
   "remark": "Remark",
   "remarkPlaceholder": "Optional notes…",

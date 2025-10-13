@@ -547,8 +547,8 @@ export function setupAdminPage(
 
     const keepValue = '';
     const keepLabel = isDelivery
-      ? (i18n?.t('statusDelivery.keep') || '（不修改）')
-      : (i18n?.t('statusSite.keep') || '（不修改）');
+      ? (i18n?.t('modal.statusDelivery.keep') || '（不修改）')
+      : (i18n?.t('modal.statusSite.keep') || '（不修改）');
 
     // 默认选择“不修改”
     const createOption = (value, label, isSelected = false) => {

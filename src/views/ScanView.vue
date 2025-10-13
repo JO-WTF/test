@@ -73,8 +73,8 @@
               </select>
             </div>
             <div>
-              <label for="dnStatusSite" style="margin-left:12px">{{ t('updateStatusSite') }}：</label>
-              <select id="dnStatusSite" class="status" v-model="state.dnStatusSite" style="margin-left:6px">
+              <label for="dnStatusSite">{{ t('updateStatusSite') }}：</label>
+              <select id="dnStatusSite" class="status" v-model="state.dnStatusSite">
                 <option value="" disabled>{{ t('choose') }}</option>
                 <option v-for="opt in scanStatusSiteOptions" :key="opt" :value="opt">
                   {{ opt }}

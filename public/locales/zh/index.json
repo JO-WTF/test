@@ -9,7 +9,7 @@
   "restart": "重新开始",
   "result": "识别结果",
   "updateStatusDelivery": "更新配送状态",
-  "updateStatusSite": "更新站点状态",
+  "updateStatusSite": "更新站点状态（可选）",
   "choose": "请选择",
   "remark": "备注信息",
   "remarkPlaceholder": "可填写额外说明…",

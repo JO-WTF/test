@@ -9,7 +9,7 @@
   "restart": "Mulai Ulang",
   "result": "Hasil",
   "updateStatusDelivery": "Perbarui Status Pengiriman",
-  "updateStatusSite": "Perbarui Status Site",
+  "updateStatusSite": "Perbarui Status Site (opsional)",
   "choose": "Silakan pilih",
   "remark": "Catatan",
   "remarkPlaceholder": "Tambahkan keterangan…",
