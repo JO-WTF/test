@@ -763,6 +763,11 @@ body.admin-theme {
 .admin-page .du-col {
   display: flex;
   flex-direction: column;
+  max-height: 150px;
+  overflow: auto;
+}
+#f-dn {
+  min-height: 60px!important;
 }
 .admin-page .du-col textarea {
   flex: 1;
@@ -807,7 +812,6 @@ body.admin-theme {
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
-  margin-bottom: 12px;
 }
 .admin-page .status-switch {
   display: inline-flex;
@@ -1348,4 +1352,11 @@ body.admin-theme {
 }
 .admin-page .history-photo-thumbnail:hover {
   transform: scale(1.05);
+}
+
+/* Disable row hover styling for summary rows (visual only) */
+.admin-page tr.summary-row.expandable:hover,
+.admin-page tr.summary-row.status-mismatch-row.expandable:hover {
+  background: transparent !important;
+  box-shadow: none !important;
 }

@@ -4,7 +4,7 @@
   "table.statusSite": "站点状态",
   "title": "DN 提交记录管理",
   "dn.label": "DN 号（支持多行/逗号/空格分隔；多于1个则批量查询）",
-  "dn.placeholder": "示例：\nDN123...\nDN456...",
+  "dn.placeholder": "示例：\nDN123...",
   "dn.tip": "合法的DN number为 3-5位大写字母+数字，总长为14-18位。",
   "statusDelivery.label": "配送状态",
   "statusDelivery.filter.any": "(任意)",

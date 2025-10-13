@@ -49,7 +49,7 @@
                 id="f-dn"
                 class="admin-textarea"
                 data-i18n-placeholder="dn.placeholder"
-                placeholder="示例：&#10;DN123...&#10;DN456..."
+                placeholder="示例：&#10;DN123..."
               ></textarea>
             </div>
             <div class="muted" style="margin-top: 6px" data-i18n="dn.tip">
@@ -390,11 +390,23 @@
               <span>{{ record.statusSiteDisplay || '-' }}</span>
             </template>
             <template v-else-if="column.key === 'remark'">
-              <span class="summary-remark-text">{{ record.remark || '-' }}</span>
+              <!-- Inject data-label so CSS can display column name via ::before on mobile -->
+              <span
+                class="summary-remark-text"
+                :data-label="translate('table.remark', '备注') || '备注'"
+              >
+                {{ record.remark || '-' }}
+              </span>
             </template>
             <template v-else-if="column.key === 'latestRecordCreatedAt'">
               <div class="latest-record-wrapper">
-                <span class="latest-record-text">{{ record.latestRecordCreatedAt || '-' }}</span>
+                <!-- add data-label so mobile pseudo-element can show the column name inline -->
+                <span
+                  class="latest-record-text"
+                  :data-label="translate('table.latestRecordCreatedAt', '更新时间') || '更新时间'"
+                >
+                  {{ record.latestRecordCreatedAt || '-' }}
+                </span>
                 <template v-if="record.hasUpdateBadge">
                   <button
                     type="button"
