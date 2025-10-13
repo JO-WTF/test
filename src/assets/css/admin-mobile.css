@@ -71,7 +71,7 @@
     border-inline-start: 0px!important;
   }
   .ant-table-container >.ant-table-header >table {
-    border-top: 0px;
+    border-top: none;
   }
   thead {
     display: none; /* hide header */
@@ -82,6 +82,7 @@
     margin: 0 0 12px 0;
     padding: 6px;
     background: #fff;
+    border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
     /* border: 1px solid #e6edf6; */
@@ -239,5 +240,34 @@
   .admin-page .ant-table-tbody > tr > td:hover {
     background: transparent !important;
     box-shadow: none !important;
+  }
+
+  /* Ensure expanded-row's single cell occupies full width on narrow screens
+     Ant adds a tr.ant-table-expanded-row with one td spanning columns. In our
+     mobile card layout we want that td to behave as a block and fill the card
+     width to avoid layout/overflow issues. */
+  .admin-page .ant-table-expanded-row {
+    display: block; /* treat expanded row as a block-level row */
+  }
+  .admin-page .ant-table-expanded-row > td {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    padding: 8px 10px !important;
+    border-bottom: none !important;
+    background: transparent !important;
+  }
+
+  /* Make sure detail content inside expanded cell also fills width */
+  .admin-page .ant-table-expanded-row > td .detail-content,
+  .admin-page .ant-table-expanded-row > td .detail-grid {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .admin-page .detail-row .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px;
   }
 }
