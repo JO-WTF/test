@@ -345,8 +345,8 @@ body.admin-theme {
   gap: 4px;
 }
 .admin-page tr.summary-row .summary-primary {
-  font-weight: 600;
-  color: var(--ant-text-primary);
+  font-weight: 700!important;
+  color: var(--ant-primary);
   cursor: pointer;
   background: none;
   border: none;
@@ -358,8 +358,8 @@ body.admin-theme {
   word-break: break-all;
   white-space: normal;
 }
-.admin-page tr.summary-row .summary-primary:focus-visible {
-  outline: 2px solid var(--ant-focus-ring);
+.admin-page tr.summary-row .summary-primary:hover {
+  outline: 1px dashed var(--ant-focus-ring);
   outline-offset: 2px;
 }
 .admin-page tr.summary-row .summary-hint {
