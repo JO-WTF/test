@@ -97,6 +97,22 @@
                 {{ t(option.filterLabelKey) }}
               </option>
             </select>
+            <label for="dnStatusSite" style="margin-left:12px">{{ t('modal.status_site.label') }}：</label>
+            <select
+              id="dnStatusSite"
+              class="status"
+              v-model="state.dnStatusSite"
+              style="margin-left:6px"
+            >
+              <option value="" disabled>{{ t('modal.status_site.keep') }}</option>
+              <option
+                v-for="opt in scanStatusSiteOptions"
+                :key="opt"
+                :value="opt"
+              >
+                {{ opt }}
+              </option>
+            </select>
           </div>
           <div class="hint" v-if="state.needsStatusHint">
             {{ t('needSelectStatus') }}
@@ -199,7 +215,7 @@ import { useDeviceDetection } from '../composables/useDeviceDetection';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
 import { isValidDn } from '../utils/dn.js';
-import { STATUS_DELIVERY_ITEMS } from '../config.js';
+import { STATUS_DELIVERY_ITEMS, STATUS_DELIVERY_VALUES, STATUS_SITE_ORDERED_LIST } from '../config.js';
 import { getCookie } from '../utils/cookie.js';
 
 const LICENSE_KEY = getDynamsoftLicenseKey();
@@ -238,6 +254,7 @@ const state = reactive({
   location: null,
   hasDN: false,
   dnNumber: '',
+  dnStatusSite: '',
   dnStatusDelivery: '',
   remark: '',
   photoFile: null,
@@ -299,6 +316,11 @@ const submitSummaryRows = computed(() => {
         label: t('statusLabel'),
         value: formatResultText(statusLabel(view.status_delivery)),
       },
+    {
+      key: 'status_site',
+      label: t('modal.status_site.label'),
+      value: formatResultText(view.status_site),
+    },
     {
       key: 'remark',
       label: t('remarkLabel'),
@@ -490,7 +512,10 @@ const clearPhoto = () => {
   state.photoPreview = null;
 };
 
-const scanStatusDeliveryOptions = STATUS_DELIVERY_ITEMS || [];
+const scanStatusDeliveryOptions = (STATUS_DELIVERY_ITEMS || []).filter(
+  (item) => item && item.value !== (STATUS_DELIVERY_VALUES && STATUS_DELIVERY_VALUES.NO_STATUS)
+);
+const scanStatusSiteOptions = STATUS_SITE_ORDERED_LIST || [];
 const scanStatusMetaMap = new Map(scanStatusDeliveryOptions.map((item) => [item.value, item]));
 
 const STATUS_TRANSLATION_MAP = scanStatusDeliveryOptions.reduce(
@@ -594,6 +619,7 @@ const submitUpdate = async () => {
         phoneNumber: currentPhone,
         dnNumber: state.dnNumber,
       status_delivery: state.dnStatusDelivery,
+        status_site: state.dnStatusSite,
         remark: state.remark,
         photo: state.photoPreview || null,
         lng: state.location?.lng,
@@ -609,6 +635,7 @@ const submitUpdate = async () => {
     const fd = new FormData();
     fd.append('dnNumber', state.dnNumber);
   fd.append('status_delivery', state.dnStatusDelivery ?? '');
+    fd.append('status_site', state.dnStatusSite ?? '');
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
@@ -641,6 +668,7 @@ const submitUpdate = async () => {
       phoneNumber: currentPhone,
       dnNumber: state.dnNumber,
   status_delivery: state.dnStatusDelivery,
+        status_site: state.dnStatusSite,
       remark: state.remark,
       photo: state.photoPreview || null,
       lng: state.location?.lng,
