@@ -40,6 +40,8 @@ export const TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS = [
   { status_delivery: "Total", label: "Total" },
   { status_delivery: STATUS_DELIVERY_VALUES.ARRIVED_AT_WH, label: "Arrived at WH" },
   { status_delivery: STATUS_DELIVERY_VALUES.DEPARTED_FROM_WH, label: "Departed from WH" },
+  { status_delivery: STATUS_DELIVERY_VALUES.ARRIVED_AT_XD_PM, label: "Arrived at XD/PM" },
+  { status_delivery: STATUS_DELIVERY_VALUES.DEPARTED_FROM_XD_PM, label: "Departed from XD/PM" },
   { status_delivery: STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE, label: "Arrived at Site" },
   { status_delivery: STATUS_DELIVERY_VALUES.POD, label: "POD" },
   { status_delivery: STATUS_DELIVERY_VALUES.NO_STATUS, label: "No Status" },
