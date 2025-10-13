@@ -32,16 +32,12 @@
   }
 
   .admin-page .status-card {
-    padding: 8px;
+    padding: 8px 2px;
     min-height: 50px;
   }
 
   .admin-page .status-card__count {
     font-size: 20px;
-  }
-
-  .admin-page .status-card__label {
-    font-size: 13px;
   }
 
   .admin-page table,
