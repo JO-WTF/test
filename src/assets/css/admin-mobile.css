@@ -66,6 +66,22 @@
 
 /* Mobile-specific styles for devices with width <= 768px */
 @media (max-width: 768px) {
+  .lsp-summary-card-wrapper {
+    padding: 4px 6px;
+  }
+  .admin-page .lsp-summary-card-container {
+    gap: 4px;
+  }
+  .admin-page .lsp-summary-card {
+    padding: 3px 4px;
+  }
+  .admin-page .lsp-summary-card__label {
+    font-weight: 500;
+  }
+  .admin-page .lsp-summary-card {
+    font-size: 10px;
+    line-height: 1.2;
+  }
   /* convert table structural elements to block but keep td as flex items */
   .ant-table-container {
     border-inline-start: 0px!important;
@@ -77,16 +93,37 @@
     display: none; /* hide header */
   }
 
-  tbody tr {
+  /* Make the table and its body behave as block elements on mobile so rows
+     can be rendered as flex cards. Without this some browsers (Chrome) keep
+     table layout semantics which prevents tr from stretching to 100%. */
+  .ant-table-container table,
+  .ant-table-container .ant-table-body table,
+  .admin-page table {
     display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .ant-table-container .ant-table-body,
+  .ant-table-container .ant-table-tbody,
+  .admin-page tbody {
+    display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  tbody tr {
+    /* render each row as a flex card and force it to occupy full width */
+    display: flex;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
     margin: 0 0 12px 0;
     padding: 6px;
     background: #fff;
     border: 1px solid var(--ant-border-subtle);
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
-    /* border: 1px solid #e6edf6; */
-    display: flex; /* use flex layout inside each card */
     flex-wrap: wrap;
     gap: 8px;
   }
