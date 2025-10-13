@@ -58,7 +58,7 @@
           </div>
 
           <div class="rhs">
-            <div class="filters-grid" id="filters-grid">
+            <div class="filters-grid" id="filters-grid" :class="{ collapsed: !showFilters }" :aria-hidden="String(!showFilters)">
               <div class="field filter-field">
                 <label data-i18n="planMosDate.label">Plan MOS Date</label>
                 <a-select
@@ -285,9 +285,10 @@
               id="filters-toggle"
               class="filters-toggle-btn"
               aria-controls="filters-grid"
-              data-i18n="filters.toggle.show"
+              :aria-expanded="String(!!showFilters)"
+              @click.prevent="showFilters = !showFilters"
             >
-              显示筛选器
+              {{ showFilters ? translate('filters.toggle.hide') || '隐藏筛选器' : translate('filters.toggle.show') || '显示筛选器' }}
             </button>
           </div>
         </div>
@@ -1332,6 +1333,8 @@ const filterSelectOption = (input, option) => {
 
 const showOnlyNonEmptyStatus = ref(false);
 const showMissingInGs = ref(false);
+  // Controls visibility of the filters grid on small screens (default hidden)
+  const showFilters = ref(false);
 let syncingFromStatusDeliverySelect = false;
 let syncingFromSwitch = false;
 

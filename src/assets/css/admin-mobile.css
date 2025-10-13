@@ -242,6 +242,53 @@
     box-shadow: none !important;
   }
 
+  /* Mobile filters toggle: show a full-width ghost button between filters-grid and actions
+     The template binds the button to `showFilters`. By default keep filters visible; the
+     button toggles it. */
+  .admin-page .filters-toggle-btn {
+    display: block !important;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
+    padding: 10px 12px;
+    text-align: center;
+    background: transparent;
+    border: 1px solid var(--ant-border-subtle);
+    color: var(--ant-primary);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  /* If filters are hidden (v-show=false) the filters-grid will be display:none via Vue,
+     but ensure visual collapse by applying helper class if needed. */
+  .admin-page .filters-grid[hidden],
+  .admin-page .filters-grid[style*="display: none"] {
+    display: none !important;
+  }
+
+  /* Animated collapse/expand for filters-grid (only on mobile). We use
+     max-height transition and opacity for a smooth effect. The .collapsed
+     class is toggled from Vue. */
+  .admin-page .filters-grid {
+    transition: max-height 240ms ease, opacity 200ms ease, transform 200ms ease;
+    overflow: hidden;
+    max-height: 999px; /* large by default when expanded */
+    opacity: 1;
+    transform-origin: top center;
+  }
+
+  .admin-page .filters-grid.collapsed {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    transform: translateY(-6px);
+    pointer-events: none;
+  }
+
+  /* Slight transition for the toggle button when switching */
+  .admin-page .filters-toggle-btn {
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+
   /* Ensure expanded-row's single cell occupies full width on narrow screens
      Ant adds a tr.ant-table-expanded-row with one td spanning columns. In our
      mobile card layout we want that td to behave as a block and fill the card
