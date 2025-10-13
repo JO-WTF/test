@@ -2,7 +2,9 @@
   <div class="wrap scan-view">
     <LanguageSwitcher v-model="state.lang" @change="setLang" />
 
-    <div><h1>{{ t('scanTitle') }}</h1></div>
+    <div>
+      <h1>{{ t('scanTitle') }}</h1>
+    </div>
 
     <section id="container" class="scan-area container" v-show="!state.hasDN">
       <div id="div-ui-container" style="width: 100%; height: 100%">
@@ -20,42 +22,22 @@
     <div class="did-input card" style="margin-top: 12px">
       <label for="dnInput">{{ t('didLabel') }}</label>
       <div class="did-row" style="display: flex; align-items: center; gap: 5px">
-        <span
-          id="error-icon"
-          v-if="!state.isValid"
-          style="color: red; margin-left: 10px; font-size: 20px"
-        >
+        <span id="error-icon" v-if="!state.isValid" style="color: red; margin-left: 10px; font-size: 20px">
           ❌
         </span>
-        <span
-          id="success-icon"
-          v-if="state.isValid"
-          style="color: green; margin-left: 10px; font-size: 20px"
-        >
+        <span id="success-icon" v-if="state.isValid" style="color: green; margin-left: 10px; font-size: 20px">
           ✅
         </span>
 
-        <input
-          id="dnInput"
-          ref="dnInput"
-          class="mono"
-          maxlength="20"
-          v-model="state.dnNumber"
-          style="flex: 1"
-          @input="onDNInput"
-        />
+        <input id="dnInput" ref="dnInput" class="mono" maxlength="20" v-model="state.dnNumber" style="flex: 1"
+          @input="onDNInput" />
 
         <button class="okBtn" type="button" @click="onOkClick">OK</button>
       </div>
     </div>
 
-    <button
-      class="tag"
-      v-if="torchTagVisible"
-      @click="toggleTorch"
-      :aria-pressed="state.torchOn"
-      style="cursor: pointer; user-select: none"
-    >
+    <button class="tag" v-if="torchTagVisible" @click="toggleTorch" :aria-pressed="state.torchOn"
+      style="cursor: pointer; user-select: none">
       {{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b>
     </button>
 
@@ -79,40 +61,26 @@
       <template v-if="state.isValid">
         <div class="status-box" v-show="!state.submitOk">
           <div class="status-row" :class="{ shake: state.needsStatusShake }">
-            <label for="dnStatusDelivery">{{ t('updateStatus') }}：</label>
-            <select
-              id="dnStatusDelivery"
-              class="status"
-              :class="{ invalid: state.needsStatusHint }"
-              v-model="state.dnStatusDelivery"
-              aria-invalid="true"
-              @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }"
-            >
-              <option value="" disabled>{{ t('choose') }}</option>
-              <option
-                v-for="option in scanStatusDeliveryOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ t(option.filterLabelKey) }}
-              </option>
-            </select>
-            <label for="dnStatusSite" style="margin-left:12px">{{ t('modal.status_site.label') }}：</label>
-            <select
-              id="dnStatusSite"
-              class="status"
-              v-model="state.dnStatusSite"
-              style="margin-left:6px"
-            >
-              <option value="" disabled>{{ t('modal.status_site.keep') }}</option>
-              <option
-                v-for="opt in scanStatusSiteOptions"
-                :key="opt"
-                :value="opt"
-              >
-                {{ opt }}
-              </option>
-            </select>
+            <div>
+              <label for="dnStatusDelivery">{{ t('updateStatusDelivery') }}：</label>
+              <select id="dnStatusDelivery" class="status" :class="{ invalid: state.needsStatusHint }"
+                v-model="state.dnStatusDelivery" aria-invalid="true"
+                @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }">
+                <option value="" disabled>{{ t('choose') }}</option>
+                <option v-for="option in scanStatusDeliveryOptions" :key="option.value" :value="option.value">
+                  {{ t(option.filterLabelKey) }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label for="dnStatusSite" style="margin-left:12px">{{ t('updateStatusSite') }}：</label>
+              <select id="dnStatusSite" class="status" v-model="state.dnStatusSite" style="margin-left:6px">
+                <option value="" disabled>{{ t('choose') }}</option>
+                <option v-for="opt in scanStatusSiteOptions" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+            </div>
           </div>
           <div class="hint" v-if="state.needsStatusHint">
             {{ t('needSelectStatus') }}
@@ -126,19 +94,9 @@
             <div class="col">
               <label style="display: block; margin-bottom: 6px">{{ t('uploadPhoto') }}</label>
               <div class="uploader">
-                <img
-                  v-if="state.photoPreview"
-                  :src="state.photoPreview"
-                  alt="preview"
-                  class="thumb"
-                />
+                <img v-if="state.photoPreview" :src="state.photoPreview" alt="preview" class="thumb" />
                 <div style="display: flex; flex-direction: column; gap: 8px">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    @change="onPickPhoto"
-                  />
+                  <input type="file" accept="image/*" capture="environment" @change="onPickPhoto" />
                   <small class="muted">{{ t('photoTip') }}</small>
                   <button v-if="state.photoFile" class="ghost" @click="clearPhoto">
                     {{ t('removePhoto') }}
@@ -148,27 +106,20 @@
             </div>
           </div>
 
-          <button
-            class="primary"
-            style="align-self: flex-start"
-            @click="submitUpdate"
-            :disabled="!state.isValid || state.submitting"
-          >
+          <button class="primary" style="align-self: flex-start" @click="submitUpdate"
+            :disabled="!state.isValid || state.submitting">
             {{ state.submitting ? t('submitting') : t('submit') }}
           </button>
 
           <div v-if="state.submitting">
             <div class="progress" :class="{ indeterminate: !state.photoFile }">
-              <div
-                class="progress-bar"
-                :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"
-              ></div>
+              <div class="progress-bar" :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"></div>
             </div>
             <div class="progress-text">
               {{
-                state.photoFile
-                  ? `${t('uploadingPct')} ${state.uploadPct}%`
-                  : t('submittingDots')
+              state.photoFile
+              ? `${t('uploadingPct')} ${state.uploadPct}%`
+              : t('submittingDots')
               }}
             </div>
           </div>
@@ -180,11 +131,7 @@
 
         <div class="result-box" v-if="state.showResult">
           <h3>{{ t('submittedTitle') }}</h3>
-          <div
-            class="result-row"
-            v-for="row in submitSummaryRows"
-            :key="row.key"
-          >
+          <div class="result-row" v-for="row in submitSummaryRows" :key="row.key">
             <span class="k">{{ row.label }}:</span>
             <span class="v" :class="{ mono: row.mono }">{{ row.value }}</span>
           </div>
@@ -318,7 +265,7 @@ const submitSummaryRows = computed(() => {
       },
     {
       key: 'status_site',
-      label: t('modal.status_site.label'),
+      label: t('statusSiteLabel'),
       value: formatResultText(view.status_site),
     },
     {
