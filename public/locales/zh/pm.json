@@ -1,0 +1,12 @@
+{
+  "pm.title": "创建 PM",
+  "pm.search.placeholder": "输入地址后回车或点击搜索",
+  "pm.search.button": "搜索",
+  "pm.use_current": "使用当前位置",
+  "pm.address.hint": "请确认地图中展示的Pool Mover 位置正确。如果位置不准确，点击地址，输入正确的位置并搜索。",
+  "pm.name.label": "PM 名称",
+  "pm.name.placeholder": "输入 PM 名称",
+  "pm.confirm": "确认",
+  "pm.create.success": "创建成功",
+  "pm.create.fail": "创建失败"
+}

@@ -1,0 +1,12 @@
+{
+  "pm.title": "Buat PM",
+  "pm.search.placeholder": "Ketik alamat lalu tekan Enter atau klik Cari",
+  "pm.search.button": "Cari",
+  "pm.use_current": "Gunakan lokasi saat ini sebagai PM",
+  "pm.address.hint": "Pastikan lokasi Pool Mover yang ditampilkan di peta benar. Jika lokasi tidak akurat, klik alamat, masukkan lokasi yang benar lalu cari.",
+  "pm.name.label": "Nama PM",
+  "pm.name.placeholder": "Masukkan nama PM",
+  "pm.confirm": "Konfirmasi",
+  "pm.create.success": "Berhasil dibuat",
+  "pm.create.fail": "Gagal membuat"
+}
