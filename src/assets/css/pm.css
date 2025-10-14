@@ -16,6 +16,7 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --pm-control-height: 44px;
 }
 
 /* ==================== Base Layout ==================== */
@@ -24,20 +25,15 @@
   margin: 0 auto;
   padding: 24px 16px 40px;
   min-height: 100vh;
-  background: var(--bg) !important;
+  background: var(--bg);
   color: var(--fg);
-}
-
-/* unified control height for inputs/buttons in PM view */
-.wrap.pm-view {
-  --pm-control-height: 44px;
 }
 
 /* ==================== Card Styles ==================== */
 .pm-view .pm-card.ant-card {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 16px !important;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow-md);
   transition: box-shadow 0.3s ease;
@@ -48,13 +44,13 @@
 }
 
 .pm-view .pm-card.ant-card .ant-card-head {
-  background: var(--card-bg) !important;
-  border-bottom: 1px solid var(--border) !important;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
   padding: 20px 24px;
 }
 
 .pm-view .pm-card.ant-card .ant-card-head-title {
-  color: var(--fg) !important;
+  color: var(--fg);
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -62,7 +58,7 @@
 
 .pm-view .pm-card.ant-card .ant-card-body {
   padding: 24px;
-  background: var(--card-bg) !important;
+  background: var(--card-bg);
 }
 
 /* ==================== Map Container ==================== */
@@ -72,101 +68,52 @@
   gap: 12px;
 }
 
-/* Search Bar */
 .pm-view .search-bar {
   display: flex;
   gap: 8px;
-  width: 100%;
   align-items: center;
 }
 
 .pm-view .search-input {
   flex: 1;
-  min-width: 0; /* Prevents flex item from overflowing */
+  min-width: 0;
 }
 
 .pm-view .search-button {
   flex-shrink: 0;
 }
 
-/* Ensure address-edit (which reuses search-bar) forces consistent heights
-   and alignment between Ant input wrappers and buttons. This avoids the
-   input and button appearing vertically misaligned across browsers. */
+/* Address Edit Controls */
 .pm-view .address-edit.search-bar {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  align-items: center; /* vertically center elements on the same row */
+  flex-direction: row;
+  flex-wrap: nowrap;
 }
 
 .pm-view .address-edit.search-bar .ant-input-affix-wrapper {
-  flex: 1 1 auto;
-  min-width: 0;
-  box-sizing: border-box;
-  height: var(--pm-control-height) !important; /* fixed height */
+  flex: 1;
+  min-width: 80px;
+  height: var(--pm-control-height);
   display: flex;
   align-items: center;
 }
 
 .pm-view .address-edit.search-bar input.ant-input {
-  height: 100% !important;
-  padding: 0 12px !important;
-  box-sizing: border-box;
-  border: none !important; /* inner border removed */
-  background: transparent !important;
+  height: 100%;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
 }
 
-.pm-view .address-edit.search-bar .ant-btn,
-.pm-view .address-edit.search-bar .ant-btn > span,
-.pm-view .address-edit.search-bar .ant-btn .anticon {
+.pm-view .address-edit.search-bar .ant-btn {
+  flex-shrink: 0;
+  width: auto;
+  max-width: 200px;
+  padding: 8px 10px;
+  font-size: 14px;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-/* Make the button visually match the input height. Use padding if necessary
-   but prefer stretching so that icons/text are centered. */
-.pm-view .address-edit.search-bar .ant-btn {
-  flex-shrink: 0;
-  align-self: center; /* center buttons vertically */
-}
-
-/* Force the address-edit row to remain inline (input + two buttons) even on
-   narrow screens, letting the input shrink but the buttons keep their width. */
-.pm-view .address-edit.search-bar {
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-}
-
-.pm-view .address-edit.search-bar .search-input {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-}
-
-.pm-view .address-edit.search-bar .use-current-button,
-.pm-view .address-edit.search-bar .search-button {
-  flex: 0 0 auto !important;
-  white-space: nowrap;
-}
-
-/* More aggressive overrides to avoid global/mobile rules forcing full width */
-.pm-view .address-edit.search-bar .ant-btn {
-  width: auto !important;
-  max-width: 200px !important; /* prevent extremely wide buttons */
-  padding: 8px 10px !important;
-  font-size: 14px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* If the container becomes too narrow, allow the input to take minimal width and keep buttons readable */
-.pm-view .address-edit.search-bar .search-input {
-  min-width: 80px !important;
 }
 
 .pm-view .map-box {
@@ -187,97 +134,71 @@
 
 /* ==================== Input Styles ==================== */
 .pm-view .ant-input,
-.pm-view .ant-input-affix-wrapper,
-.pm-view .ant-input-affix-wrapper-lg {
-  background: var(--input-bg) !important;
-  border: 1px solid var(--border-light) !important;
-  border-radius: 10px !important;
-  color: var(--fg) !important;
+.pm-view .ant-input-affix-wrapper {
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  color: var(--fg);
   font-size: 16px;
   transition: all 0.3s ease;
 }
 
-.pm-view .ant-input-affix-wrapper input.ant-input,
-.pm-view .ant-input-affix-wrapper-lg input.ant-input {
-  background: transparent !important;
-  color: var(--fg) !important;
-}
-
-/* Remove inner input border to avoid double border when wrapped by affix wrapper */
-.pm-view .address-edit.search-bar .ant-input-affix-wrapper input.ant-input,
-.pm-view .address-edit.search-bar .ant-input-affix-wrapper-lg input.ant-input {
-  border: none !important;
-  box-shadow: none !important;
-  padding: 8px 10px !important; /* ensure spacing inside wrapper */
+.pm-view .ant-input-affix-wrapper input.ant-input {
+  background: transparent;
+  color: var(--fg);
 }
 
 .pm-view .ant-input::placeholder,
-.pm-view .ant-input-affix-wrapper input::placeholder,
-.pm-view .ant-input-affix-wrapper-lg input::placeholder {
-  color: var(--muted) !important;
+.pm-view .ant-input-affix-wrapper input::placeholder {
+  color: var(--muted);
 }
 
 .pm-view .ant-input:hover,
-.pm-view .ant-input-affix-wrapper:hover,
-.pm-view .ant-input-affix-wrapper-lg:hover {
-  border-color: var(--accent) !important;
-  background: #0f1730 !important;
+.pm-view .ant-input-affix-wrapper:hover {
+  border-color: var(--accent);
+  background: #0f1730;
 }
 
 .pm-view .ant-input:focus,
 .pm-view .ant-input-affix-wrapper:focus,
-.pm-view .ant-input-affix-wrapper-focused,
-.pm-view .ant-input-affix-wrapper-lg:focus,
-.pm-view .ant-input-affix-wrapper-focused.ant-input-affix-wrapper-lg {
-  border-color: var(--accent) !important;
-  background: var(--input-bg) !important;
-  box-shadow: 0 0 0 3px rgba(105, 168, 255, 0.15) !important;
-  outline: none !important;
+.pm-view .ant-input-affix-wrapper-focused {
+  border-color: var(--accent);
+  background: var(--input-bg);
+  box-shadow: 0 0 0 3px rgba(105, 168, 255, 0.15);
+  outline: none;
 }
 
 .pm-view .ant-input-prefix {
-  color: var(--muted) !important;
+  color: var(--muted);
   margin-right: 8px;
 }
 
 .pm-view .ant-input-suffix {
-  color: var(--muted) !important;
+  color: var(--muted);
 }
 
-/* Suffix button inside the input: make it visually consistent with input
-   and the other buttons in the search bar. */
 .pm-view .pm-suffix-btn {
   margin-left: 8px;
-  height: 32px; /* matches compact input height */
-  padding: 0 10px !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  line-height: 1 !important;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.pm-view .address-edit.search-bar .ant-input-affix-wrapper .pm-suffix-btn {
-  /* ensure the suffix button doesn't break input layout */
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+.pm-view .ant-input-clear-icon {
+  color: var(--muted);
 }
 
-/* Clear button styling */
-.pm-view .ant-input-clear-icon,
-.pm-view .ant-input-affix-wrapper .ant-input-clear-icon {
-  color: var(--muted) !important;
-}
-
-.pm-view .ant-input-clear-icon:hover,
-.pm-view .ant-input-affix-wrapper .ant-input-clear-icon:hover {
-  color: var(--fg) !important;
+.pm-view .ant-input-clear-icon:hover {
+  color: var(--fg);
 }
 
 /* ==================== Button Styles ==================== */
-/* Base button styles with higher specificity */
-.pm-view .ant-btn,
-.pm-view button.ant-btn {
-  border-radius: 10px !important;
+.pm-view .ant-btn {
+  border-radius: 10px;
   font-weight: 600;
   font-size: 16px;
   height: auto;
@@ -286,81 +207,54 @@
   border: 1px solid var(--border-light);
 }
 
-.pm-view .ant-btn.ant-btn-lg,
-.pm-view button.ant-btn.ant-btn-lg {
-  padding: 12px 20px !important;
+.pm-view .ant-btn.ant-btn-lg {
+  padding: 12px 20px;
   font-size: 16px;
-  height: auto !important;
   line-height: 1.5;
 }
 
-/* Primary button styles with increased specificity */
-.pm-view .ant-btn-primary,
-.pm-view .ant-btn.ant-btn-primary,
-.pm-view button.ant-btn-primary {
-  background: var(--accent) !important;
-  border-color: var(--accent) !important;
-  color: #07122b !important;
+.pm-view .ant-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #07122b;
   box-shadow: 0 2px 8px rgba(105, 168, 255, 0.3);
 }
 
-.pm-view .ant-btn-primary:hover:not(:disabled),
-.pm-view .ant-btn.ant-btn-primary:hover:not(:disabled),
-.pm-view button.ant-btn-primary:hover:not(:disabled),
-.pm-view .ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover,
-.pm-view .ant-btn.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover,
-.pm-view button.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover {
-  background: var(--accent-hover) !important;
-  border-color: var(--accent-hover) !important;
-  color: #07122b !important;
-  box-shadow: 0 4px 12px rgba(105, 168, 255, 0.4) !important;
+.pm-view .ant-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #07122b;
+  box-shadow: 0 4px 12px rgba(105, 168, 255, 0.4);
   transform: translateY(-1px);
 }
 
-.pm-view .ant-btn-primary:active:not(:disabled),
-.pm-view .ant-btn.ant-btn-primary:active:not(:disabled),
-.pm-view button.ant-btn-primary:active:not(:disabled) {
+.pm-view .ant-btn-primary:active:not(:disabled) {
   transform: translateY(0);
 }
 
 .pm-view .ant-btn-primary:disabled,
-.pm-view .ant-btn.ant-btn-primary:disabled,
-.pm-view button.ant-btn-primary:disabled,
-.pm-view .ant-btn-primary.ant-btn-disabled,
-.pm-view .ant-btn.ant-btn-primary.ant-btn-disabled,
-.pm-view button.ant-btn-primary.ant-btn-disabled {
-  background: var(--input-bg) !important;
-  border-color: var(--border) !important;
-  color: var(--muted) !important;
+.pm-view .ant-btn-primary.ant-btn-disabled {
+  background: var(--input-bg);
+  border-color: var(--border);
+  color: var(--muted);
   opacity: 0.6;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-/* Default button styles with increased specificity */
-.pm-view .ant-btn-default,
-.pm-view .ant-btn.ant-btn-default,
-.pm-view button.ant-btn-default {
-  background: var(--input-bg) !important;
-  border-color: var(--border-light) !important;
-  color: var(--fg) !important;
+.pm-view .ant-btn-default {
+  background: var(--input-bg);
+  border-color: var(--border-light);
+  color: var(--fg);
 }
 
-.pm-view .ant-btn-default:hover:not(:disabled),
-.pm-view .ant-btn.ant-btn-default:hover:not(:disabled),
-.pm-view button.ant-btn-default:hover:not(:disabled),
-.pm-view .ant-btn-default:not(:disabled):not(.ant-btn-disabled):hover,
-.pm-view .ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):hover,
-.pm-view button.ant-btn-default:not(:disabled):not(.ant-btn-disabled):hover {
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-  background: #0f1730 !important;
+.pm-view .ant-btn-default:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #0f1730;
 }
 
-/* Block button */
-.pm-view .ant-btn-block,
-.pm-view .ant-btn.ant-btn-block,
-.pm-view button.ant-btn.ant-btn-block {
+.pm-view .ant-btn-block {
   width: 100%;
   display: block;
 }
@@ -372,81 +266,69 @@
 
 .pm-view .ant-form-item-label > label {
   font-weight: 600;
-  color: var(--fg) !important;
+  color: var(--fg);
   font-size: 14px;
   letter-spacing: 0.3px;
 }
 
-/* Ensure PM name input uses a single clean border and matches search input spacing */
-.pm-view .pm-card .ant-form-item input.ant-input,
 .pm-view .pm-card .ant-form-item .ant-input {
-  background: var(--input-bg) !important;
-  border: 1px solid var(--border-light) !important;
-  box-shadow: none !important;
-  padding: 10px 12px !important;
-  border-radius: 10px !important;
-  color: var(--fg) !important;
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+  box-shadow: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--fg);
 }
 
-.pm-view .pm-card .ant-form-item input.ant-input:focus,
 .pm-view .pm-card .ant-form-item .ant-input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(105, 168, 255, 0.08) !important;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(105, 168, 255, 0.08);
 }
 
 /* ==================== Alert Styles ==================== */
 .pm-view .ant-alert {
-  border-radius: 10px !important;
-  border: 1px solid var(--border-light) !important;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
   animation: slideIn 0.3s ease-out;
 }
 
-.pm-view .ant-alert-info,
-.pm-view .ant-alert.ant-alert-info {
-  background: rgba(105, 168, 255, 0.1) !important;
-  border-color: var(--accent) !important;
+.pm-view .ant-alert-info {
+  background: rgba(105, 168, 255, 0.1);
+  border-color: var(--accent);
 }
 
-.pm-view .ant-alert-info .ant-alert-message,
-.pm-view .ant-alert.ant-alert-info .ant-alert-message {
-  color: var(--fg) !important;
+.pm-view .ant-alert-info .ant-alert-message {
+  color: var(--fg);
 }
 
-.pm-view .ant-alert-info .ant-alert-icon,
-.pm-view .ant-alert.ant-alert-info .ant-alert-icon {
-  color: var(--accent) !important;
+.pm-view .ant-alert-info .ant-alert-icon {
+  color: var(--accent);
 }
 
-.pm-view .ant-alert-success,
-.pm-view .ant-alert.ant-alert-success {
-  background: rgba(102, 230, 164, 0.1) !important;
-  border-color: var(--ok) !important;
+.pm-view .ant-alert-success {
+  background: rgba(102, 230, 164, 0.1);
+  border-color: var(--ok);
 }
 
-.pm-view .ant-alert-success .ant-alert-message,
-.pm-view .ant-alert.ant-alert-success .ant-alert-message {
-  color: var(--ok) !important;
+.pm-view .ant-alert-success .ant-alert-message {
+  color: var(--ok);
 }
 
-.pm-view .ant-alert-success .ant-alert-icon,
-.pm-view .ant-alert.ant-alert-success .ant-alert-icon {
-  color: var(--ok) !important;
+.pm-view .ant-alert-success .ant-alert-icon {
+  color: var(--ok);
 }
 
-.pm-view .ant-alert-error,
-.pm-view .ant-alert.ant-alert-error {
-  background: rgba(255, 154, 166, 0.1) !important;
-  border-color: var(--err) !important;
+.pm-view .ant-alert-error {
+  background: rgba(255, 154, 166, 0.1);
+  border-color: var(--err);
 }
 
-.pm-view .ant-alert-error .ant-alert-message,
-.pm-view .ant-alert.ant-alert-error .ant-alert-message {
-  color: var(--err) !important;
+.pm-view .ant-alert-error .ant-alert-message {
+  color: var(--err);
 }
 
-.pm-view .ant-alert-error .ant-alert-icon,
-.pm-view .ant-alert.ant-alert-error .ant-alert-icon {
-  color: var(--err) !important;
+.pm-view .ant-alert-error .ant-alert-icon {
+  color: var(--err);
 }
 
 .pm-view .ant-alert-close-icon {
@@ -488,10 +370,9 @@
   }
 }
 
-/* Address hint: increase contrast and ensure it's vertically separated */
 .pm-view .address-hint {
   margin-top: 8px;
-  color: var(--muted) !important; /* override inline darker color */
+  color: var(--muted);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
@@ -531,9 +412,7 @@
   margin-right: 0;
 }
 
-/* Icon in button alignment */
-.pm-view .ant-btn > .anticon + span,
-.pm-view button.ant-btn > .anticon + span {
+.pm-view .ant-btn > .anticon + span {
   margin-left: 6px;
 }
 
@@ -543,6 +422,11 @@
 .pm-view .ant-input,
 .pm-view .ant-btn {
   box-sizing: border-box;
+}
+
+/* ==================== Smooth Transitions ==================== */
+.pm-view * {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ==================== Mobile Responsive ==================== */
@@ -568,59 +452,30 @@
     border-radius: 10px;
   }
 
-  /* Stack search bar vertically on mobile */
   .pm-view .search-bar {
     flex-direction: column;
     gap: 12px;
   }
 
   .pm-view .search-input,
-  .pm-view .search-button {
+  .pm-view .search-button,
+  .pm-view .ant-btn {
     width: 100%;
   }
 
-  .pm-view .ant-btn,
-  .pm-view button.ant-btn,
-  .pm-view .ant-btn.ant-btn-lg,
-  .pm-view button.ant-btn.ant-btn-lg {
-    width: 100% !important;
-    padding: 12px 16px !important;
-  }
-
   .pm-view .ant-input,
-  .pm-view .ant-input-affix-wrapper,
-  .pm-view .ant-input-affix-wrapper-lg {
-    font-size: 16px !important; /* Prevent zoom on iOS */
-  }
-
-  .pm-view .ant-form-item-label > label {
-    font-size: 14px;
+  .pm-view .ant-input-affix-wrapper {
+    font-size: 16px; /* Prevent zoom on iOS */
   }
 }
 
-/* ==================== Tablet Responsive ==================== */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .wrap.pm-view {
-    padding: 20px 16px 36px;
-  }
-
-  .pm-view .map-box {
-    height: 350px;
-  }
-
-  .pm-view .pm-card.ant-card .ant-card-body {
-    padding: 22px;
-  }
-}
-
-/* ==================== Extra Small Screens ==================== */
 @media (max-width: 480px) {
   .wrap.pm-view {
     padding: 12px 8px 28px;
   }
 
   .pm-view .pm-card.ant-card {
-    border-radius: 12px !important;
+    border-radius: 12px;
   }
 
   .pm-view .pm-card.ant-card .ant-card-head {
@@ -640,28 +495,32 @@
     border-radius: 8px;
   }
 
-  .pm-view .search-bar {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .pm-view .ant-btn,
-  .pm-view button.ant-btn,
-  .pm-view .ant-btn.ant-btn-lg,
-  .pm-view button.ant-btn.ant-btn-lg {
-    padding: 10px 14px !important;
+  .pm-view .ant-btn {
+    padding: 10px 14px;
     font-size: 15px;
   }
 
   .pm-view .ant-input,
-  .pm-view .ant-input-affix-wrapper,
-  .pm-view .ant-input-affix-wrapper-lg {
+  .pm-view .ant-input-affix-wrapper {
     padding: 10px 12px;
-    font-size: 16px !important;
   }
 }
 
-/* ==================== Large Screens ==================== */
+/* ==================== Tablet & Large Screens ==================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .wrap.pm-view {
+    padding: 20px 16px 36px;
+  }
+
+  .pm-view .map-box {
+    height: 350px;
+  }
+
+  .pm-view .pm-card.ant-card .ant-card-body {
+    padding: 22px;
+  }
+}
+
 @media (min-width: 1025px) {
   .wrap.pm-view {
     padding: 32px 24px 48px;
@@ -676,7 +535,7 @@
   }
 }
 
-/* ==================== Focus Visible (Accessibility) ==================== */
+/* ==================== Accessibility ==================== */
 .pm-view .ant-input:focus-visible,
 .pm-view .ant-input-affix-wrapper:focus-visible,
 .pm-view .ant-btn:focus-visible {
@@ -684,9 +543,27 @@
   outline-offset: 2px;
 }
 
-/* ==================== Smooth Transitions ==================== */
-.pm-view * {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+@media (prefers-contrast: high) {
+  .pm-view {
+    --border: #ffffff;
+    --border-light: #ffffff;
+  }
+
+  .pm-view .ant-input,
+  .pm-view .ant-input-affix-wrapper,
+  .pm-view .ant-btn {
+    border-width: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-view *,
+  .pm-view *::before,
+  .pm-view *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
 }
 
 /* ==================== Print Styles ==================== */
@@ -703,30 +580,5 @@
 
   .pm-view .ant-btn {
     display: none;
-  }
-}
-
-/* ==================== High Contrast Mode ==================== */
-@media (prefers-contrast: high) {
-  .pm-view {
-    --border: #ffffff;
-    --border-light: #ffffff;
-  }
-
-  .pm-view .ant-input,
-  .pm-view .ant-input-affix-wrapper,
-  .pm-view .ant-btn {
-    border-width: 2px;
-  }
-}
-
-/* ==================== Reduced Motion ==================== */
-@media (prefers-reduced-motion: reduce) {
-  .pm-view *,
-  .pm-view *::before,
-  .pm-view *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 }
