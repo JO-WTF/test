@@ -66,13 +66,14 @@
 
         <!-- Success/Error Message -->
         <a-alert
-          v-if="submitMsg"
+          v-if="submitMsg && !isCameraError(submitMsg)"
           :message="submitMsg"
           :type="submitOk ? 'success' : 'error'"
           show-icon
           closable
           @close="submitMsg = ''"
         />
+        <div v-else-if="submitMsg && isCameraError(submitMsg)" class="status-box muted">(摄像头错误，已记录)</div>
       </a-space>
     </a-card>
   </div>
@@ -80,21 +81,16 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, h, nextTick } from 'vue';
-import { createI18n } from '../i18n/core';
+import { useRouter } from 'vue-router';
+import { useI18n } from '../i18n/useI18n';
 import { getMapboxAccessToken, getApiBase } from '../utils/env.js';
 import { EnvironmentOutlined } from '@ant-design/icons-vue';
 
-// i18n
-const i18n = createI18n({ namespaces: ['core', 'index', 'pm'], fallbackLang: 'id', defaultLang: 'id' });
-await i18n.init();
+// use shared i18n helper
+const _i18n = await useI18n({ namespaces: ['core', 'index', 'pm'], fallbackLang: 'id', defaultLang: 'id' });
 const i18nVersion = ref(0);
-i18n.onChange(() => {
-  i18nVersion.value++;
-});
-const t = (key, vars) => {
-  i18nVersion.value;
-  return i18n.t(key, vars);
-};
+_i18n.onChange(() => { i18nVersion.value++; });
+const t = (key, vars) => { i18nVersion.value; return _i18n.t(key, vars); };
 
 const mapContainer = ref(null);
 const mapboxgl = ref(null);
@@ -109,6 +105,14 @@ const pmName = ref('');
 const submitting = ref(false);
 const submitOk = ref(false);
 const submitMsg = ref('');
+
+// filter camera/scanner related errors so they are not shown in <a-alert>
+const isCameraError = (m) => {
+  try {
+    const s = String(m || '');
+    return /\b(camera|摄像头|scanner|dynamsoft|getUserMedia|NotAllowedError|NotFoundError|NotReadableError|OverconstrainedError|Camera start failed|Scanner SDK not loaded|Camera stop failed|Scanner init failed)\b/i.test(s);
+  } catch (e) { return false; }
+};
 
 const accessToken = getMapboxAccessToken();
 
@@ -207,6 +211,8 @@ const useCurrentLocationAsPM = async () => {
   }
 };
 
+const router = useRouter();
+
 const submitPM = async () => {
   if (!pmName.value) return;
   submitting.value = true;
@@ -231,6 +237,14 @@ const submitPM = async () => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     submitOk.value = true;
     submitMsg.value = t('pm.create.success');
+    try {
+      // persist selected pm name locally
+      localStorage.setItem('selected_pm_name', pmName.value);
+      // navigate to inventory view
+      router.push({ path: '/inventory' }).catch(() => {});
+    } catch (err) {
+      console.warn('Failed to persist or navigate', err);
+    }
   } catch (e) {
     submitOk.value = false;
     submitMsg.value = `${t('pm.create.fail')}: ${e?.message || 'Error'}`;

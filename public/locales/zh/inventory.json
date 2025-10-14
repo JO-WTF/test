@@ -1,0 +1,21 @@
+{
+  "viewInventory": "查看库存",
+  "manageInOut": "出入库管理",
+  "totalCount": "总数",
+  "dnCode": "DN 编码",
+  "rescan": "重新扫描",
+  "inbound": "入库",
+  "outbound": "出库",
+  "dnNumber": "DN 编号",
+  "inboundTime": "入库时间",
+  "loadingError": "加载错误，已记录",
+  "cameraError": "摄像头错误，已记录",
+  "pm.inventory.error.dn_already_in_inventory": "DN 已存在库存中",
+  "pm.inventory.error.dn_not_found": "未找到 DN",
+  "pm.inventory.error.dn_invalid": "无效的 DN",
+  "pm.inventory.error.HTTP_400": "请求错误",
+  "pm.inventory.error.default": "发生错误",
+  "pm.inventory.success.inbound": "入库成功",
+  "pm.inventory.success.outbound": "出库成功",
+  "pm.inventory.success.default": "操作成功"
+}

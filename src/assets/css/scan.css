@@ -1,0 +1,58 @@
+/* Reusable scan CSS shared by ScanView and InventoryView manage mode */
+.scan-area.container{position:relative;border-radius:8px;overflow:hidden;background:#000}
+.dce-video-container{width:100%;height:100%;background:#000}
+
+/* Ensure scan and inventory wrappers share the same background and text color
+	 Use CSS variables if available, with sensible fallbacks matching pm.css */
+.wrap.scan-view, .wrap.inventory-view {
+	/* ensure wrapper background fills viewport */
+	min-height: 100vh;
+	width: 100%;
+	background: var(--bg, #0b1020) !important;
+	color: var(--fg, #eaf2ff) !important;
+	/* don't vertically center content so background extends from top */
+	align-items: stretch;
+	justify-content: flex-start;
+}
+
+/* make sure root elements allow 100% heights where needed */
+html, body, #app {
+	height: 100%;
+}
+
+/* Card appearance consistent with PM card */
+.wrap.scan-view .card, .wrap.inventory-view .card,
+.wrap.scan-view .inventory-card, .wrap.inventory-view .inventory-card {
+	background: var(--card-bg, #101831) !important;
+	border: 1px solid var(--border, #1f2a4d) !important;
+	color: var(--fg, #eaf2ff) !important;
+	border-radius: 12px;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+	padding: 12px;
+}
+
+/* decorative corner markers like ScanView */
+.corners{position:absolute;inset:0;pointer-events:none}
+.corners .c{width:36px;height:36px;border:4px solid rgba(255,255,255,0.25);position:absolute;border-radius:6px}
+.corners .tl{left:8px;top:8px;border-right-color:transparent;border-bottom-color:transparent}
+.corners .tr{right:8px;top:8px;border-left-color:transparent;border-bottom-color:transparent}
+.corners .bl{left:8px;bottom:8px;border-right-color:transparent;border-top-color:transparent}
+.corners .br{right:8px;bottom:8px;border-left-color:transparent;border-top-color:transparent}
+
+.did-input.card{margin-top:8px}
+.did-input.card label{display:block;margin-bottom:6px;font-weight:600}
+.did-row{display:flex;align-items:center;gap:8px}
+.did-row input{padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:transparent;color:inherit}
+.okBtn,.tag,button.primary,button.ghost{cursor:pointer}
+
+/* control buttons similar to ScanView */
+.row{display:flex;gap:8px;margin-top:8px}
+button.primary,.ant-btn.primary{background:linear-gradient(180deg,#69a8ff,#4a86e6);border:none;color:#07122b;padding:8px 12px;border-radius:8px}
+button.ghost,.ant-btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--fg);padding:8px 12px;border-radius:8px}
+
+.status-box{border:1px solid rgba(255,255,255,0.04);padding:12px;border-radius:8px;margin-top:8px}
+.result-box{padding:12px;border:1px solid rgba(255,255,255,0.04);border-radius:8px;margin-top:8px}
+.hint{color:rgba(255,255,255,0.6);margin-top:6px}
+
+/* small responsive tweaks */
+@media (max-width:480px){.dce-video-container{height:200px}}

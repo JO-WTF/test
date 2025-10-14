@@ -5,6 +5,7 @@ import {
   Table,
   Input,
   DatePicker,
+  Spin,
   Radio,
   RadioGroup,
   RadioButton,
@@ -32,6 +33,7 @@ app.use(Select);
 app.use(Table);
 app.use(Input);
 app.use(DatePicker);
+app.use(Spin);
 app.use(Radio);
 app.use(RadioGroup);
 app.use(RadioButton);

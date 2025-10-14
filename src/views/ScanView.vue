@@ -154,13 +154,15 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Toastify from 'toastify-js';
 import Compressor from 'compressorjs';
-import { createI18n } from '../i18n/core';
+import { useI18n } from '../i18n/useI18n';
 import { useBodyTheme } from '../composables/useBodyTheme';
 import { useUpload } from '../composables/useUpload';
 import { useAuth } from '../composables/useAuth';
 import { useDeviceDetection } from '../composables/useDeviceDetection';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
+import { createScanner } from '../composables/useScanner';
+import '../assets/css/scan.css';
 import { isValidDn } from '../utils/dn.js';
 import { STATUS_DELIVERY_ITEMS, STATUS_DELIVERY_VALUES, STATUS_SITE_ORDERED_LIST } from '../config.js';
 import { getCookie } from '../utils/cookie.js';
@@ -174,12 +176,7 @@ if (LICENSE_KEY && window?.Dynamsoft?.DBR?.BarcodeScanner) {
   console.warn('Dynamsoft license key is not configured. Scanner features may be unavailable.');
 }
 
-const i18n = createI18n({
-  namespaces: ['core', 'index'],
-  fallbackLang: 'id',
-  defaultLang: 'id',
-});
-await i18n.init(); // 自动设置 document.documentElement.lang
+const _i18n = await useI18n({ namespaces: ['core', 'index'], fallbackLang: 'id', defaultLang: 'id' });
 
 useBodyTheme('scan-theme');
 
@@ -223,20 +220,14 @@ const state = reactive({
 // 使用版本号强制响应式更新
 const i18nVersion = ref(0);
 
-i18n.onChange((lang) => {
-  state.lang = lang;
-  i18nVersion.value++; // 触发所有使用 t() 的地方重新渲染
-  // document.documentElement.lang 现在由 i18n 核心模块自动更新
-});
+i18nVersion.value; // keep dependency
+_i18n.onChange((lang) => { state.lang = lang; i18nVersion.value++; });
 
 const dnInput = ref(null);
 let scanner = null;
+let scannerApi = null;
 
-const t = (key, vars) => {
-  // 依赖 i18nVersion 确保语言切换时模板重新渲染
-  i18nVersion.value;
-  return i18n.t(key, vars);
-};
+const t = (key, vars) => { i18nVersion.value; return _i18n.t(key, vars); };
 
 const showScanControls = computed(() => !state.isValid);
 const torchTagVisible = computed(() => state.running && !state.isValid);
@@ -721,19 +712,19 @@ onMounted(async () => {
     return;
   }
   try {
-    scanner = await window.Dynamsoft.DBR.BarcodeScanner.createInstance();
+    scannerApi = await createScanner();
+    await scannerApi.init();
+    scanner = scannerApi;
     const container = document.getElementById('div-ui-container');
-    if (container) {
-      await scanner.setUIElement(container);
-    }
-    scanner.setVideoFit('cover');
-    scanner.barcodeFillStyle = 'rgba(73, 245, 73, 0)';
-    scanner.barcodeLineWidth = 5;
-    scanner.barcodeStrokeStyle = 'rgba(73, 245, 73, 1)';
-    scanner.onUniqueRead = (txt) => {
-      onCodeScanned(txt);
-    };
-    await start();
+    if (container) await scannerApi.setUIElement(container);
+    scannerApi.setVideoFit('cover');
+    // set visuals when underlying scanner exists
+    try { scannerApi.barcodeFillStyle = 'rgba(73,245,73,0)'; } catch {}
+    try { scannerApi.barcodeLineWidth = 5; } catch {}
+    try { scannerApi.barcodeStrokeStyle = 'rgba(73,245,73,1)'; } catch {}
+    scannerApi.setOnUniqueRead((txt) => onCodeScanned(txt));
+    await scannerApi.show();
+    state.running = true;
   } catch (e) {
     state.submitOk = false;
     state.submitMsg = e?.message || 'Camera start failed';
@@ -741,9 +732,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(async () => {
-  try {
-    await stop();
-  } catch {}
+  try { if (scannerApi) await scannerApi.stop(); } catch {}
   if (state.photoPreview) {
     URL.revokeObjectURL(state.photoPreview);
   }
