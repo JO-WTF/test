@@ -134,6 +134,8 @@ const fetchData = async () => {
   try {
     const res = await fetch(buildRequestUrl());
     const json = await res.json();
+    const LSP_PATTERN = /^HTM[A-Za-z0-9]+-IDN$/;
+
     const arr = (json?.data.by_plan_mos_date ?? [])
       .map((item) => ({
         time: getTimeValue(item.recorded_at),
@@ -141,7 +143,7 @@ const fetchData = async () => {
         status_not_empty: Number(item.status_not_empty ?? 0),
         total_dn: Number(item.total_dn ?? 0),
       }))
-      .filter((item) => Number.isFinite(item.time))
+      .filter((item) => Number.isFinite(item.time) && LSP_PATTERN.test(String(item.lsp)))
       .sort((a, b) => a.time - b.time);
     raw.value = arr;
 
@@ -151,7 +153,7 @@ const fetchData = async () => {
         lsp: item.lsp,
         updated_dn: Number(item.updated_dn ?? 0),
       }))
-      .filter((item) => Number.isFinite(item.time))
+      .filter((item) => Number.isFinite(item.time) && LSP_PATTERN.test(String(item.lsp)))
       .sort((a, b) => a.time - b.time);
     rawUpdate.value = updateArr;
   } catch (error) {
