@@ -1,0 +1,21 @@
+{
+  "viewInventory": "Lihat Inventaris",
+  "manageInOut": "Kelola Masuk/Keluar",
+  "totalCount": "Total",
+  "dnCode": "Kode DN",
+  "rescan": "Pindai Ulang",
+  "inbound": "Masuk",
+  "outbound": "Keluar",
+  "dnNumber": "Nomor DN",
+  "inboundTime": "Waktu Masuk",
+  "loadingError": "Kesalahan memuat (tercatat)",
+  "cameraError": "Kesalahan kamera (tercatat)",
+  "pm.inventory.error.dn_already_in_inventory": "DN sudah ada di inventaris",
+  "pm.inventory.error.dn_not_found": "DN tidak ditemukan",
+  "pm.inventory.error.dn_invalid": "DN tidak valid",
+  "pm.inventory.error.HTTP_400": "Permintaan salah",
+  "pm.inventory.error.default": "Terjadi kesalahan",
+  "pm.inventory.success.inbound": "Berhasil masuk inventaris",
+  "pm.inventory.success.outbound": "Berhasil keluar inventaris",
+  "pm.inventory.success.default": "Berhasil"
+}

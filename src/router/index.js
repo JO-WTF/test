@@ -33,6 +33,16 @@ const routes = [
     component: () => import('../views/MapView.vue'),
   },
   {
+    path: '/pm',
+    name: 'pm',
+    component: () => import('../views/PMView.vue'),
+  },
+  {
+    path: '/inventory',
+    name: 'inventory',
+    component: () => import('../views/InventoryView.vue'),
+  },
+  {
     path: '/lsp-stats',
     name: 'lsp-stats',
     component: () => import('../views/LSPStatsView.vue'),

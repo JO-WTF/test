@@ -5,10 +5,16 @@ import {
   Table,
   Input,
   DatePicker,
+  Spin,
   Radio,
   RadioGroup,
   RadioButton,
   Modal,
+  Card,
+  Button,
+  Alert,
+  Space,
+  Form,
 } from 'ant-design-vue';
 import Viewer from 'v-viewer';
 import App from './App.vue';
@@ -27,10 +33,16 @@ app.use(Select);
 app.use(Table);
 app.use(Input);
 app.use(DatePicker);
+app.use(Spin);
 app.use(Radio);
 app.use(RadioGroup);
 app.use(RadioButton);
 app.use(Modal);
+app.use(Card);
+app.use(Button);
+app.use(Alert);
+app.use(Space);
+app.use(Form);
 
 app.use(Viewer);
 app.mount('#app');

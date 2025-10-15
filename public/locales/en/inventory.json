@@ -1,0 +1,21 @@
+{
+  "viewInventory": "View Inventory",
+  "manageInOut": "Inbound/Outbound",
+  "totalCount": "Total",
+  "dnCode": "DN Code",
+  "rescan": "Rescan",
+  "inbound": "Inbound",
+  "outbound": "Outbound",
+  "dnNumber": "DN Number",
+  "inboundTime": "Inbound Time",
+  "loadingError": "Loading error (logged)",
+  "cameraError": "Camera error (logged)",
+  "pm.inventory.error.dn_already_in_inventory": "DN already in inventory",
+  "pm.inventory.error.dn_not_found": "DN not found",
+  "pm.inventory.error.dn_invalid": "Invalid DN",
+  "pm.inventory.error.HTTP_400": "Bad request",
+  "pm.inventory.error.default": "An error occurred",
+  "pm.inventory.success.inbound": "Inbound success",
+  "pm.inventory.success.outbound": "Outbound success",
+  "pm.inventory.success.default": "Success"
+}

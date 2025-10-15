@@ -1,0 +1,19 @@
+{
+  "pm.title": "Manajemen PM",
+  "pm.use_existing": "Gunakan PM yang ada",
+  "pm.create_mode": "Buat PM",
+  "pm.search.placeholder": "Ketik alamat lalu tekan Enter atau klik Cari",
+  "pm.search.button": "Cari",
+  "pm.use_current": "Gunakan lokasi saat ini",
+  "pm.address.hint": "Pastikan lokasi Pool Mover yang ditampilkan di peta benar. Jika lokasi tidak akurat, klik alamat, masukkan lokasi yang benar lalu cari.",
+  "pm.name.label": "Nama PM",
+  "pm.name.placeholder": "Masukkan nama PM",
+  "pm.confirm": "Konfirmasi",
+  "pm.create.success": "Berhasil dibuat",
+  "pm.create.fail": "Gagal membuat"
+  ,
+  "pm.list.title": "PM Tersedia",
+  "pm.list.refresh": "Muat Ulang",
+  "pm.list.location": "Lokasi",
+  "pm.select": "Pilih"
+}
