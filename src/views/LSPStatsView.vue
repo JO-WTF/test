@@ -134,7 +134,7 @@ const fetchData = async () => {
   try {
     const res = await fetch(buildRequestUrl());
     const json = await res.json();
-    const LSP_PATTERN = /^HTM[A-Za-z0-9]+-IDN$/;
+    const LSP_PATTERN = /^HTM\.[A-Za-z0-9]+-IDN$/;
 
     const arr = (json?.data.by_plan_mos_date ?? [])
       .map((item) => ({
