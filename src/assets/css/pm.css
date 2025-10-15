@@ -355,6 +355,18 @@
   display: block;
 }
 
+.ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination .ant-pagination-disabled .ant-pagination-item-link,
+.ant-pagination .ant-pagination-next .ant-pagination-item-link,
+.ant-pagination .ant-pagination-disabled:hover .ant-pagination-item-link {
+  color: #fff;
+}
+.ant-pagination .ant-pagination-item a {
+  color: #ffffff;
+}
+.ant-pagination .ant-pagination-item-active a {
+  color: #1677ff;
+}
 /* ==================== Form Styles ==================== */
 .pm-view .ant-form-item {
   margin-bottom: 0;
