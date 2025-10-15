@@ -940,6 +940,19 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* Highlight animation when a DN is scanned successfully */
+.inventory-view .dn-input-row input.dn-highlight {
+  animation: dnPulse 0.9s ease-in-out;
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.06);
+  border-color: var(--accent-hover, #5891e6);
+}
+@keyframes dnPulse {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.02); }
+  60% { transform: scale(0.995); }
+  100% { transform: scale(1); }
+}
+
 .inventory-view .status-icon {
   font-size: 20px;
   flex-shrink: 0;
@@ -959,9 +972,7 @@
   gap: 12px;
 }
 
-.inventory-view .rescan-btn {
-  align-self: flex-start;
-}
+
 
 .inventory-view .action-buttons {
   display: flex;
@@ -1140,10 +1151,6 @@
 
   .inventory-view .scan-area.container {
     height: 240px;
-  }
-
-  .inventory-view .dn-input-row {
-    flex-wrap: wrap;
   }
 
   .inventory-view .dn-input-row input {

@@ -72,14 +72,13 @@
             maxlength="40"
             v-model="manageState.dnNumber"
             @input="onDNInputManage"
+            :class="{ 'dn-highlight': highlightPulse }"
           />
         </div>
       </div>
 
       <!-- Action buttons -->
       <div v-if="manageState.isValid" class="action-section">
-        <a-button @click="rescan" class="rescan-btn">{{ t('rescan') }}</a-button>
-
         <div class="action-buttons">
           <a-button
             type="primary"
@@ -181,6 +180,12 @@ let scannerManage = null;
 let scannerManageApi = null;
 const dnInputManage = ref(null);
 const successTimer = { id: null };
+const highlightPulse = ref(false);
+let highlightTimer = null;
+// simple dedupe to avoid repeated handling of same code in short period
+const lastScanned = ref('');
+const lastScannedAt = ref(0);
+const scanCooldownMs = 500; // ms
 
 const setMode = (m) => {
   mode.value = m;
@@ -314,12 +319,33 @@ const stopManageScanner = async () => {
 };
 
 const onCodeScannedManage = async (code) => {
-  const v = String(code || '').toUpperCase();
-  manageState.value.isValid = isValidDn(v);
-  manageState.value.dnNumber = v;
-  if (manageState.value.isValid) {
-    await stopManageScanner();
-    manageState.value.hasDN = true;
+  try {
+    const v = String(code || '').toUpperCase();
+    // dedupe: ignore same code within cooldown window
+    const now = Date.now();
+    if (v && v === lastScanned.value && (now - lastScannedAt.value) < scanCooldownMs) return;
+    lastScanned.value = v;
+    lastScannedAt.value = now;
+
+    manageState.value.isValid = isValidDn(v);
+    manageState.value.dnNumber = v;
+
+    // animate input to emphasize the scanned DN when valid
+    try {
+      if (manageState.value.isValid) {
+        highlightPulse.value = false; // restart
+        if (highlightTimer) { clearTimeout(highlightTimer); highlightTimer = null; }
+        // small next tick to allow CSS reflow restart
+        setTimeout(() => { highlightPulse.value = true; }, 10);
+        highlightTimer = setTimeout(() => { highlightPulse.value = false; highlightTimer = null; }, 900);
+      }
+    } catch (e) {}
+
+    // Keep scanner running so it continues to scan for new codes.
+    // We intentionally do NOT stop the scanner or set hasDN here.
+    // If the UI needs to explicitly pause scanning, user can press the rescan/controls.
+  } catch (e) {
+    console.error('onCodeScannedManage error', e);
   }
 };
 
@@ -328,22 +354,7 @@ const onDNInputManage = () => {
   manageState.value.isValid = isValidDn(manageState.value.dnNumber);
 };
 
-const rescan = async () => {
-  manageState.value.dnNumber = '';
-  manageState.value.isValid = false;
-  manageState.value.hasDN = false;
-  manageState.value.msg = '';
-  try {
-    if (scannerManage && typeof scannerManage.show === 'function') {
-      await scannerManage.show();
-      manageState.value.running = true;
-    } else {
-      await initManageScanner();
-    }
-  } catch (e) {
-    console.error(e);
-  }
-};
+// rescan removed per UI simplification: scanning now continues automatically
 
 const performAction = async (path, actionName) => {
   if (!manageState.value.isValid) return;
