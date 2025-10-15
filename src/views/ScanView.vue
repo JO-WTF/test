@@ -2,7 +2,9 @@
   <div class="wrap scan-view">
     <LanguageSwitcher v-model="state.lang" @change="setLang" />
 
-    <div><h1>{{ t('scanTitle') }}</h1></div>
+    <div>
+      <h1>{{ t('scanTitle') }}</h1>
+    </div>
 
     <section id="container" class="scan-area container" v-show="!state.hasDN">
       <div id="div-ui-container" style="width: 100%; height: 100%">
@@ -20,42 +22,22 @@
     <div class="did-input card" style="margin-top: 12px">
       <label for="dnInput">{{ t('didLabel') }}</label>
       <div class="did-row" style="display: flex; align-items: center; gap: 5px">
-        <span
-          id="error-icon"
-          v-if="!state.isValid"
-          style="color: red; margin-left: 10px; font-size: 20px"
-        >
+        <span id="error-icon" v-if="!state.isValid" style="color: red; margin-left: 10px; font-size: 20px">
           ❌
         </span>
-        <span
-          id="success-icon"
-          v-if="state.isValid"
-          style="color: green; margin-left: 10px; font-size: 20px"
-        >
+        <span id="success-icon" v-if="state.isValid" style="color: green; margin-left: 10px; font-size: 20px">
           ✅
         </span>
 
-        <input
-          id="dnInput"
-          ref="dnInput"
-          class="mono"
-          maxlength="20"
-          v-model="state.dnNumber"
-          style="flex: 1"
-          @input="onDNInput"
-        />
+        <input id="dnInput" ref="dnInput" class="mono" maxlength="20" v-model="state.dnNumber" style="flex: 1"
+          @input="onDNInput" />
 
         <button class="okBtn" type="button" @click="onOkClick">OK</button>
       </div>
     </div>
 
-    <button
-      class="tag"
-      v-if="torchTagVisible"
-      @click="toggleTorch"
-      :aria-pressed="state.torchOn"
-      style="cursor: pointer; user-select: none"
-    >
+    <button class="tag" v-if="torchTagVisible" @click="toggleTorch" :aria-pressed="state.torchOn"
+      style="cursor: pointer; user-select: none">
       {{ t('torch') }}：<b>{{ state.torchOn ? t('on') : t('off') }}</b>
     </button>
 
@@ -79,24 +61,26 @@
       <template v-if="state.isValid">
         <div class="status-box" v-show="!state.submitOk">
           <div class="status-row" :class="{ shake: state.needsStatusShake }">
-            <label for="dnStatus">{{ t('updateStatus') }}：</label>
-            <select
-              id="dnStatus"
-              class="status"
-              :class="{ invalid: state.needsStatusHint }"
-              v-model="state.dnStatus"
-              aria-invalid="true"
-              @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }"
-            >
-              <option value="" disabled>{{ t('choose') }}</option>
-              <option
-                v-for="option in scanStatusOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ t(option.filterLabelKey) }}
-              </option>
-            </select>
+            <div>
+              <label for="dnStatusDelivery">{{ t('updateStatusDelivery') }}：</label>
+              <select id="dnStatusDelivery" class="status" :class="{ invalid: state.needsStatusHint }"
+                v-model="state.dnStatusDelivery" aria-invalid="true"
+                @change="() => { state.needsStatusHint = false; state.needsStatusShake = false; }">
+                <option value="" disabled>{{ t('choose') }}</option>
+                <option v-for="option in scanStatusDeliveryOptions" :key="option.value" :value="option.value">
+                  {{ t(option.filterLabelKey) }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label for="dnStatusSite">{{ t('updateStatusSite') }}：</label>
+              <select id="dnStatusSite" class="status" v-model="state.dnStatusSite">
+                <option value="" disabled>{{ t('choose') }}</option>
+                <option v-for="opt in scanStatusSiteOptions" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+            </div>
           </div>
           <div class="hint" v-if="state.needsStatusHint">
             {{ t('needSelectStatus') }}
@@ -110,19 +94,9 @@
             <div class="col">
               <label style="display: block; margin-bottom: 6px">{{ t('uploadPhoto') }}</label>
               <div class="uploader">
-                <img
-                  v-if="state.photoPreview"
-                  :src="state.photoPreview"
-                  alt="preview"
-                  class="thumb"
-                />
+                <img v-if="state.photoPreview" :src="state.photoPreview" alt="preview" class="thumb" />
                 <div style="display: flex; flex-direction: column; gap: 8px">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    @change="onPickPhoto"
-                  />
+                  <input type="file" accept="image/*" capture="environment" @change="onPickPhoto" />
                   <small class="muted">{{ t('photoTip') }}</small>
                   <button v-if="state.photoFile" class="ghost" @click="clearPhoto">
                     {{ t('removePhoto') }}
@@ -132,27 +106,20 @@
             </div>
           </div>
 
-          <button
-            class="primary"
-            style="align-self: flex-start"
-            @click="submitUpdate"
-            :disabled="!state.isValid || state.submitting"
-          >
+          <button class="primary" style="align-self: flex-start" @click="submitUpdate"
+            :disabled="!state.isValid || state.submitting">
             {{ state.submitting ? t('submitting') : t('submit') }}
           </button>
 
           <div v-if="state.submitting">
             <div class="progress" :class="{ indeterminate: !state.photoFile }">
-              <div
-                class="progress-bar"
-                :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"
-              ></div>
+              <div class="progress-bar" :style="{ width: (state.photoFile ? state.uploadPct : 100) + '%' }"></div>
             </div>
             <div class="progress-text">
               {{
-                state.photoFile
-                  ? `${t('uploadingPct')} ${state.uploadPct}%`
-                  : t('submittingDots')
+              state.photoFile
+              ? `${t('uploadingPct')} ${state.uploadPct}%`
+              : t('submittingDots')
               }}
             </div>
           </div>
@@ -164,11 +131,7 @@
 
         <div class="result-box" v-if="state.showResult">
           <h3>{{ t('submittedTitle') }}</h3>
-          <div
-            class="result-row"
-            v-for="row in submitSummaryRows"
-            :key="row.key"
-          >
+          <div class="result-row" v-for="row in submitSummaryRows" :key="row.key">
             <span class="k">{{ row.label }}:</span>
             <span class="v" :class="{ mono: row.mono }">{{ row.value }}</span>
           </div>
@@ -199,7 +162,7 @@ import { useDeviceDetection } from '../composables/useDeviceDetection';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import { getApiBase, getDynamsoftLicenseKey } from '../utils/env.js';
 import { isValidDn } from '../utils/dn.js';
-import { DN_SCAN_STATUS_ITEMS } from '../config.js';
+import { STATUS_DELIVERY_ITEMS, STATUS_DELIVERY_VALUES, STATUS_SITE_ORDERED_LIST } from '../config.js';
 import { getCookie } from '../utils/cookie.js';
 
 const LICENSE_KEY = getDynamsoftLicenseKey();
@@ -212,7 +175,7 @@ if (LICENSE_KEY && window?.Dynamsoft?.DBR?.BarcodeScanner) {
 }
 
 const i18n = createI18n({
-  namespaces: ['index'],
+  namespaces: ['core', 'index'],
   fallbackLang: 'id',
   defaultLang: 'id',
 });
@@ -238,7 +201,8 @@ const state = reactive({
   location: null,
   hasDN: false,
   dnNumber: '',
-  dnStatus: '',
+  dnStatusSite: '',
+  dnStatusDelivery: '',
   remark: '',
   photoFile: null,
   photoPreview: null,
@@ -294,10 +258,15 @@ const submitSummaryRows = computed(() => {
       value: formatResultText(view.dnNumber),
       mono: true,
     },
+      {
+        key: 'status_delivery',
+        label: t('statusLabel'),
+        value: formatResultText(statusLabel(view.status_delivery)),
+      },
     {
-      key: 'status',
-      label: t('statusLabel'),
-      value: formatResultText(statusLabel(view.status)),
+      key: 'status_site',
+      label: t('statusSiteLabel'),
+      value: formatResultText(view.status_site),
     },
     {
       key: 'remark',
@@ -405,7 +374,7 @@ const resume = async () => {
   state.showResult = false;
   state.submitMsg = '';
   state.submitOk = false;
-  state.dnStatus = '';
+  state.dnStatusDelivery = '';
   state.remark = '';
   state.photoFile = null;
   if (state.photoPreview) URL.revokeObjectURL(state.photoPreview);
@@ -490,10 +459,13 @@ const clearPhoto = () => {
   state.photoPreview = null;
 };
 
-const scanStatusOptions = DN_SCAN_STATUS_ITEMS || [];
-const scanStatusMetaMap = new Map(scanStatusOptions.map((item) => [item.value, item]));
+const scanStatusDeliveryOptions = (STATUS_DELIVERY_ITEMS || []).filter(
+  (item) => item && item.value !== (STATUS_DELIVERY_VALUES && STATUS_DELIVERY_VALUES.NO_STATUS)
+);
+const scanStatusSiteOptions = STATUS_SITE_ORDERED_LIST || [];
+const scanStatusMetaMap = new Map(scanStatusDeliveryOptions.map((item) => [item.value, item]));
 
-const STATUS_TRANSLATION_MAP = scanStatusOptions.reduce(
+const STATUS_TRANSLATION_MAP = scanStatusDeliveryOptions.reduce(
   (acc, item) => {
     acc[item.value] = item.filterLabelKey;
     return acc;
@@ -514,7 +486,6 @@ const statusLabel = (v) => {
       const translated = t(key);
       if (translated && translated !== key) return translated;
     }
-    if (meta.fallbackLabel) return meta.fallbackLabel;
   } else {
     const key = STATUS_TRANSLATION_MAP[v];
     if (key) {
@@ -547,7 +518,7 @@ const formatCoordinate = (val) => {
 
 const submitUpdate = async () => {
   if (!state.isValid) return;
-  if (!state.dnStatus) {
+  if (!state.dnStatusDelivery) {
     state.needsStatusHint = true;
     state.needsStatusShake = true;
     return;
@@ -594,7 +565,8 @@ const submitUpdate = async () => {
       state.submitView = {
         phoneNumber: currentPhone,
         dnNumber: state.dnNumber,
-        status: state.dnStatus,
+      status_delivery: state.dnStatusDelivery,
+        status_site: state.dnStatusSite,
         remark: state.remark,
         photo: state.photoPreview || null,
         lng: state.location?.lng,
@@ -609,7 +581,8 @@ const submitUpdate = async () => {
 
     const fd = new FormData();
     fd.append('dnNumber', state.dnNumber);
-    fd.append('status', state.dnStatus ?? '');
+  fd.append('status_delivery', state.dnStatusDelivery ?? '');
+    fd.append('status_site', state.dnStatusSite ?? '');
     fd.append('remark', state.remark ?? '');
     fd.append('lng', state.location?.lng ?? '');
     fd.append('lat', state.location?.lat ?? '');
@@ -641,7 +614,8 @@ const submitUpdate = async () => {
     state.submitView = {
       phoneNumber: currentPhone,
       dnNumber: state.dnNumber,
-      status: state.dnStatus,
+  status_delivery: state.dnStatusDelivery,
+        status_site: state.dnStatusSite,
       remark: state.remark,
       photo: state.photoPreview || null,
       lng: state.location?.lng,

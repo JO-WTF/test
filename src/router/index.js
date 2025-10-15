@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { getCookie } from '../utils/cookie.js';
 
-const PHONE_COOKIE_KEY = 'phone_number';
-
 const routes = [
   {
     path: '/',
@@ -52,7 +50,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const storedPhone = getCookie(PHONE_COOKIE_KEY);
+  const storedPhone = getCookie('phone_number');
 
   if (to.name === 'phone') {
     if (storedPhone) {

@@ -1,15 +1,12 @@
 import { api as viewerApi } from 'v-viewer';
-import Toastify from 'toastify-js';
 import {
-  STATUS_VALUES,
-  DN_SCAN_STATUS_VALUES,
-  STATUS_DISPLAY_OVERRIDES,
-  DN_SCAN_STATUS_ITEMS,
+  STATUS_DELIVERY_VALUES,
+  STATUS_DELIVERY_ITEMS,
 } from '../../config.js';
 import { getApiBase, getMapboxAccessToken } from '../../utils/env.js';
 
 import { createDnEntryManager } from './dnEntry.js';
-import { createStatusCardManager } from './statusCards.js';
+import { createStatusDeliveryCardManager } from './statusCards.js';
 import { createLspSummaryCardManager } from './lspSummaryCards.js';
 import { createFilterBridgeManager } from './filterBridgeManager.js';
 import { createAuthHandler } from './authHandler.js';
@@ -17,36 +14,54 @@ import { getTodayDateStringInTimezone } from './dateUtils.js';
 import {
   escapeHtml,
   setFormControlValue,
-  lockBodyScroll,
-  unlockBodyScroll,
-  resetBodyScrollLock,
+  fetchWithPayload,
+  bindAsyncButtonClick,
+  normalizeTextValue,
+  setSearchParamValues,
+  convertDateToOffsetIso,
+  formatTimestampWithOffset,
+  formatTimestampForExport,
+  isTimestampKey,
+  downloadCSV,
+  extractItemsFromResponse,
+  showToast,
 } from './utils.js';
-import { createTableRenderer } from './tableRenderer.js';
+import { createUpdateHistoryRenderer } from './updateHistoryRenderer.js';
 
 import {
   TRANSPORT_MANAGER_ROLE_KEY,
-  STATUS_VALUE_TO_KEY,
-  STATUS_ALIAS_LOOKUP,
-  STATUS_KNOWN_VALUES,
-  STATUS_NOT_EMPTY_VALUE,
-  STATUS_ANY_VALUE,
-  DEFAULT_STATUS_VALUE,
+  STATUS_DELIVERY_VALUE_TO_KEY,
+  STATUS_DELIVERY_ALIAS_MAP,
+  STATUS_DELIVERY_KNOWN_VALUES,
+  DEFAULT_STATUS_DELIVERY_VALUE,
   PLAN_MOS_TIME_ZONE,
-  PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
   JAKARTA_UTC_OFFSET_MINUTES,
   ARCHIVE_THRESHOLD_DAYS,
-  TRANSPORT_MANAGER_STATUS_CARDS,
-  STATUS_DELIVERY_OPTIONS,
-  DEFAULT_MODAL_STATUS_ORDER,
+  TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   DN_DETAIL_KEYS,
   ICON_MARKUP,
 } from './constants.js';
 
-const SCAN_STATUS_META = new Map(
-  (DN_SCAN_STATUS_ITEMS || []).map((item) => [item.value, item])
-);
-
 const API_BASE = getApiBase();
+const JAKARTA_OFFSET = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
+  ? JAKARTA_UTC_OFFSET_MINUTES
+  : 0;
+const EXPORT_PREFERRED_KEYS = [
+  ...DN_DETAIL_KEYS,
+  'du_id',
+  'status_delivery',
+  'status_site',
+  'remark',
+  'photo_url',
+  'photo',
+  'photo_urls',
+  'lat',
+  'lng',
+  'latitude',
+  'longitude',
+  'created_at',
+  'updated_at',
+];
 
 export function setupAdminPage(
   rootEl,
@@ -57,14 +72,28 @@ export function setupAdminPage(
     filterSelects,
     filterInputs,
     onRoleChange,
+    modalControllers = {},
+    tableBridge = null,
   } = {}
 ) {
-  if (!rootEl) return () => {};
+  if (!rootEl) return () => { };
 
   const controller = new AbortController();
   const { signal } = controller;
 
-  const el = (id) => rootEl.querySelector(`#${id}`);
+  const el = (id) => {
+    if (!id) return null;
+    try {
+      return document.getElementById(id);
+    } catch (err) {
+      console.error(`Failed to query element #${id}`, err);
+      return null;
+    }
+  };
+
+  const scanStatusMeta = new Map(
+    (STATUS_DELIVERY_ITEMS || []).map((item) => [item.value, item])
+  );
 
   const {
     getFilterValues,
@@ -84,30 +113,23 @@ export function setupAdminPage(
 
   const dnInput = el('f-dn');
   const dnPreview = el('dn-preview');
-  const tbl = el('tbl');
-  const tbody = tbl?.querySelector('tbody');
-  const actionsHeader = tbl?.querySelector('thead th[data-column="actions"]');
-  const updatedAtHeader = tbl?.querySelector('thead th[data-column="updatedAt"]');
   const hint = el('hint');
-  const pager = el('pager');
-  const pginfo = el('pginfo');
 
   const hasSelect = el('f-has');
   const hasSelectField = hasSelect ? hasSelect.closest('.field') : null;
-  const pageSizeInput = el('f-ps2');
 
-  const mask = el('modal-mask');
   const mId = el('modal-id');
-  const mStatus = el('m-status');
   const mStatusDelivery = el('m-status-delivery');
-  const mStatusDeliveryField = el('m-status-delivery-field');
+  const mStatusSite = el('m-status-site');
+  const mStatusSiteField = el('m-status-site-field');
   const mRemark = el('m-remark');
   const mRemarkField = el('m-remark-field');
   const mPhoto = el('m-photo');
   const mPhotoField = el('m-photo-field');
   const mMsg = el('m-msg');
+  const filtersGrid = el('filters-grid');
+  const filtersToggle = el('filters-toggle');
 
-  const authModal = el('auth-modal');
   const authBtn = el('btn-auth');
   const authCancel = el('auth-cancel');
   const authConfirm = el('auth-confirm');
@@ -121,41 +143,95 @@ export function setupAdminPage(
   const lspSummaryContainer = el('lsp-summary-card-container');
 
   const dnBtn = el('btn-dn-entry');
-  const dnModal = el('dn-modal');
   const dnEntryInput = el('dn-input');
   const dnEntryPreview = el('dn-preview-modal');
-  const dnClose = el('dn-close');
   const dnCancel = el('dn-cancel');
   const dnConfirm = el('dn-confirm');
   const archiveExpiredDnBtn = el('btn-archive-expired-dn');
 
-  const updateHistoryModal = el('update-history-modal');
   const historyDnNumber = el('history-dn-number');
   const historyContent = el('history-content');
   const historyOk = el('history-ok');
 
+  const editModalController = modalControllers?.edit || null;
+  const authModalController = modalControllers?.auth || null;
+  const dnModalController = modalControllers?.dn || null;
+  const updateHistoryModalController = modalControllers?.updateHistory || null;
+
   let editingId = 0;
   let editingItem = null;
   let removeI18nListener = null;
-  let tableRenderer = null;
+  let filtersExpanded = true;
+  let filtersMediaQuery = null;
+  let removeFiltersMediaListener = null;
+  const updateHistoryRenderer = createUpdateHistoryRenderer({
+    container: historyContent,
+    signal,
+    i18n,
+    i18nStatusDisplay,
+    escapeHtml,
+    formatTimestampToJakarta,
+    toAbsUrl,
+    getIconMarkup,
+    getMapboxStaticImageUrl,
+    getTableRenderer: () => ({
+      openViewerWithUrl: openPhotoViewer,
+    }),
+  });
+
+  if (filtersToggle) {
+    filtersToggle.setAttribute('aria-expanded', 'false');
+    filtersToggle.addEventListener('click', () => {
+      setFiltersExpanded(!filtersExpanded);
+    }, { signal });
+  }
+
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    filtersMediaQuery = window.matchMedia('(max-width: 768px)');
+    const mediaHandler = (event) => {
+      handleFiltersMediaChange(event);
+    };
+    if (typeof filtersMediaQuery.addEventListener === 'function') {
+      filtersMediaQuery.addEventListener('change', mediaHandler);
+      removeFiltersMediaListener = () => {
+        try {
+          filtersMediaQuery.removeEventListener('change', mediaHandler);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+    } else if (typeof filtersMediaQuery.addListener === 'function') {
+      filtersMediaQuery.addListener(mediaHandler);
+      removeFiltersMediaListener = () => {
+        try {
+          filtersMediaQuery.removeListener(mediaHandler);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+    }
+    handleFiltersMediaChange(filtersMediaQuery);
+  } else {
+    setFiltersExpanded(true);
+  }
 
   // 初始化授权处理器
   const authHandler = createAuthHandler({
-    authModal,
     authBtn,
     authCancel,
     authConfirm,
     authInput,
     authMsg,
     authRoleTag,
+    authModalController,
     signal,
     i18n,
     showToast,
     onRoleChange,
     onRoleApplied: handleAuthRoleApplied,
-    onAuthSuccess: (role, userInfo) => {
-      // 授权成功后刷新列表
-      fetchList();
+    onAuthSuccess: () => {
+      // 授权成功后执行完整初始化逻辑
+      init();
     },
   });
 
@@ -168,83 +244,20 @@ export function setupAdminPage(
     }
   }
 
-  function convertDateToJakartaIso(dateString, { endOfDay = false } = {}) {
-    if (!dateString) return '';
-
-    const parts = String(dateString).split('-');
-    if (parts.length < 3) {
-      return formatDateFallback(dateString, { endOfDay });
-    }
-
-    const [yearPart, monthPart, dayPart] = parts;
-    const year = Number(yearPart);
-    const monthIndex = Number(monthPart) - 1;
-    const day = Number(dayPart);
-
-    if (
-      !Number.isFinite(year) ||
-      !Number.isFinite(monthIndex) ||
-      !Number.isFinite(day)
-    ) {
-      return formatDateFallback(dateString, { endOfDay });
-    }
-
-    // 统一将起止日期固定到雅加达中午，避免在不同时区展示或解析时日期被偏移。
-    const hours = 12;
-    const minutes = 0;
-    const seconds = 0;
-    const milliseconds = 0;
-
-    const offsetMinutes = Number.isFinite(JAKARTA_UTC_OFFSET_MINUTES)
-      ? JAKARTA_UTC_OFFSET_MINUTES
-      : 0;
-
-    const utcTimestamp =
-      Date.UTC(year, monthIndex, day, hours, minutes, seconds, milliseconds) -
-      offsetMinutes * 60 * 1000;
-
-    return new Date(utcTimestamp).toISOString();
-  }
-
-  function formatDateFallback(dateString, _opts = {}) {
-    const suffix = 'T12:00:00';
-    const value = new Date(`${dateString}${suffix}`);
-    if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
-    return value.toISOString();
+  function convertDateToJakartaIso(dateString, options = {}) {
+    return convertDateToOffsetIso(dateString, {
+      ...options,
+      offsetMinutes: JAKARTA_OFFSET,
+    });
   }
 
   function formatTimestampToJakarta(timestamp) {
-    if (!timestamp) return '';
-    
-    let date;
-    if (timestamp instanceof Date) {
-      date = timestamp;
-    } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
-      date = new Date(timestamp);
-    } else {
-      return '';
-    }
-    
-    if (Number.isNaN(date.getTime())) return '';
-    
-    // 转换为雅加达时间 (UTC+7)
-    const jakartaOffset = JAKARTA_UTC_OFFSET_MINUTES || 420; // 默认 420 分钟 = 7 小时
-    const utcTime = date.getTime();
-    const jakartaTime = new Date(utcTime + jakartaOffset * 60 * 1000);
-    
-    const year = jakartaTime.getUTCFullYear();
-    const month = String(jakartaTime.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(jakartaTime.getUTCDate()).padStart(2, '0');
-    const hours = String(jakartaTime.getUTCHours()).padStart(2, '0');
-    const minutes = String(jakartaTime.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(jakartaTime.getUTCSeconds()).padStart(2, '0');
-    
-    return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
+    return formatTimestampWithOffset(timestamp, {
+      offsetMinutes: JAKARTA_OFFSET,
+    });
   }
 
-  // 使用 STATUS_VALUES 作为 status 值，label 也使用同样的值以保持一致性
-  // 实际显示文本会通过 i18n 系统翻译
-  setFilterValue('status', DEFAULT_STATUS_VALUE);
+  setFilterValue('status_delivery', DEFAULT_STATUS_DELIVERY_VALUE);
 
   function getIconMarkup(name) {
     return ICON_MARKUP[name] || '';
@@ -275,15 +288,14 @@ export function setupAdminPage(
 
   function getNormalizedPageSize() {
     const fallback = 20;
-    if (!pageSizeInput) return fallback;
-    const raw = Number(pageSizeInput.value);
+    const raw = Number(q.page_size);
     if (!Number.isFinite(raw) || raw <= 0) {
-      setFormControlValue(pageSizeInput, String(fallback));
+      q.page_size = fallback;
       return fallback;
     }
     const normalized = Math.min(1000, Math.max(1, Math.floor(raw)));
-    if (String(normalized) !== String(pageSizeInput.value)) {
-      setFormControlValue(pageSizeInput, String(normalized));
+    if (normalized !== q.page_size) {
+      q.page_size = normalized;
     }
     return normalized;
   }
@@ -293,28 +305,11 @@ export function setupAdminPage(
       typeof paramInput === 'string'
         ? paramInput
         : paramInput && typeof paramInput.toString === 'function'
-        ? paramInput.toString()
-        : '';
+          ? paramInput.toString()
+          : '';
     const basePath =
       mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?';
     return `${API_BASE}${basePath}${params}`;
-  }
-
-  function showToast(text, type = 'info') {
-    const backgroundColor =
-      type === 'success'
-        ? '#16a34a'
-        : type === 'error'
-        ? '#dc2626'
-        : '#0f172a';
-    Toastify({
-      text,
-      duration: 3000,
-      gravity: 'bottom',
-      position: 'center',
-      stopOnFocus: true,
-      style: { background: backgroundColor },
-    }).showToast();
   }
 
   function getCurrentRole() {
@@ -334,10 +329,8 @@ export function setupAdminPage(
     dnInput,
     dnPreview,
     dnBtn,
-    dnModal,
     dnEntryInput,
     dnEntryPreview,
-    dnClose,
     dnCancel,
     dnConfirm,
     signal,
@@ -347,6 +340,7 @@ export function setupAdminPage(
     getCurrentPermissions,
     getCurrentRoleKey: () => authHandler.getCurrentRoleKey(),
     fetchList,
+    dnModalController,
   });
 
   const lspSummaryCards = createLspSummaryCardManager({
@@ -361,18 +355,18 @@ export function setupAdminPage(
     },
   });
 
-  const statusCards = createStatusCardManager({
+  const statusCards = createStatusDeliveryCardManager({
     container: statusCardContainer,
     wrapper: statusCardWrapper,
     signal,
     API_BASE,
     i18n,
     getCurrentRole,
-    normalizeStatusValue,
+    normalizeStatusDeliveryValue,
     i18nStatusDisplay,
-    getStatusDeliveryValues: () => getFilterValues('status_delivery'),
-    getStatusFilterValue: () => getSingleFilterValue('status'),
-    transportManagerCards: TRANSPORT_MANAGER_STATUS_CARDS,
+    getStatusSiteValues: () => getFilterValues('status_site'),
+    getStatusDeliveryFilterValue: () => getSingleFilterValue('status_delivery'),
+    transportManagerCards: TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
     onApplyFilter(def, canonicalStatus) {
       applyStatusCardFilter(def, canonicalStatus);
       statusCards.updateActiveState();
@@ -393,24 +387,20 @@ export function setupAdminPage(
 
   // 授权相关函数已移至 authHandler.js
 
-  function normalizeStatusValue(raw) {
+  function normalizeStatusDeliveryValue(raw) {
     const text = (raw || '').trim();
     if (!text) return '';
-    const alias = STATUS_ALIAS_LOOKUP[text];
+    const alias = STATUS_DELIVERY_ALIAS_MAP[text];
     if (alias) return alias;
-    if (STATUS_KNOWN_VALUES.has(text)) return text;
+    if (STATUS_DELIVERY_KNOWN_VALUES.has(text)) return text;
     const upper = text.toUpperCase();
-    if (STATUS_KNOWN_VALUES.has(upper)) return upper;
+    if (STATUS_DELIVERY_KNOWN_VALUES.has(upper)) return upper;
     return text;
   }
 
   function i18nStatusDisplay(value) {
-    const canonical = normalizeStatusValue(value);
-    const override =
-      (STATUS_DISPLAY_OVERRIDES && STATUS_DISPLAY_OVERRIDES[canonical]) ||
-      (STATUS_DISPLAY_OVERRIDES && STATUS_DISPLAY_OVERRIDES[value]);
-    if (override) return override;
-    const key = STATUS_VALUE_TO_KEY[canonical] || STATUS_VALUE_TO_KEY[value];
+    const canonical = normalizeStatusDeliveryValue(value);
+    const key = STATUS_DELIVERY_VALUE_TO_KEY[canonical] || STATUS_DELIVERY_VALUE_TO_KEY[value];
     if (key && i18n) {
       try {
         const translated = i18n.t(key);
@@ -433,36 +423,44 @@ export function setupAdminPage(
     return fallback;
   }
 
-  function normalizeTextValue(value) {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string') return value.trim();
-    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-    if (typeof value === 'boolean') return value ? 'true' : 'false';
-    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
-    try {
-      return String(value).trim();
-    } catch (err) {
-      console.error(err);
+  function updateFiltersToggleLabel() {
+    if (!filtersToggle) return;
+    const key = filtersExpanded ? 'filters.toggle.hide' : 'filters.toggle.show';
+    const fallback = filtersExpanded ? 'Hide Filters' : 'Show Filters';
+    filtersToggle.textContent = translateInstant(key, fallback);
+  }
+
+  function setFiltersExpanded(expanded) {
+    filtersExpanded = !!expanded;
+    if (filtersGrid) {
+      filtersGrid.classList.toggle('is-visible', filtersExpanded);
     }
-    return '';
+    if (filtersToggle) {
+      filtersToggle.setAttribute('aria-expanded', filtersExpanded ? 'true' : 'false');
+      filtersToggle.setAttribute('data-state', filtersExpanded ? 'expanded' : 'collapsed');
+    }
+    updateFiltersToggleLabel();
+  }
+
+  function handleFiltersMediaChange(event) {
+    const isMobile = !!event?.matches;
+    setFiltersExpanded(!isMobile);
   }
 
   function applyAllTranslations() {
     if (typeof applyTranslations === 'function') {
       applyTranslations();
     }
-    if (tableRenderer) {
-      tableRenderer.translateStatusCells();
-      tableRenderer.updateDetailSaveButtonLabels();
-    }
+    tableBridge?.notifyTranslations?.();
     authHandler.refreshLabels();
     statusCards.updateLabels();
     statusCards.updateActiveState();
     lspSummaryCards.updateActiveState();
     refreshDnEntryVisibility();
-    populateModalStatusOptions(mStatus?.value || '');
-    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
+    populateModalStatusOptions({ type: 'delivery', selected: mStatusDelivery?.value || '' });
+    populateModalStatusOptions({ type: 'site', selected: mStatusSite?.value || '' });
     dnEntry.renderFilterPreview();
+    updateFiltersToggleLabel();
   }
 
   if (i18n && typeof i18n.onChange === 'function') {
@@ -473,13 +471,12 @@ export function setupAdminPage(
 
   function handleAuthRoleApplied(_roleKey, _role, _userInfo) {
     refreshDnEntryVisibility();
-    populateModalStatusOptions(mStatus?.value || '');
-    populateModalStatusDeliveryOptions(mStatusDelivery?.value || '');
+    populateModalStatusOptions({ type: 'delivery', selected: mStatusDelivery?.value || '' });
+    populateModalStatusOptions({ type: 'site', selected: mStatusSite?.value || '' });
     updateModalFieldVisibility();
-    if (tableRenderer) {
-      tableRenderer.updateActionColumnVisibility();
-      tableRenderer.rerenderTableActions();
-    }
+    tableBridge?.setPermissions?.(getCurrentPermissions());
+    tableBridge?.setTransportManager?.(isTransportManagerRole());
+    tableBridge?.notifyTranslations?.();
     statusCards.render();
     statusCards.refreshCounts();
     lspSummaryCards.updateActiveState();
@@ -489,15 +486,15 @@ export function setupAdminPage(
     const perms = getCurrentPermissions();
     const allowRemark = Boolean(perms?.allowRemark);
     const allowPhoto = Boolean(perms?.allowPhoto);
-    const allowStatusDelivery = Boolean(perms?.canEdit);
+    const allowStatusSite = Boolean(perms?.canEdit);
 
-    if (mStatusDeliveryField) {
-      mStatusDeliveryField.style.display = allowStatusDelivery ? '' : 'none';
+    if (mStatusSiteField) {
+      mStatusSiteField.style.display = allowStatusSite ? '' : 'none';
     }
-    if (mStatusDelivery) {
-      mStatusDelivery.disabled = !allowStatusDelivery;
-      if (!allowStatusDelivery) {
-        setFormControlValue(mStatusDelivery, '');
+    if (mStatusSite) {
+      mStatusSite.disabled = !allowStatusSite;
+      if (!allowStatusSite) {
+        setFormControlValue(mStatusSite, '');
       }
     }
 
@@ -523,11 +520,11 @@ export function setupAdminPage(
   }
 
   function getModalStatusLabel(value) {
-    const canonical = normalizeStatusValue(value);
+    const canonical = normalizeStatusDeliveryValue(value);
     if (!canonical) return '';
-    const meta = SCAN_STATUS_META.get(canonical);
+    const meta = scanStatusMeta.get(canonical);
     if (meta) {
-      const translated = translateInstant(meta.filterLabelKey, meta.fallbackLabel || canonical);
+      const translated = translateInstant(meta.filterLabelKey, canonical);
       if (translated) return translated;
     }
     const label = i18nStatusDisplay(canonical);
@@ -535,161 +532,47 @@ export function setupAdminPage(
     return canonical;
   }
 
-  function populateModalStatusOptions(selected) {
-    if (!mStatus) return;
+  function populateModalStatusOptions({ type, selected }) {
+    const isDelivery = type === 'delivery';
+    const selectEl = isDelivery ? mStatusDelivery : mStatusSite;
+    if (!selectEl) return;
+
     const perms = getCurrentPermissions();
-    const rawAllowed = Array.isArray(perms?.statusOptions)
-      ? perms.statusOptions
+    const optionsAllowed = Array.isArray(perms?.[isDelivery ? 'statusDeliveryOptions' : 'statusSiteOptions'])
+      ? perms[isDelivery ? 'statusDeliveryOptions' : 'statusSiteOptions']
       : [];
-    const baseList = rawAllowed.length ? rawAllowed : DEFAULT_MODAL_STATUS_ORDER;
-    const seen = new Set();
-    const normalized = [];
+    const selectedCanonical = normalizeStatusDeliveryValue(selected);
 
-    baseList.forEach((value) => {
-      const canonical = normalizeStatusValue(value);
-      if (!canonical || seen.has(canonical)) return;
-      seen.add(canonical);
-      normalized.push(canonical);
-    });
+    selectEl.innerHTML = '';
 
-    const ordered = [];
-    DEFAULT_MODAL_STATUS_ORDER.forEach((value) => {
-      if (seen.has(value)) {
-        ordered.push(value);
-        seen.delete(value);
-      }
-    });
-    normalized.forEach((value) => {
-      if (seen.has(value)) {
-        ordered.push(value);
-        seen.delete(value);
-      }
-    });
+    const keepValue = '';
+    const keepLabel = isDelivery
+      ? (i18n?.t('modal.statusDelivery.keep') || '（不修改）')
+      : (i18n?.t('modal.statusSite.keep') || '（不修改）');
 
-    if (!ordered.length) {
-      ordered.push(...DEFAULT_MODAL_STATUS_ORDER);
-    }
-
-    const selectedRaw = selected || '';
-    const selectedCanonical = normalizeStatusValue(selectedRaw);
-    if (selectedCanonical && !ordered.includes(selectedCanonical)) {
-      ordered.push(selectedCanonical);
-    }
-
-    const keepLabel = i18n?.t('modal.status.keep') || '（不修改）';
-    mStatus.innerHTML = '';
-    const keepOption = document.createElement('option');
-    keepOption.value = '';
-    keepOption.setAttribute('data-i18n', 'modal.status.keep');
-    keepOption.textContent = keepLabel;
-    mStatus.appendChild(keepOption);
-
-    const appended = new Set();
-    ordered.forEach((value) => {
-      const canonical = normalizeStatusValue(value);
-      if (!canonical || appended.has(canonical)) return;
-      appended.add(canonical);
+    // 默认选择“不修改”
+    const createOption = (value, label, isSelected = false) => {
       const opt = document.createElement('option');
-      opt.value = canonical;
-      opt.textContent = getModalStatusLabel(canonical);
-      if (canonical === selectedCanonical) {
-        opt.selected = true;
-      }
-      mStatus.appendChild(opt);
-    });
-
-    if (selectedCanonical && !appended.has(selectedCanonical)) {
-      const opt = document.createElement('option');
-      opt.value = selectedCanonical;
-      opt.textContent = getModalStatusLabel(selectedCanonical);
-      opt.selected = true;
-      mStatus.appendChild(opt);
-      appended.add(selectedCanonical);
-    }
-
-    if (selectedCanonical) {
-      mStatus.value = selectedCanonical;
-    } else {
-      mStatus.value = '';
-    }
-  }
-
-  function populateModalStatusDeliveryOptions(selected) {
-    if (!mStatusDelivery) return;
-    const selectedRaw = selected || '';
-    const selectedCanonical = normalizeStatusValue(selectedRaw);
-    const keepLabel = i18n?.t('modal.statusDelivery.keep') || '（不修改）';
-
-    mStatusDelivery.innerHTML = '';
-    const keepOption = document.createElement('option');
-    keepOption.value = '';
-    keepOption.setAttribute('data-i18n', 'modal.statusDelivery.keep');
-    keepOption.textContent = keepLabel;
-    mStatusDelivery.appendChild(keepOption);
-
-    const appended = new Set();
-    STATUS_DELIVERY_OPTIONS.forEach((value) => {
-      const canonical = normalizeStatusValue(value);
-      if (!canonical || appended.has(canonical)) return;
-      appended.add(canonical);
-      const opt = document.createElement('option');
-      opt.value = canonical;
-      opt.textContent = getModalStatusLabel(canonical);
-      if (canonical === selectedCanonical) {
-        opt.selected = true;
-      }
-      mStatusDelivery.appendChild(opt);
-    });
-
-    if (selectedCanonical && !appended.has(selectedCanonical)) {
-      const opt = document.createElement('option');
-      opt.value = selectedCanonical;
-      opt.textContent = getModalStatusLabel(selectedCanonical);
-      opt.selected = true;
-      mStatusDelivery.appendChild(opt);
-      appended.add(selectedCanonical);
-    }
-
-    if (selectedCanonical) {
-      setFormControlValue(mStatusDelivery, selectedCanonical);
-    } else {
-      setFormControlValue(mStatusDelivery, '');
-    }
-  }
-
-  function syncStatusDeliveryWithStatus() {
-    if (!mStatus || !mStatusDelivery) return;
-    const canonicalStatus = normalizeStatusValue(mStatus.value);
-    if (!canonicalStatus) {
-      setFormControlValue(mStatusDelivery, '');
-      return;
-    }
-    if (canonicalStatus === DN_SCAN_STATUS_VALUES.ARRIVED_AT_WH) {
-      setFormControlValue(mStatusDelivery, '');
-      return;
-    }
-
-    const ARRIVED_AT_SITE = DN_SCAN_STATUS_VALUES.ARRIVED_AT_SITE;
-    const POD_STATUS = DN_SCAN_STATUS_VALUES.POD || 'POD';
-    const podDeliveryValue = STATUS_VALUES.POD || POD_STATUS;
-
-    const statusDeliveryMap = {
-      [ARRIVED_AT_SITE]: STATUS_VALUES.ON_SITE,
-      [POD_STATUS]: podDeliveryValue,
+      opt.value = value;
+      opt.textContent = label;
+      if (isSelected) opt.selected = true;
+      selectEl.appendChild(opt);
     };
 
-    const nextValue = statusDeliveryMap[canonicalStatus] || STATUS_VALUES.ON_THE_WAY;
-    setFormControlValue(mStatusDelivery, nextValue);
-  }
+    createOption(keepValue, keepLabel, true);
 
-  if (mStatus && mStatusDelivery) {
-    mStatus.addEventListener(
-      'change',
-      () => {
-        syncStatusDeliveryWithStatus();
-      },
-      { signal }
-    );
+    optionsAllowed.forEach((value) => {
+      const canonical = normalizeStatusDeliveryValue(value);
+      if (canonical) {
+        createOption(
+          canonical,
+          isDelivery ? getModalStatusLabel(canonical) : i18nStatusDisplay(canonical),
+          false // 其他选项不默认选中
+        );
+      }
+    });
+
+    selectEl.value = keepValue;
   }
 
   function refreshDnEntryVisibility() {
@@ -704,10 +587,10 @@ export function setupAdminPage(
   function applyLspSummaryCardFilter(lspName) {
     const normalizedLsp = normalizeTextValue(lspName);
     if (!normalizedLsp) return;
-  resetAllFilters();
+    resetAllFilters();
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
-      PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
+      JAKARTA_OFFSET,
       'dd MMM yy'
     );
     setFilterValue('plan_mos_date', todayJakarta);
@@ -719,63 +602,36 @@ export function setupAdminPage(
   }
 
   function applyStatusCardFilter(def, canonicalStatus) {
-    const targetStatus = def?.type === 'status' ? canonicalStatus : '';
+    const targetStatus = def?.type === 'status_delivery' ? canonicalStatus : '';
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
-      PLAN_MOS_TIMEZONE_OFFSET_MINUTES,
+      JAKARTA_OFFSET,
       'dd MMM yy'
     );
 
-    setInputValue('remark', '');
-    setFormControlValue(hasSelect, '');
-    setFilterValue('has_coordinate', '');
-    setFilterValue('date_from', '');
-    setFilterValue('date_to', '');
-    setInputValue('du', '');
-
-    setFilterValue('lsp', '');
-    setFilterValue('region', '');
-    setFilterValue('subcon', '');
-    setFilterValue('status_wh', '');
-
-    // Clicking a status card should only apply the status_delivery filter.
-    // Keep the status filter cleared so the query does not constrain by status.
-    setFilterValue('status', '');
-
+    resetAllFilters({ preservePageSize: true });
     setFilterValue('status_delivery', targetStatus);
-
     setFilterValue('plan_mos_date', todayJakarta);
-
-    if (dnInput) {
-      dnInput.value = '';
-      dnEntry.normalizeFilterInput({ enforceFormat: false });
-    }
   }
 
-  // 本地表格渲染逻辑已移除，统一由 tableRenderer 管理
 
   async function fetchFilterCandidates() {
     try {
-      const resp = await fetch(`${API_BASE}/api/dn/filters`, { signal });
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
+      const { resp, data, message } = await fetchWithPayload(
+        `${API_BASE}/api/dn/filters`,
+        { signal }
+      );
       if (!resp.ok) {
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+        throw new Error(message || `HTTP ${resp.status}`);
       }
-
       const payload = data?.data && typeof data.data === 'object' ? data.data : data;
       setFilterDropdownOptions('lsp', payload?.lsp);
       setFilterDropdownOptions('region', payload?.region);
+      setFilterDropdownOptions('area', payload?.area);
       setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
       setFilterDropdownOptions('subcon', payload?.subcon);
-      setFilterDropdownOptions('status_wh', payload?.status_wh);
-      const deliveryOptions = payload?.status_delivery || payload?.status_deliver;
-      setFilterDropdownOptions('status_delivery', deliveryOptions);
+      const siteOptions = payload?.status_site;
+      setFilterDropdownOptions('status_site', siteOptions);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       console.error('Failed to load DN filter options', err);
@@ -793,7 +649,7 @@ export function setupAdminPage(
       q.mode = 'batch';
     } else {
       q.mode = 'single';
-      const st = getSingleFilterValue('status');
+      const st = getSingleFilterValue('status_delivery');
       const rk = getInputValue('remark').trim();
       const hp = hasSelect?.value;
       const hc = getSingleFilterValue('has_coordinate');
@@ -802,17 +658,18 @@ export function setupAdminPage(
       const du = getInputValue('du').trim();
       const lspValues = getFilterValues('lsp');
       const regionValues = getFilterValues('region');
+  const areaValues = getFilterValues('area');
       const planMosDateTokens = getFilterValues('plan_mos_date');
       const subconValues = getFilterValues('subcon');
-      const statusWhValues = getFilterValues('status_wh');
-      const statusDeliveryValues = getFilterValues('status_delivery');
+      
+      const statusSiteValues = getFilterValues('status_site');
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
-      if (st === STATUS_NOT_EMPTY_VALUE) {
+      if (st === '__NOT_EMPTY__') {
         params.set('status_not_empty', 'true');
       } else if (st) {
-        params.set('status', st);
+        params.set('status_delivery', st);
       }
       if (rk) params.set('remark', rk);
       if (hp) params.set('has_photo', hp);
@@ -825,36 +682,15 @@ export function setupAdminPage(
         const jakartaDateTo = convertDateToJakartaIso(dt, { endOfDay: true });
         if (jakartaDateTo) params.set('date_to', jakartaDateTo);
       }
-      if (lspValues.length === 1) {
-        params.set('lsp', lspValues[0]);
-      } else if (lspValues.length > 1) {
-        lspValues.forEach((value) => params.append('lsp', value));
-      }
-      if (regionValues.length === 1) {
-        params.set('region', regionValues[0]);
-      } else if (regionValues.length > 1) {
-        regionValues.forEach((value) => params.append('region', value));
-      }
-      if (planMosDateTokens.length === 1) {
-        params.set('date', planMosDateTokens[0]);
-      } else if (planMosDateTokens.length > 1) {
-        planMosDateTokens.forEach((token) => params.append('date', token));
-      }
-      if (subconValues.length === 1) {
-        params.set('subcon', subconValues[0]);
-      } else if (subconValues.length > 1) {
-        subconValues.forEach((value) => params.append('subcon', value));
-      }
-      if (statusWhValues.length === 1) {
-        params.set('status_wh', statusWhValues[0]);
-      } else if (statusWhValues.length > 1) {
-        statusWhValues.forEach((value) => params.append('status_wh', value));
-      }
-      if (statusDeliveryValues.length === 1) {
-        params.set('status_delivery', statusDeliveryValues[0]);
-      } else if (statusDeliveryValues.length > 1) {
-        statusDeliveryValues.forEach((value) => params.append('status_delivery', value));
-      }
+      setSearchParamValues(params, {
+        lsp: lspValues,
+        region: regionValues,
+  area: areaValues,
+        date: planMosDateTokens,
+        subcon: subconValues,
+        
+        status_site: statusSiteValues,
+      });
     }
 
     if (q.mode === 'single') {
@@ -875,58 +711,134 @@ export function setupAdminPage(
   }
 
   async function fetchList() {
-    if (!hint || !tbl || !pager || !pginfo) return;
+    if (!hint) return;
     try {
       hint.textContent = i18n?.t('hint.loading') || '加载中…';
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
+      tableBridge?.setLoading?.(true);
+      q.page_size = getNormalizedPageSize();
 
       const params = buildParamsAuto();
       const url = buildSearchUrl(params);
-      const resp = await fetch(url);
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
+      const { resp, data, message } = await fetchWithPayload(url, { signal });
       if (!resp.ok) {
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+        throw new Error(message || `HTTP ${resp.status}`);
       }
 
       const items = Array.isArray(data?.items) ? data.items : [];
-      tableRenderer.renderRows(items);
-      tableRenderer.bindRowActions();
+
+      // 如果 search 接口返回了 stats，就把它传递给 statusCards 与 lspSummaryCards
+      try {
+        const rawStats = data?.stats ?? null;
+        if (rawStats && typeof rawStats === 'object') {
+          const sd = rawStats.status_delivery || rawStats.statusDelivery || {};
+          // status_site may be returned separately by the backend; merge it into the
+          // unified counts object so statusCards can find counts for both delivery
+          // and site-type status cards.
+          const ss = rawStats.status_site || rawStats.statusSite || {};
+          const counts = Object.create(null);
+          Object.keys(sd || {}).forEach((k) => {
+            const n = Number(sd[k]);
+            counts[k] = Number.isFinite(n) ? n : 0;
+          });
+          // Merge site stats, summing with any existing delivery counts if keys collide
+          Object.keys(ss || {}).forEach((k) => {
+            const n = Number(ss[k]);
+            const prev = Number.isFinite(Number(counts[k])) ? Number(counts[k]) : 0;
+            counts[k] = prev + (Number.isFinite(n) ? n : 0);
+          });
+          const totalFromStats = Number.isFinite(Number(rawStats.total)) ? Number(rawStats.total) : null;
+          const total = totalFromStats !== null ? totalFromStats : (data?.total || Object.values(counts).reduce((s, v) => s + (Number.isFinite(Number(v)) ? Number(v) : 0), 0));
+          const lspSummary = Array.isArray(rawStats.lsp_summary) ? rawStats.lsp_summary : Array.isArray(rawStats.lspSummary) ? rawStats.lspSummary : [];
+          const statsObj = { counts, total, lspSummary };
+          try {
+            statusCards.refreshCounts(statsObj);
+          } catch (err) {
+            console.error('Error calling statusCards.refreshCounts with stats', err);
+          }
+          try {
+            lspSummaryCards.setData(lspSummary);
+            lspSummaryCards.updateActiveState();
+          } catch (err) {
+            console.error('Error updating lspSummaryCards from stats', err);
+          }
+        } else {
+          // no stats returned, still trigger refresh (will be no-op or fetch nothing)
+          try {
+            statusCards.refreshCounts();
+          } catch (err) {
+            console.error('Error calling statusCards.refreshCounts', err);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to process stats from list response', err);
+      }
+
+      tableBridge?.setItems?.(items, {
+        total: Number(data?.total) || 0,
+        page: q.page,
+        pageSize: q.page_size,
+      });
       applyAllTranslations();
 
-      tbl.style.display = '';
       hint.textContent = items.length
         ? ''
         : i18n?.t('hint.empty') || '没有数据';
-
-      const total = data?.total || 0;
-      const pages = Math.max(1, Math.ceil(total / q.page_size));
-      const pageLabel = i18n?.t('pager.info');
-      if (pageLabel && pageLabel !== 'pager.info') {
-        pginfo.textContent = pageLabel
-          .replace('{page}', q.page)
-          .replace('{pages}', pages)
-          .replace('{total}', total);
-      } else {
-        pginfo.textContent = `第 ${q.page} / ${pages} 页，共 ${total} 条`;
-      }
-      pager.style.display = pages > 1 ? '' : 'none';
-      const prev = el('prev');
-      const next = el('next');
-      if (prev) prev.disabled = q.page <= 1;
-      if (next) next.disabled = q.page >= pages;
     } catch (err) {
       hint.textContent = `${i18n?.t('hint.error') || '查询失败'}：${err?.message || err}`;
-      tbl.style.display = 'none';
-      pager.style.display = 'none';
+      tableBridge?.setItems?.([], {
+        total: 0,
+        page: q.page,
+        pageSize: q.page_size,
+      });
     } finally {
-      statusCards.refreshCounts();
+      // Ensure any loading indicator is cleared regardless of outcome.
+      try {
+        tableBridge?.setLoading?.(false);
+      } catch (err) {
+        console.error('Failed to clear table loading state', err);
+      }
+    }
+  }
+
+  let photoViewerInstance = null;
+
+  function cleanupPhotoViewer() {
+    if (!photoViewerInstance) return;
+    try {
+      if (typeof photoViewerInstance.destroy === 'function') {
+        photoViewerInstance.destroy();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    photoViewerInstance = null;
+  }
+
+  function openPhotoViewer(url) {
+    if (!url || !viewerApi) return;
+
+    cleanupPhotoViewer();
+
+    try {
+      photoViewerInstance = viewerApi({
+        options: {
+          navbar: false,
+          title: false,
+          toolbar: false,
+          fullscreen: false,
+          movable: true,
+          zoomRatio: 0.4,
+          loading: true,
+          backdrop: true,
+          hidden() {
+            cleanupPhotoViewer();
+          },
+        },
+        images: [url],
+      });
+    } catch (err) {
+      console.error(err);
+      cleanupPhotoViewer();
     }
   }
 
@@ -953,72 +865,56 @@ export function setupAdminPage(
         console.error(err);
       }
     }
-    const canonicalStatus = normalizeStatusValue(item.status);
-    populateModalStatusOptions(canonicalStatus);
-    const statusDeliveryRaw =
-      item.status_delivery ||
-      item.statusDelivery ||
-      item.status_deliver ||
-      item.statusDeliver ||
+    const canonicalStatus = normalizeStatusDeliveryValue(item.status_delivery || item.status);
+    populateModalStatusOptions({ type: 'delivery', selected: canonicalStatus });
+    const statusSiteRaw =
+      item.status_site ||
+      item.statusSite ||
       '';
-    const canonicalStatusDelivery = normalizeStatusValue(statusDeliveryRaw);
-    populateModalStatusDeliveryOptions(canonicalStatusDelivery);
+    const canonicalStatusSite = normalizeStatusDeliveryValue(statusSiteRaw);
+    populateModalStatusOptions({ type: 'site', selected: canonicalStatusSite });
     updateModalFieldVisibility();
     if (mMsg) mMsg.textContent = '';
-    const wasVisible = mask && mask.style.display === 'flex';
-    if (mask) mask.style.display = 'flex';
-    if (!wasVisible) {
-      lockBodyScroll();
+    if (editModalController?.open) {
+      editModalController.open();
     }
   }
 
   function closeModal() {
-    const wasVisible = mask && mask.style.display === 'flex';
-    if (mask) mask.style.display = 'none';
-    if (wasVisible) {
-      unlockBodyScroll();
+    if (editModalController?.close) {
+      editModalController.close();
     }
     editingId = 0;
     editingItem = null;
-    if (mStatusDelivery) {
-      setFormControlValue(mStatusDelivery, '');
+    if (mStatusSite) {
+      setFormControlValue(mStatusSite, '');
     }
   }
 
   async function openUpdateHistoryModal(dnNumber) {
-    if (!dnNumber || !updateHistoryModal) return;
-    
+    if (!dnNumber) return;
+
     if (historyDnNumber) {
       historyDnNumber.textContent = dnNumber;
     }
-    
+
     if (historyContent) {
       historyContent.innerHTML = '<div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>';
     }
-    
-    const wasVisible = updateHistoryModal.style.display === 'flex';
-    updateHistoryModal.style.display = 'flex';
-    if (!wasVisible) {
-      lockBodyScroll();
+
+    if (updateHistoryModalController?.open) {
+      updateHistoryModalController.open();
     }
 
     try {
       const url = `${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`;
-      const resp = await fetch(url, { signal });
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
-      
+      const { resp, data, message } = await fetchWithPayload(url, { signal });
       if (!resp.ok) {
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+        throw new Error(message || `HTTP ${resp.status}`);
       }
-      
+
       const items = Array.isArray(data?.items) ? data.items : [];
-      renderUpdateHistory(items);
+      updateHistoryRenderer.render(items);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (historyContent) {
@@ -1030,12 +926,8 @@ export function setupAdminPage(
   }
 
   function closeUpdateHistoryModal() {
-    if (updateHistoryModal) {
-      const wasVisible = updateHistoryModal.style.display === 'flex';
-      updateHistoryModal.style.display = 'none';
-      if (wasVisible) {
-        unlockBodyScroll();
-      }
+    if (updateHistoryModalController?.close) {
+      updateHistoryModalController.close();
     }
   }
 
@@ -1043,140 +935,26 @@ export function setupAdminPage(
     // Get Mapbox token from env
     const mapboxToken = getMapboxAccessToken();
     if (!mapboxToken || !lng || !lat) return '';
-    
+
     // Mapbox Static Images API
     // https://docs.mapbox.com/api/maps/static-images/
     const style = 'mapbox/streets-v12'; // or 'mapbox/satellite-streets-v12' for satellite view
     const marker = `pin-s+ff0000(${lng},${lat})`; // Small red pin
-    
-    return `https://api.mapbox.com/styles/v1/${style}/static/${marker}/${lng},${lat},${zoom},0/${width}x${height}@2x?access_token=${encodeURIComponent(mapboxToken)}`;
-  }
 
-  function renderUpdateHistory(items) {
-    if (!historyContent) return;
-    
-    if (!items || items.length === 0) {
-      const emptyMsg = i18n?.t('updateHistory.empty') || '暂无更新记录';
-      historyContent.innerHTML = `<div class="empty-state">${escapeHtml(emptyMsg)}</div>`;
-      return;
-    }
-    
-    const recordsHtml = items.map((item, index) => {
-      const status = i18nStatusDisplay(item.status || '');
-      const remark = item.remark ? escapeHtml(item.remark) : '<span class="muted">-</span>';
-      const photoUrl = item.photo_url ? toAbsUrl(item.photo_url) : '';
-      
-      // Build updated_by with phone_number
-      let updatedBy = '<span class="muted">-</span>';
-      if (item.updated_by) {
-        updatedBy = escapeHtml(item.updated_by);
-        if (item.phone_number) {
-          updatedBy += ` <span class="phone-number-suffix">(${escapeHtml(item.phone_number)})</span>`;
-        }
-      }
-      
-      const createdAt = item.created_at ? formatTimestampToJakarta(item.created_at) : '<span class="muted">-</span>';
-      
-      const [lat, lng] = [item.lat, item.lng];
-      const hasCoords = lat && lng;
-      
-      // Build map preview section
-      let mapSection = '';
-      if (hasCoords) {
-        const mapImageUrl = getMapboxStaticImageUrl(lng, lat);
-        const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
-        const coords = `${escapeHtml(lat)}, ${escapeHtml(lng)}`;
-        
-        if (mapImageUrl) {
-          mapSection = `
-            <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener" class="history-map-image-link" title="在 Google Maps 中打开">
-              <img src="${escapeHtml(mapImageUrl)}" alt="位置地图" class="history-map-image" loading="lazy" />
-              <div class="history-map-overlay">
-                ${getIconMarkup('map')}
-              </div>
-            </a>
-          `;
-        } else {
-          // Fallback if no Mapbox token
-          mapSection = `
-            <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener" class="history-map-link-compact">
-              ${getIconMarkup('map')} 查看地图
-            </a>
-          `;
-        }
-      } else {
-        mapSection = '<span class="muted">无位置</span>';
-      }
-      
-      // Build photo section
-      const photoSection = photoUrl
-        ? `<img src="${escapeHtml(photoUrl)}" alt="现场照片" class="history-photo-thumbnail view-link" data-url="${escapeHtml(photoUrl)}" loading="lazy" />`
-        : '<span class="muted">无照片</span>';
-      
-      return `
-        <div class="history-record ${index === 0 ? 'latest' : ''}">
-          <div class="history-record-header">
-            <div class="history-record-index">#${items.length - index}</div>
-            <div class="history-record-time">${createdAt}</div>
-          </div>
-          <div class="history-record-main">
-            <div class="history-record-info">
-              <div class="history-info-row">
-                <div class="history-field">
-                  <div class="history-field-label">状态</div>
-                  <div class="history-field-value history-status"><strong>${status}</strong></div>
-                </div>
-                <div class="history-field">
-                  <div class="history-field-label">更新人</div>
-                  <div class="history-field-value">${updatedBy}</div>
-                </div>
-              </div>
-              <div class="history-field">
-                <div class="history-field-label">备注</div>
-                <div class="history-field-value">${remark}</div>
-              </div>
-            </div>
-            <div class="history-record-media">
-              <div class="history-media-item">${mapSection}</div>
-              <div class="history-media-item">${photoSection}</div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-    
-    historyContent.innerHTML = `<div class="history-records">${recordsHtml}</div>`;
-    
-    // Bind photo view buttons
-    historyContent.querySelectorAll('.view-link').forEach((trigger) => {
-      trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const url = trigger.getAttribute('data-url');
-        tableRenderer.openViewerWithUrl(url);
-      }, { signal });
-    });
+    return `https://api.mapbox.com/styles/v1/${style}/static/${marker}/${lng},${lat},${zoom},0/${width}x${height}@2x?access_token=${encodeURIComponent(mapboxToken)}`;
   }
 
   if (historyOk) {
     historyOk.addEventListener('click', closeUpdateHistoryModal, { signal });
   }
-  if (updateHistoryModal) {
-    updateHistoryModal.addEventListener('click', (e) => {
-      if (e.target === updateHistoryModal) {
-        closeUpdateHistoryModal();
-      }
-    }, { signal });
-  }
-
   function buildFormDataForSave() {
     const perms = getCurrentPermissions();
     const form = new FormData();
-    const statusValRaw = mStatus?.value || '';
-    const statusVal = normalizeStatusValue(statusValRaw) || statusValRaw;
-    const statusDeliveryRaw = mStatusDelivery?.value || '';
-    const statusDeliveryVal =
-      normalizeStatusValue(statusDeliveryRaw) || statusDeliveryRaw;
+    const statusDeliveryValRaw = mStatusDelivery?.value || '';
+    const statusDeliveryVal = normalizeStatusDeliveryValue(statusDeliveryValRaw) || statusDeliveryValRaw;
+    const statusSiteRaw = mStatusSite?.value || '';
+    const statusSiteVal =
+      normalizeStatusDeliveryValue(statusSiteRaw) || statusSiteRaw;
     const remarkVal = perms?.allowRemark ? (mRemark?.value || '').trim() : '';
     const allowPhoto = perms?.allowPhoto && mPhoto?.files && mPhoto.files[0];
     const currentItem = editingItem || null;
@@ -1189,36 +967,31 @@ export function setupAdminPage(
     const updatedBy = (resolvedUser?.name || '').trim();
     form.set('updated_by', updatedBy);
 
-    const originalStatusRaw = currentItem?.status || '';
+    const originalStatusRaw = currentItem?.status_delivery || currentItem?.status || '';
     const originalStatus =
-      normalizeStatusValue(originalStatusRaw) || originalStatusRaw || '';
-    const statusToSubmit = statusVal || originalStatus;
-    if (statusToSubmit) {
-      form.set('status', statusToSubmit);
+      normalizeStatusDeliveryValue(originalStatusRaw) || originalStatusRaw || '';
+    const statusDeliveryToSubmit = statusDeliveryVal || originalStatus;
+    if (statusDeliveryToSubmit) {
+      form.set('status_delivery', statusDeliveryToSubmit);
     }
-    const originalStatusDeliveryRaw =
-      currentItem?.status_delivery ||
-      currentItem?.statusDelivery ||
-      currentItem?.status_deliver ||
-      currentItem?.statusDeliver ||
-      '';
-    const originalStatusDelivery =
-      normalizeStatusValue(originalStatusDeliveryRaw) || originalStatusDeliveryRaw || '';
-    const statusDeliveryToSubmit = statusDeliveryVal || originalStatusDelivery;
-    form.set('status_delivery', statusDeliveryToSubmit || '');
+    const originalStatusSiteRaw = currentItem?.status_site || currentItem?.statusSite || '';
+    const originalStatusSite =
+      normalizeStatusDeliveryValue(originalStatusSiteRaw) || originalStatusSiteRaw || '';
+    const statusSiteToSubmit = statusSiteVal || originalStatusSite;
+    form.set('status_site', statusSiteToSubmit || '');
     if (remarkVal) form.set('remark', remarkVal);
     if (allowPhoto) {
       form.set('photo', mPhoto.files[0]);
     }
     return {
       form,
-      statusVal,
       statusDeliveryVal,
+      statusSiteVal,
       remarkVal,
       allowPhoto,
       dnNumber,
-      statusToSubmit,
       statusDeliveryToSubmit,
+      statusSiteToSubmit,
     };
   }
 
@@ -1237,42 +1010,25 @@ export function setupAdminPage(
       return false;
     }
 
-    if (perms.requireStatusSelection && !payload.statusVal) {
+    if (perms.requireStatusDeliverySelection && !payload.statusDeliveryVal) {
       if (mMsg)
         mMsg.textContent = i18n
-          ? i18n.t('modal.status.requiredHint')
+          ? i18n.t('modal.status_delivery.requiredHint')
           : '请选择允许的状态后再保存。';
       return false;
     }
 
-    const allowedOptions = Array.isArray(perms?.statusOptions)
-      ? perms.statusOptions.map((status) => normalizeStatusValue(status) || status)
-      : [];
-
-    if (
-      payload.statusVal &&
-
-      allowedOptions.length &&
-      !allowedOptions.includes(payload.statusVal)
-    ) {
+    if (!payload.statusDeliveryToSubmit) {
       if (mMsg)
         mMsg.textContent = i18n
-          ? i18n.t('modal.status.invalid')
-          : '选择的状态不在当前角色的权限范围内。';
-      return false;
-    }
-
-    if (!payload.statusToSubmit) {
-      if (mMsg)
-        mMsg.textContent = i18n
-          ? i18n.t('modal.status.requiredHint')
+          ? i18n.t('modal.status_delivery.requiredHint')
           : '请选择允许的状态后再保存。';
       return false;
     }
 
     if (
-      !payload.statusVal &&
       !payload.statusDeliveryVal &&
+      !payload.statusSiteVal &&
       !payload.remarkVal &&
       !payload.allowPhoto
     ) {
@@ -1341,18 +1097,11 @@ export function setupAdminPage(
     if (!window.confirm(confirmMsg)) return;
     if (hint) hint.textContent = `正在删除 DN ${dnNumber} …`;
     try {
-      const resp = await fetch(`${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`, {
-        method: 'DELETE',
-      });
-      const text = await resp.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (err) {
-        console.error(err);
-      }
-      if (!resp.ok)
-        throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
+      const { resp, data, message } = await fetchWithPayload(
+        `${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`,
+        { method: 'DELETE', signal }
+      );
+      if (!resp.ok) throw new Error(message || `HTTP ${resp.status}`);
       if (hint) hint.textContent = i18n?.t('modal.deleteSuccess') || '删除成功';
       await fetchList();
     } catch (err) {
@@ -1361,11 +1110,8 @@ export function setupAdminPage(
     }
   }
 
-  function csvEscape(val) {
-    if (val === null || val === undefined) return '';
-    const s = String(val);
-    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
+  function formatTimestampForJakartaExport(value) {
+    return formatTimestampForExport(value, { offsetMinutes: JAKARTA_OFFSET });
   }
 
   function toCsvRows(items) {
@@ -1384,23 +1130,7 @@ export function setupAdminPage(
       orderedKeys.push(strKey);
     };
 
-    const preferredKeys = [
-      ...DN_DETAIL_KEYS,
-      'du_id',
-      'status',
-      'remark',
-      'photo_url',
-      'photo',
-      'photo_urls',
-      'lat',
-      'lng',
-      'latitude',
-      'longitude',
-      'created_at',
-      'updated_at',
-    ];
-
-    preferredKeys.forEach((key) => {
+    EXPORT_PREFERRED_KEYS.forEach((key) => {
       if (
         list.some(
           (item) =>
@@ -1437,6 +1167,10 @@ export function setupAdminPage(
         }
         const strValue = normalizeTextValue(value);
         const lowerKey = key.toLowerCase();
+        if (isTimestampKey(lowerKey)) {
+          const formatted = formatTimestampForJakartaExport(value);
+          if (formatted) return formatted;
+        }
         if (/photo|image|picture|attachment/.test(lowerKey) || /url/.test(lowerKey)) {
           return toAbsUrl(strValue);
         }
@@ -1445,19 +1179,6 @@ export function setupAdminPage(
       rows.push(row);
     });
     return rows;
-  }
-
-  function downloadCSV(rows, filename = 'dn_all_results.csv') {
-    const bom = '\uFEFF';
-    const lines = rows.map((r) => r.map(csvEscape).join(',')).join('\n');
-    const blob = new Blob([bom + lines], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
   }
 
   function getExportSearchParams() {
@@ -1474,135 +1195,65 @@ export function setupAdminPage(
     return `${API_BASE}${basePath}${query}`;
   }
 
-  function extractItemsFromResponse(payload) {
-    const visited = new Set();
-    const keys = ['items', 'data', 'list', 'results', 'records', 'rows'];
-
-    const walk = (value) => {
-      if (!value) return [];
-      if (Array.isArray(value)) return value;
-      if (typeof value !== 'object') return [];
-      if (visited.has(value)) return [];
-      visited.add(value);
-
-      for (const key of keys) {
-        if (Object.prototype.hasOwnProperty.call(value, key)) {
-          const direct = value[key];
-          if (Array.isArray(direct)) return direct;
+  async function exportData({ basePath, prepareParams, filename }) {
+    if (!hint) return;
+    try {
+      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
+      const params = getExportSearchParams();
+      if (typeof prepareParams === 'function') {
+        try {
+          prepareParams(params);
+        } catch (err) {
+          console.error(err);
         }
       }
-
-      for (const key of keys) {
-        if (Object.prototype.hasOwnProperty.call(value, key)) {
-          const nested = walk(value[key]);
-          if (Array.isArray(nested)) return nested;
-        }
+      const url = buildExportUrl(basePath, params);
+      const { resp, data, message } = await fetchWithPayload(url);
+      if (!resp.ok) {
+        throw new Error(message || `HTTP ${resp.status}`);
       }
 
-      return [];
-    };
+      const items = extractItemsFromResponse(data);
 
-    return walk(payload);
+      if (!items.length) {
+        window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
+        hint.textContent = '';
+        return;
+      }
+
+      downloadCSV(toCsvRows(items), filename);
+      hint.textContent = '';
+    } catch (err) {
+      hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
+    }
   }
 
   async function exportAll() {
-    if (!hint) return;
-    try {
-      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
-      const params = getExportSearchParams();
-      // Request all items for export - ensure backend returns full dataset
-      try {
-        if (params && typeof params.set === 'function') params.set('page_size', 'all');
-      } catch (e) {
-        // ignore
-      }
-      const basePath =
-        q.mode === 'batch' ? '/api/dn/list/batch' : '/api/dn/list/search';
-      const url = buildExportUrl(basePath, params);
-
-      const resp = await fetch(url);
-      const raw = await resp.text();
-      let data = null;
-      try {
-        data = raw ? JSON.parse(raw) : null;
-      } catch (err) {
-        console.error(err);
-      }
-      if (!resp.ok) {
-        const message =
-          data && typeof data === 'object' && !Array.isArray(data)
-            ? data.detail || data.message
-            : '';
-        throw new Error(message || `HTTP ${resp.status}`);
-      }
-
-      const items = extractItemsFromResponse(data);
-
-      if (!items.length) {
-        window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
-        hint.textContent = '';
-        return;
-      }
-      downloadCSV(toCsvRows(items));
-      hint.textContent = '';
-    } catch (err) {
-      hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
-    }
+    const basePath = q.mode === 'batch' ? '/api/dn/list/batch' : '/api/dn/list/search';
+    await exportData({
+      basePath,
+      prepareParams: (params) => {
+        if (params && typeof params.set === 'function') {
+          params.set('page_size', 'all');
+        }
+      },
+    });
   }
 
   async function exportUpdateRecords() {
-    if (!hint) return;
-    try {
-      hint.textContent = i18n?.t('actions.exporting') || '正在导出数据，请稍候…';
-      const params = getExportSearchParams();
-      const url = buildExportUrl('/api/dn/records', params);
-
-      const resp = await fetch(url);
-      const raw = await resp.text();
-      let data = null;
-      try {
-        data = raw ? JSON.parse(raw) : null;
-      } catch (err) {
-        console.error(err);
-      }
-      if (!resp.ok) {
-        const message =
-          data && typeof data === 'object' && !Array.isArray(data)
-            ? data.detail || data.message
-            : '';
-        throw new Error(message || `HTTP ${resp.status}`);
-      }
-
-      const items = extractItemsFromResponse(data);
-
-      if (!items.length) {
-        window.alert(i18n?.t('actions.exportNone') || '没有匹配的数据可导出。');
-        hint.textContent = '';
-        return;
-      }
-
-      downloadCSV(toCsvRows(items), 'dn_update_records.csv');
-      hint.textContent = '';
-    } catch (err) {
-      hint.textContent = `${i18n?.t('actions.exportError') || '导出失败'}：${err?.message || err}`;
-    }
+    await exportData({
+      basePath: '/api/dn/records',
+      filename: 'dn_update_records.csv',
+    });
   }
 
   // 授权模态框和事件处理已移至 authHandler.js
 
-  subscribeToFilterChange('status', (values) => {
-    const first = Array.isArray(values) && values.length ? values[0] : '';
-    const podValue = DN_SCAN_STATUS_VALUES?.POD || 'POD';
-    if (first === podValue) {
-      const currentDelivery = getFilterValues('status_delivery');
-      if (!currentDelivery.includes(podValue)) {
-        setFilterValue('status_delivery', podValue);
-      }
-    }
+  subscribeToFilterChange('status_delivery', () => {
     statusCards.updateActiveState();
   });
 
-  subscribeToFilterChange('status_delivery', () => {
+  subscribeToFilterChange('status_site', () => {
     statusCards.updateActiveState();
   });
 
@@ -1610,8 +1261,11 @@ export function setupAdminPage(
     lspSummaryCards.updateActiveState();
   });
 
-  function resetAllFilters({ statusValue = DEFAULT_STATUS_VALUE } = {}) {
-    setFilterValue('status', statusValue);
+  function resetAllFilters({
+    statusDeliveryValue = DEFAULT_STATUS_DELIVERY_VALUE,
+    preservePageSize = false,
+  } = {}) {
+    setFilterValue('status_delivery', statusDeliveryValue);
     setInputValue('remark', '');
     setFormControlValue(hasSelect, '');
     setFilterValue('has_coordinate', '');
@@ -1620,11 +1274,13 @@ export function setupAdminPage(
     setFilterValue('plan_mos_date', '');
     setFilterValue('lsp', '');
     setFilterValue('region', '');
+  setFilterValue('area', '');
     setFilterValue('subcon', '');
-    setFilterValue('status_wh', '');
-    setFilterValue('status_delivery', '');
+    setFilterValue('status_site', '');
     setInputValue('du', '');
-    setFormControlValue(pageSizeInput, '20');
+    if (!preservePageSize) {
+      q.page_size = 20;
+    }
     if (dnInput) dnInput.value = '';
     dnEntry.normalizeFilterInput({ enforceFormat: false });
   }
@@ -1641,7 +1297,7 @@ export function setupAdminPage(
   el('btn-reset')?.addEventListener(
     'click',
     () => {
-  resetAllFilters();
+      resetAllFilters();
       q.page = 1;
       fetchList();
     },
@@ -1652,8 +1308,8 @@ export function setupAdminPage(
     'admin:status-switch-change',
     (event) => {
       const detail = event?.detail || {};
-      const targetValue = detail.showOnlyNonEmpty ? STATUS_NOT_EMPTY_VALUE : STATUS_ANY_VALUE;
-      setFilterValue('status', targetValue);
+      const targetValue = detail.showOnlyNonEmpty ? '__NOT_EMPTY__' : "";
+      setFilterValue('status_delivery', targetValue);
       q.page = 1;
       fetchList();
     },
@@ -1673,174 +1329,74 @@ export function setupAdminPage(
     { signal }
   );
 
-  el('prev')?.addEventListener(
-    'click',
-    () => {
-      if (q.page > 1) {
-        q.page--;
-        fetchList();
-      }
-    },
-    { signal }
-  );
-
-  el('next')?.addEventListener(
-    'click',
-    () => {
-      q.page++;
-      fetchList();
-    },
-    { signal }
-  );
-
-  pageSizeInput?.addEventListener(
-    'keydown',
-    (event) => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      const ps = getNormalizedPageSize();
-      q.page = 1;
-      q.page_size = ps;
-      fetchList();
-    },
-    { signal }
-  );
-
   const exportAllBtn = el('btn-export-all');
-  exportAllBtn?.addEventListener(
-    'click',
-    async () => {
-      if (!exportAllBtn) return;
-      exportAllBtn.disabled = true;
-      try {
-        await exportAll();
-      } finally {
-        exportAllBtn.disabled = false;
-      }
-    },
-    { signal }
-  );
+  bindAsyncButtonClick(exportAllBtn, exportAll, { signal });
 
   const exportRecordsBtn = el('btn-export-records');
-  exportRecordsBtn?.addEventListener(
-    'click',
-    async () => {
-      if (!exportRecordsBtn) return;
-      exportRecordsBtn.disabled = true;
-      try {
-        await exportUpdateRecords();
-      } finally {
-        exportRecordsBtn.disabled = false;
-      }
-    },
-    { signal }
-  );
+  bindAsyncButtonClick(exportRecordsBtn, exportUpdateRecords, { signal });
 
   const syncSheetBtn = el('btn-sync-google-sheet');
-  syncSheetBtn?.addEventListener(
-    'click',
-    async () => {
-      if (!syncSheetBtn) return;
-      syncSheetBtn.disabled = true;
-      try {
-        const resp = await fetch(`${API_BASE}/api/dn/sync`, { method: 'GET' });
-        const contentType = resp.headers?.get('content-type') || '';
-        let payload = null;
-        let text = '';
-        if (contentType.includes('application/json')) {
-          try {
-            payload = await resp.json();
-          } catch (err) {
-            console.error(err);
-          }
-        } else {
-          try {
-            text = await resp.text();
-          } catch (err) {
-            console.error(err);
-          }
-        }
-
-        const messageFromResp =
-          (payload && (payload.message || payload.msg || payload.detail)) || text || '';
-
-        if (!resp.ok) {
-          const baseError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
-          const errorMessage = messageFromResp
-            ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: messageFromResp }) ||
-              `${baseError}：${messageFromResp}`
-            : baseError;
-          showToast(errorMessage, 'error');
-          return;
-        }
-
-        const baseSuccess =
-          i18n?.t('actions.syncGoogleSheetSuccess') || '已触发 Google Sheet 数据更新';
-        const successMessage = messageFromResp
-          ? i18n?.t('actions.syncGoogleSheetSuccessWithMsg', { msg: messageFromResp }) ||
-            `${baseSuccess}：${messageFromResp}`
-          : baseSuccess;
-        showToast(successMessage, 'success');
-      } catch (err) {
-        const fallbackError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
-        const message = err?.message || err;
-        const composed = message
-          ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: message }) ||
-            `${fallbackError}：${message}`
-          : fallbackError;
-        showToast(composed, 'error');
-      } finally {
-        syncSheetBtn.disabled = false;
+  bindAsyncButtonClick(syncSheetBtn, async () => {
+    if (!syncSheetBtn) return;
+    try {
+      const { resp, message: responseMessage } = await fetchWithPayload(
+        `${API_BASE}/api/dn/sync`,
+        { method: 'GET' }
+      );
+      if (!resp.ok) {
+        const baseError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
+        const errorMessage = responseMessage
+          ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: responseMessage }) ||
+            `${baseError}：${responseMessage}`
+          : baseError;
+        showToast(errorMessage, 'error');
+        return;
       }
-    },
-    { signal }
-  );
 
-  archiveExpiredDnBtn?.addEventListener(
-    'click',
+      const baseSuccess =
+        i18n?.t('actions.syncGoogleSheetSuccess') || '已触发 Google Sheet 数据更新';
+      const successMessage = responseMessage
+        ? i18n?.t('actions.syncGoogleSheetSuccessWithMsg', { msg: responseMessage }) ||
+          `${baseSuccess}：${responseMessage}`
+        : baseSuccess;
+      showToast(successMessage, 'success');
+    } catch (err) {
+      const fallbackError = i18n?.t('actions.syncGoogleSheetError') || '同步失败';
+      const message = err?.message || err;
+      const composed = message
+        ? i18n?.t('actions.syncGoogleSheetErrorWithMsg', { msg: message }) ||
+          `${fallbackError}：${message}`
+        : fallbackError;
+      showToast(composed, 'error');
+    }
+  }, { signal });
+
+  bindAsyncButtonClick(
+    archiveExpiredDnBtn,
     async () => {
-      if (!archiveExpiredDnBtn || archiveExpiredDnBtn.disabled) return;
-      archiveExpiredDnBtn.disabled = true;
+      if (!archiveExpiredDnBtn) return;
       try {
-        const resp = await fetch(`${API_BASE}/api/dn/archive/mark`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ threshold_days: ARCHIVE_THRESHOLD_DAYS }),
-        });
-
-        const contentType = resp.headers?.get('content-type') || '';
-        let payload = null;
-        let text = '';
-
-        if (contentType.includes('application/json')) {
-          try {
-            payload = await resp.json();
-          } catch (err) {
-            console.error(err);
+        const { resp, data, message: responseMessage } = await fetchWithPayload(
+          `${API_BASE}/api/dn/archive/mark`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ threshold_days: ARCHIVE_THRESHOLD_DAYS }),
           }
-        } else {
-          try {
-            text = await resp.text();
-          } catch (err) {
-            console.error(err);
-          }
-        }
+        );
 
-        const messageFromResp =
-          (payload && (payload.message || payload.msg || payload.detail)) || text || '';
-
-        if (!resp.ok || (payload && payload.ok === false)) {
+        if (!resp.ok || (data && data.ok === false)) {
           const baseError =
             i18n?.t('actions.archiveExpiredDnError') || '归档过期 DN 标记失败';
-          const errorMessage = messageFromResp
-            ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: messageFromResp }) ||
-              `${baseError}：${messageFromResp}`
+          const errorMessage = responseMessage
+            ? i18n?.t('actions.archiveExpiredDnErrorWithMsg', { msg: responseMessage }) ||
+              `${baseError}：${responseMessage}`
             : baseError;
           showToast(errorMessage, 'error');
           return;
         }
 
-        const rawMatchedRows = payload?.data?.matched_rows;
+        const rawMatchedRows = data?.data?.matched_rows;
         let matchedCount = null;
         if (typeof rawMatchedRows === 'number' && Number.isFinite(rawMatchedRows)) {
           matchedCount = rawMatchedRows;
@@ -1856,10 +1412,10 @@ export function setupAdminPage(
           successMessage =
             i18n?.t('actions.archiveExpiredDnSuccessWithCount', { count: matchedCount }) ||
             `${baseSuccess}，匹配 ${matchedCount} 条记录`;
-        } else if (messageFromResp) {
+        } else if (responseMessage) {
           successMessage =
-            i18n?.t('actions.archiveExpiredDnSuccessWithMsg', { msg: messageFromResp }) ||
-            `${baseSuccess}：${messageFromResp}`;
+            i18n?.t('actions.archiveExpiredDnSuccessWithMsg', { msg: responseMessage }) ||
+            `${baseSuccess}：${responseMessage}`;
         }
 
         showToast(successMessage, 'success');
@@ -1872,11 +1428,16 @@ export function setupAdminPage(
             `${fallbackError}：${message}`
           : fallbackError;
         showToast(composed, 'error');
-      } finally {
-        archiveExpiredDnBtn.disabled = !isTransportManagerRole();
       }
     },
-    { signal }
+    {
+      signal,
+      onFinally: () => {
+        if (archiveExpiredDnBtn) {
+          archiveExpiredDnBtn.disabled = !isTransportManagerRole();
+        }
+      },
+    }
   );
 
   el('btn-trust-backend-link')?.addEventListener(
@@ -1894,35 +1455,53 @@ export function setupAdminPage(
     await fetchList();
   }
 
-  tableRenderer = createTableRenderer({
-    tbody,
-    tableEl: tbl,
-    actionsHeader,
-    updatedAtHeader,
-    i18n,
-    signal,
-    showToast,
-    openModalEdit,
-    onDelete,
-    openUpdateHistoryModal,
-    getCurrentPermissions,
-    isTransportManagerRole,
-    translateInstant,
-    normalizeStatusValue,
-    normalizeTextValue,
-    i18nStatusDisplay,
+  hideHasAttachmentFilter();
+
+  tableBridge?.setNormalizeStatusDelivery?.(normalizeStatusDeliveryValue);
+  tableBridge?.setStatusDisplay?.(i18nStatusDisplay);
+  tableBridge?.setUtilities?.({
     toAbsUrl,
     formatTimestampToJakarta,
-    getCurrentRoleKey: () => authHandler.getCurrentRoleKey(),
-    viewerApi,
+  });
+  tableBridge?.setPermissions?.(getCurrentPermissions());
+  tableBridge?.setTransportManager?.(isTransportManagerRole());
+  tableBridge?.registerActionHandlers?.({
+    onEdit: openModalEdit,
+    onDelete,
+    onViewHistory: openUpdateHistoryModal,
+    onOpenPhoto: openPhotoViewer,
+  });
+  tableBridge?.registerPaginationHandlers?.({
+    onPageChange(page, pageSize) {
+      const normalizedPage = Math.max(1, Number(page) || 1);
+      const normalizedSize = Math.max(1, Math.min(1000, Number(pageSize) || q.page_size));
+      let shouldFetch = false;
+      if (q.page !== normalizedPage) {
+        q.page = normalizedPage;
+        shouldFetch = true;
+      }
+      if (q.page_size !== normalizedSize) {
+        q.page_size = normalizedSize;
+        shouldFetch = true;
+      }
+      if (shouldFetch) {
+        fetchList();
+      } else {
+        tableBridge?.notifyTranslations?.();
+      }
+    },
   });
 
-  tableRenderer?.updateActionColumnVisibility?.();
-  hideHasAttachmentFilter();
-  tableRenderer?.hideUpdatedAtColumn?.();
-
-  authHandler.restoreFromStorage();
-  init();
+  const hasAuth = authHandler.restoreFromStorage();
+  if (hasAuth) {
+    init();
+  } else {
+    try {
+      authHandler.openAuthModal?.();
+    } catch (err) {
+      console.error('Failed to open auth modal:', err);
+    }
+  }
   applyAllTranslations();
 
   return () => {
@@ -1938,13 +1517,14 @@ export function setupAdminPage(
         console.error(err);
       }
     }
-    cleanupFilterSubscriptions();
-    try {
-      tableRenderer?.closeViewer?.();
-    } catch (err) {
-      console.error(err);
+    if (removeFiltersMediaListener) {
+      try {
+        removeFiltersMediaListener();
+      } catch (err) {
+        console.error(err);
+      }
     }
-    if (tableRenderer) tableRenderer.cleanup();
-    resetBodyScrollLock();
+    cleanupFilterSubscriptions();
+    cleanupPhotoViewer();
   };
 }

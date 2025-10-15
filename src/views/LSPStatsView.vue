@@ -163,8 +163,8 @@ const fetchDriverData = async () => {
   loadingDriverData.value = true;
   try {
     const url = apiBase 
-      ? new URL('/api/dn/status/by-driver', apiBase).toString()
-      : '/api/dn/status/by-driver';
+      ? new URL('/api/dn/status_delivery/by-driver', apiBase).toString()
+      : '/api/dn/status_delivery/by-driver';
     const res = await fetch(url);
     const json = await res.json();
     

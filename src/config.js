@@ -1,183 +1,73 @@
-const STATUS_DEFINITIONS = [
+const STATUS_DELIVERY_DEFINITIONS = [
   {
-    key: 'NEW_MOS',
-    value: 'New MOS',
-    translationKey: 'status.newMos',
-    fallbackLabel: '新建MOS',
-    aliases: ['NEW MOS', '新建MOS', '新 MOS', 'MOS BARU', 'MOS Baru', 'Nwe MOS'],
+    key: 'ARRIVED_AT_WH',
+    value: 'ARRIVED AT WH',
+    translationKey: 'statusDelivery.arrivedAtWh',
   },
   {
-    key: 'PREPARE_VEHICLE',
-    value: 'Prepare Vehicle',
-    translationKey: 'status.prepareVehicle',
-    fallbackLabel: 'Prepare Vehicle',
-    displayOverride: 'Prepare Vehicle',
-    aliases: ['准备车辆', 'PREPARE VEHICLE', 'SIAPKAN KENDARAAN', 'PREPARE_VEHICLE'],
-  },
-  {
-    key: 'ON_THE_WAY',
-    value: 'On the way',
-    translationKey: 'status.inTransit',
-    fallbackLabel: 'On the way',
-    displayOverride: 'On the way',
-    aliases: [
-      'ON THE WAY',
-      'IN TRANSIT',
-      'START TRANSPORT',
-      '开始运输',
-      '运输中',
-      '在途',
-      'SEDANG DIKIRIM',
-      'MULAI PENGIRIMAN',
-      'Mulai Pengiriman',
-    ],
-  },
-  {
-    key: 'ON_SITE',
-    value: 'On Site',
-    translationKey: 'status.onSite',
-    fallbackLabel: 'On Site',
-    displayOverride: 'On Site',
-    aliases: [
-      'ON SITE',
-      'ARRIVED',
-      '现场',
-      '已到达',
-      '到达',
-      'SUDAH TIBA',
-      'TIBA DI LOKASI',
-      'DI LOKASI',
-    ],
-  },
-  {
-    key: 'POD',
-    value: 'POD',
-    translationKey: 'status.pod',
-    fallbackLabel: 'POD',
-    displayOverride: 'POD',
-    aliases: ['PROOF OF DELIVERY'],
-  },
-  {
-    key: 'REPLAN_MOS_PROJECT',
-    value: 'RePlan MOS Project',
-    translationKey: 'status.projectReschedule',
-    fallbackLabel: '项目重排(Project)',
-    aliases: ['REPLAN MOS PROJECT', '项目重排(Project)', 'PENJADWALAN ULANG PROYEK'],
-  },
-  {
-    key: 'WAITING_PIC_FEEDBACK',
-    value: 'Waiting PIC Feedback',
-    translationKey: 'status.waitingFeedback',
-    fallbackLabel: 'Waiting PIC Feedback',
-    displayOverride: 'Waiting PIC Feedback',
-    aliases: [
-      'WAITING PIC FEEDBACK',
-      'WAITING PHOTO FEEDBACK',
-      '等待 PIC 反馈',
-      '等待PIC反馈',
-      '等待图片反馈',
-      'MENUNGGU UMPAN BALIK PIC',
-      'MENUNGGU UMPAN BALIK FOTO',
-    ],
-  },
-  {
-    key: 'REPLAN_MOS_LSP_DELAY',
-    value: 'RePlan MOS Due To LSP Delay',
-    translationKey: 'status.rescheduleLsp',
-    fallbackLabel: '重新排期(LSP)',
-    aliases: [
-      'REPLAN MOS DUE TO LSP DELAY',
-      '重新排期(LSP)',
-      'PENJADWALAN ULANG (LSP)',
-    ],
-  },
-  {
-    key: 'CLOSE_BY_RN',
-    value: 'Close By RN',
-    translationKey: 'status.rnClosed',
-    fallbackLabel: 'RN关闭',
-    aliases: ['CLOSE BY RN', 'RN关闭', 'RN DITUTUP'],
-  },
-  {
-    key: 'CANCEL_MOS',
-    value: 'Cancel MOS',
-    translationKey: 'status.cancelMos',
-    fallbackLabel: '取消MOS',
-    aliases: ['CANCEL MOS', '取消MOS', 'BATALKAN MOS'],
-  },
-  {
-    key: 'NO_STATUS',
-    value: 'No Status',
-    translationKey: 'status.noStatus',
-    fallbackLabel: '无状态',
-    aliases: [
-      'NO STATUS',
-      'No Status',
-      'no status',
-      'NO_STATUS',
-      '无状态',
-      '無狀態',
-      '沒有狀態',
-      '没有状态',
-      'TANPA STATUS',
-    ],
-  },
-];
-
-const DN_SCAN_STATUS_DEFINITIONS = [
-  // {
-  //   key: 'ARRIVED_AT_WH',
-  //   value: 'ARRIVED AT WH',
-  //   translationKey: 'status.arrivedAtWh',
-  //   fallbackLabel: '到达仓库',
-  //   aliases: ['Arrived at WH', '到达仓库'],
-  // },
-  {
-    key: 'TRANSPORTING_FROM_WH',
-    value: 'TRANSPORTING FROM WH',
-    translationKey: 'status.transportingFromWh',
-    fallbackLabel: '从仓库发出',
-    aliases: ['Transporting from WH', '从仓库发出'],
+    key: 'DEPARTED_FROM_WH',
+    value: 'DEPARTED FROM WH',
+    translationKey: 'statusDelivery.departedFromWh',
   },
   {
     key: 'ARRIVED_AT_XD_PM',
     value: 'ARRIVED AT XD/PM',
-    translationKey: 'status.arrivedAtXdPm',
-    fallbackLabel: '到达XD/PM',
-    aliases: ['Arrived at XD/PM', '到达XD/PM'],
+    translationKey: 'statusDelivery.arrivedAtXdPm',
   },
   {
-    key: 'TRANSPORTING_FROM_XD_PM',
-    value: 'TRANSPORTING FROM XD/PM',
-    translationKey: 'status.transportingFromXdPm',
-    fallbackLabel: '从XD/PM发出',
-    aliases: ['Transporting from XD/PM', '从XD/PM发出'],
+    key: 'DEPARTED_FROM_XD_PM',
+    value: 'DEPARTED FROM XD/PM',
+    translationKey: 'statusDelivery.departedFromXdPm',
   },
   {
     key: 'ARRIVED_AT_SITE',
     value: 'ARRIVED AT SITE',
-    translationKey: 'status.arrivedAtSite',
-    fallbackLabel: '到达站点',
-    aliases: ['Arrived at Site', '到达站点'],
+    translationKey: 'statusDelivery.arrivedAtSite',
   },
   {
     key: 'POD',
     value: 'POD',
-    translationKey: 'status.pod',
-    fallbackLabel: 'POD',
-    aliases: ['Proof of Delivery', 'PROOF OF DELIVERY'],
+    translationKey: 'statusDelivery.pod',
   },
+  {
+    key: 'NO_STATUS',
+    value: 'No Status',
+    translationKey: 'statusDelivery.noStatus',
+  }
 ];
 
-const toCamelCaseKey = (raw) =>
-  String(raw || '')
-    .toLowerCase()
-    .split('_')
-    .filter(Boolean)
-    .map((segment, index) =>
-      index === 0 ? segment : segment.charAt(0).toUpperCase() + segment.slice(1)
-    )
-    .join('');
+const STATUS_SITE_DEFINITIONS = [
+  {
+    key: 'PIC_NOT_CONFIRMED',
+    value: 'PIC not confirmed',
+    translationKey: 'statusSite.picNotConfirmed',
+  },
+  {
+    key: 'PIC_CONFIRMED',
+    value: 'PIC confirmed',
+    translationKey: 'statusSite.picConfirmed',
+  },
+  {
+    key: 'PERMIT_ISSUE',
+    value: 'Permit Issue',
+    translationKey: 'statusSite.permitIssue',
+  },
+  {
+    key: 'COMCASE_ISSUE',
+    value: 'Comcase Issue',
+    translationKey: 'statusSite.comcaseIssue',
+  },
+  {
+    key: 'REPLAN_MOS',
+    value: 'Replan MOS',
+    translationKey: 'statusSite.replanMos',
+  },
+  {
+    key: 'CANCEL_MOS',
+    value: 'Cancel MOS',
+    translationKey: 'statusSite.cancelMos',
+  }
+];
 
 const buildValueMap = (definitions) =>
   Object.freeze(
@@ -252,49 +142,31 @@ const ROLE_USER_PREFIXES = {
   [TRANSPORT_MANAGER_ROLE_KEY]: 'VITE_ROLE_TRANSPORT_MANAGER_USER_',
 };
 
-export const STATUS_VALUES = buildValueMap(STATUS_DEFINITIONS);
-export const STATUS_ORDERED_LIST = buildList(STATUS_DEFINITIONS);
-export const DN_SCAN_STATUS_VALUES = buildValueMap(DN_SCAN_STATUS_DEFINITIONS);
-export const DN_SCAN_STATUS_ORDERED_LIST = buildList(DN_SCAN_STATUS_DEFINITIONS);
-export const DN_SCAN_STATUS_ITEMS = Object.freeze(
-  DN_SCAN_STATUS_DEFINITIONS.map(({ key, value, translationKey, fallbackLabel }) => {
-    const camelKey = toCamelCaseKey(key);
+export const STATUS_DELIVERY_VALUES = buildValueMap(STATUS_DELIVERY_DEFINITIONS);
+export const STATUS_DELIVERY_ORDERED_LIST = buildList(STATUS_DELIVERY_DEFINITIONS);
+export const STATUS_DELIVERY_ITEMS = Object.freeze(
+  STATUS_DELIVERY_DEFINITIONS.map(({ key, value, translationKey }) => {
     return {
       key,
       value,
       translationKey,
-      fallbackLabel,
-      camelKey,
-      filterLabelKey: `status.filter.${camelKey}`,
+      filterLabelKey: translationKey,
     };
   })
 );
 
-export const STATUS_TRANSLATION_KEYS = Object.freeze({
-  ...buildDefinitionMap(STATUS_DEFINITIONS, 'translationKey'),
-  ...buildDefinitionMap(DN_SCAN_STATUS_DEFINITIONS, 'translationKey'),
+export const STATUS_DELIVERY_VALUE_TO_KEY = Object.freeze({
+  ...buildDefinitionMap(STATUS_DELIVERY_DEFINITIONS, 'translationKey'),
 });
 
-export const STATUS_FALLBACK_LABELS = Object.freeze({
-  ...buildDefinitionMap(STATUS_DEFINITIONS, 'fallbackLabel'),
-  ...buildDefinitionMap(DN_SCAN_STATUS_DEFINITIONS, 'fallbackLabel'),
-});
 
-export const STATUS_DISPLAY_OVERRIDES = Object.freeze(
-  STATUS_DEFINITIONS.reduce((acc, { value, displayOverride }) => {
-    if (displayOverride) {
-      acc[value] = displayOverride;
-    }
-    return acc;
-  }, {})
+export const STATUS_DELIVERY_ALIAS_MAP = createAliasMap(
+  STATUS_DELIVERY_DEFINITIONS
 );
 
-export const STATUS_ALIAS_MAP = createAliasMap(
-  STATUS_DEFINITIONS,
-  DN_SCAN_STATUS_DEFINITIONS
-);
-
-export const ROLE_DEFINITIONS = {
+export const STATUS_SITE_VALUES = buildValueMap(STATUS_SITE_DEFINITIONS);
+export const STATUS_SITE_ORDERED_LIST = buildList(STATUS_SITE_DEFINITIONS);
+const roleDefinitions = {
   lsp: {
     key: 'lsp',
     label: 'LSP',
@@ -304,15 +176,11 @@ export const ROLE_DEFINITIONS = {
       canDelete: false,
       allowRemark: true,
       allowPhoto: true,
-      requireStatusSelection: true,
-      statusOptions: [...DN_SCAN_STATUS_ORDERED_LIST],
+      requireStatusDeliverySelection: true,
+      statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
-    statusHighlights: [
-      { status: STATUS_VALUES.NEW_MOS },
-      { status: STATUS_VALUES.CANCEL_MOS },
-      { status: STATUS_VALUES.CLOSE_BY_RN },
-      { status: STATUS_VALUES.WAITING_PIC_FEEDBACK },
-    ],
+    statusDeliveryHighlights: [],
     users: loadRoleUsers(ROLE_USER_PREFIXES.lsp),
   },
   customer: {
@@ -324,12 +192,13 @@ export const ROLE_DEFINITIONS = {
       canDelete: true,
       allowRemark: true,
       allowPhoto: false,
-      requireStatusSelection: false,
-      statusOptions: [...DN_SCAN_STATUS_ORDERED_LIST],
+      requireStatusDeliverySelection: false,
+      statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
-    statusHighlights: [
-      { status: STATUS_VALUES.NEW_MOS },
-      { status: STATUS_VALUES.POD },
+    statusDeliveryHighlights: [
+      { status_delivery: STATUS_SITE_VALUES.NEW_MOS },
+      { status_delivery: STATUS_SITE_VALUES.POD },
     ],
     users: loadRoleUsers(ROLE_USER_PREFIXES.customer),
   },
@@ -342,20 +211,13 @@ export const ROLE_DEFINITIONS = {
       canDelete: true,
       allowRemark: true,
       allowPhoto: true,
-      requireStatusSelection: false,
-      statusOptions: [...DN_SCAN_STATUS_ORDERED_LIST],
+      requireStatusDeliverySelection: false,
+      statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
+      statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
-    statusHighlights: [
-      { status: STATUS_VALUES.NEW_MOS },
-      { status: STATUS_VALUES.CANCEL_MOS },
-      { status: STATUS_VALUES.CLOSE_BY_RN },
-      { status: STATUS_VALUES.REPLAN_MOS_PROJECT },
-      { status: STATUS_VALUES.REPLAN_MOS_LSP_DELAY },
-      { status: STATUS_VALUES.PREPARE_VEHICLE },
-      { status: STATUS_VALUES.ON_THE_WAY },
-    ],
+    statusDeliveryHighlights: [],
     users: loadRoleUsers(ROLE_USER_PREFIXES[TRANSPORT_MANAGER_ROLE_KEY]),
   },
 };
 
-export const ROLE_LIST = Object.values(ROLE_DEFINITIONS);
+export const ROLE_LIST = Object.values(roleDefinitions);

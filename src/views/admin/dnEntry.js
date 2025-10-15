@@ -1,23 +1,23 @@
-import { escapeHtml, lockBodyScroll, unlockBodyScroll } from './utils.js';
+import { escapeHtml } from './utils.js';
 import { TRANSPORT_MANAGER_ROLE_KEY } from './constants.js';
 import { normalizeDnSoft, DN_VALID_RE } from '../../utils/dn.js';
 
-const DN_SEPARATOR_SOURCE = '[\\s,，；;、\\u3001]+';
-const DN_SEP_RE = new RegExp(DN_SEPARATOR_SOURCE, 'gu');
-const DN_SEP_CAPTURE_RE = new RegExp(`(${DN_SEPARATOR_SOURCE})`, 'gu');
-const DN_SEP_TEST_RE = new RegExp(`^${DN_SEPARATOR_SOURCE}$`, 'u');
+const separatorSource = '[\\s,，；;、\\u3001]+';
+const separatorSplitPattern = new RegExp(separatorSource, 'gu');
+const separatorCapturePattern = new RegExp(`(${separatorSource})`, 'gu');
+const separatorOnlyPattern = new RegExp(`^${separatorSource}$`, 'u');
 
 export function createDnEntryManager({
   dnInput,
   dnPreview,
   dnBtn,
-  dnModal,
   dnEntryInput,
   dnEntryPreview,
   dnClose,
   dnCancel,
   dnConfirm,
   signal,
+  dnModalController,
   i18n,
   API_BASE,
   showToast,
@@ -47,7 +47,7 @@ export function createDnEntryManager({
   function splitTokens(raw) {
     const normalized = normalizeRawSoft(raw);
     return normalized
-      .split(DN_SEP_RE)
+      .split(separatorSplitPattern)
       .map((value) => value.trim())
       .filter(Boolean);
   }
@@ -55,11 +55,11 @@ export function createDnEntryManager({
   function buildHighlightHTML(raw) {
     const normalized = normalizeRawSoft(raw);
     if (!normalized) return '';
-    const parts = normalized.split(DN_SEP_CAPTURE_RE);
+    const parts = normalized.split(separatorCapturePattern);
     const out = [];
     for (const chunk of parts) {
       if (!chunk) continue;
-      if (DN_SEP_TEST_RE.test(chunk)) {
+      if (separatorOnlyPattern.test(chunk)) {
         out.push(`<span class="hl-sep">${escapeHtml(chunk)}</span>`);
         continue;
       }
@@ -148,7 +148,6 @@ export function createDnEntryManager({
   }
 
   function openModal() {
-    if (!dnModal) return;
     const perms = getCurrentPermissions?.();
     if (!perms?.canEdit) {
       showToast(
@@ -157,10 +156,8 @@ export function createDnEntryManager({
       );
       return;
     }
-    const wasVisible = dnModal.style.display === 'flex';
-    dnModal.style.display = 'flex';
-    if (!wasVisible) {
-      lockBodyScroll();
+    if (dnModalController?.open) {
+      dnModalController.open();
     }
     if (dnEntryPreview) {
       dnEntryPreview.innerHTML = '';
@@ -179,12 +176,8 @@ export function createDnEntryManager({
   }
 
   function closeModal() {
-    if (dnModal) {
-      const wasVisible = dnModal.style.display === 'flex';
-      dnModal.style.display = 'none';
-      if (wasVisible) {
-        unlockBodyScroll();
-      }
+    if (dnModalController?.close) {
+      dnModalController.close();
     }
   }
 
@@ -274,13 +267,6 @@ export function createDnEntryManager({
     dnClose?.addEventListener('click', () => closeModal(), { signal });
     dnCancel?.addEventListener('click', () => closeModal(), { signal });
     dnConfirm?.addEventListener('click', () => handleConfirm(), { signal });
-    dnModal?.addEventListener(
-      'click',
-      (event) => {
-        if (event.target === dnModal) closeModal();
-      },
-      { signal }
-    );
     dnEntryInput?.addEventListener('input', () => renderModalPreview(), {
       signal,
     });

@@ -1,0 +1,19 @@
+{
+  "statusDelivery.arrivedAtWh": "到达仓库",
+  "statusDelivery.departedFromWh": "从仓库发出",
+  "statusDelivery.arrivedAtXdPm": "到达XD/PM",
+  "statusDelivery.departedFromXdPm": "从XD/PM发出",
+  "statusDelivery.arrivedAtSite": "到达站点",
+  "statusDelivery.pod": "POD",
+  "statusDelivery.inTransit": "开始运输",
+  "statusDelivery.prepareVehicle": "Prepare Vehicle",
+  "statusDelivery.cancelMos": "取消MOS",
+  "statusDelivery.arrived": "已到达",
+  "statusDelivery.newMos": "新建MOS",
+  "statusDelivery.onSite": "On Site",
+  "statusDelivery.waitingFeedback": "Waiting PIC Feedback",
+  "statusDelivery.total": "总计",
+  "inTransit": "开始运输",
+  "arrived": "已到达",
+  "overnight": "过夜"
+}

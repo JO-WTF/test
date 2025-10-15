@@ -1,661 +1,361 @@
-/* Mobile-specific styles for devices with width <= 430px */
-@media (max-width: 768px) {
-  /* Base layout and overflow prevention */
+/* admin-mobile.css
+	 响应式样式：针对宽度 <= 1000px 的设备优化布局与间距。
+	 目的：减少卡片/表格/模态的内边距，栈式布局，并确保 Table 内默认字体为 12px。
+*/
+
+@media (max-width: 1000px) {
+  /* 允许更窄的页面宽度，移除较大的最小宽度约束 */
   body.admin-theme {
-    min-width: 320px;
-    overflow-x: hidden;
+    min-width: 0;
   }
 
-  .admin-page,
-  .admin-page .container,
-  .admin-page .card,
-  .admin-page .rhs {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+  /* 按钮在小屏上略微紧凑 */
+  .admin-page .btn {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .admin-page label {
+    font-size: 11px;
+  }
+  .admin-page .ant-select {
+    font-size: 12px;
   }
 
-  .admin-page .card {
-    padding: 12px;
-  }
-
-  /* Page header layout */
-  .admin-page .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .admin-page .auth-area {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  /* Grid layout */
   .admin-page .grid-2col {
     display: flex;
     flex-direction: column;
-    gap: 16px;
   }
-
-  .admin-page .rhs {
-    min-width: 0;
-  }
-
-  /* Filters: 2 columns layout */
-  .admin-page .filters-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: flex-end;
-  }
-
   .admin-page .filters-grid .field {
-    flex: 1 1 calc(50% - 4px);
-    min-width: 0;
-    max-width: calc(50% - 4px);
-  }
-
-  .admin-page .filters-grid .field label {
-    display: block;
-    width: 100%;
-    margin-bottom: 4px;
-    font-size: 11px;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Ant Design components */
-  .admin-page .filters-grid .field .ant-select-selector {
-    height: auto !important;
-    min-height: 30px !important;
-    padding: 3px 11px !important;
-  }
-
-  .admin-page .filters-grid .field .ant-select-selection-overflow {
-    flex-wrap: wrap;
-    max-height: none;
-  }
-
-  .admin-page .filters-grid .field .ant-input,
-  .admin-page .filters-grid .field .ant-picker {
-    height: 30px;
-    width: 100%;
-  }
-
-  /* Native form elements */
-  .admin-page .filters-grid .field input:not([class*="ant-"]),
-  .admin-page .filters-grid .field select:not([class*="ant-"]) {
-    width: 100%;
-    height: 16px;
-    padding: 5px 10px;
-    box-sizing: border-box;
-  }
-
-  .admin-page .filters-grid .field > * {
-    max-width: 100%;
-  }
-
-  /* Filter actions */
-  .admin-page .filter-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .admin-page .filter-actions > div,
-  .admin-page .filter-actions .btn {
-    flex: 1 1 180px;
-    min-width: 180px;
-  }
-
-  .admin-page .filter-actions .btn {
-    justify-content: center;
-  }
-
-  /* Status and LSP cards */
-  .admin-page .status-card-grid {
-    --status-card-min-width: 80px;
-    gap: 8px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    flex: 1 1 150px;
+    max-width: 200px;
   }
 
   .admin-page .status-card {
-    padding: 10px 12px;
-    min-height: 80px;
+    padding: 8px 2px;
+    min-height: 50px;
   }
 
   .admin-page .status-card__count {
-    font-size: 20px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .admin-page .status-card__label {
+    font-size: 12px;
+    font-weight: 500;
   }
 
-  .admin-page .status-card__label,
-  .admin-page .lsp-summary-card {
-    font-size: 11px;
-  }
-
-  .admin-page .lsp-summary-card-section {
-    padding: 8px;
-  }
-
-  .admin-page .lsp-summary-card {
-    padding: 5px 8px;
-  }
-
-  /* Table to card transformation */
   .admin-page table,
-  .admin-page table tbody {
-    display: block;
-    border: 0;
+  .admin-page th,
+  .admin-page td {
+    font-size: 11px;
+    padding: 4px !important;
+  }
+  .admin-page tr.summary-row .summary-cell {
+    gap: 3px;
+  }
+  .admin-page .summary-du-id-value {
+    word-wrap: break-word;
+    max-width: 120px;
+  }
+  .admin-page .latest-record-wrapper {
+    display: flex;
+    /* flex-direction: row; */
+    flex-wrap: wrap;
+  }
+  .admin-page .checkin-cell,
+  .admin-page .actions {
+    flex-direction: column;
+  }
+}
+
+/* Mobile-specific styles for devices with width <= 768px */
+@media (max-width: 768px) {
+  .lsp-summary-card-wrapper {
+    padding: 4px 6px;
+  }
+  .admin-page .lsp-summary-card-container {
+    gap: 4px;
+  }
+  .admin-page .lsp-summary-card {
+    padding: 3px 4px;
+  }
+  .admin-page .lsp-summary-card__label {
+    font-weight: 500;
+  }
+  .admin-page .lsp-summary-card {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  /* convert table structural elements to block but keep td as flex items */
+  .ant-table-container {
+    border-inline-start: 0px!important;
+  }
+  .ant-table-container >.ant-table-header >table {
+    border-top: none;
+  }
+  thead {
+    display: none; /* hide header */
   }
 
-  .admin-page table thead {
+  /* Make the table and its body behave as block elements on mobile so rows
+     can be rendered as flex cards. Without this some browsers (Chrome) keep
+     table layout semantics which prevents tr from stretching to 100%. */
+  .ant-table-container table,
+  .ant-table-container .ant-table-body table,
+  .admin-page table {
+    display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .ant-table-container .ant-table-body,
+  .ant-table-container .ant-table-tbody,
+  .admin-page tbody {
+    display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  tbody tr {
+    /* render each row as a flex card and force it to occupy full width */
+    display: flex;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    margin: 0 0 12px 0;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid var(--ant-border-subtle);
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  tbody tr td {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: none!important;
+    min-width: 0;
+  }
+
+  .admin-page .summary-primary {
+    font-size: 16px!important;
+  }
+  .admin-page .summary-du-id-value {
+    word-wrap: break-word;
+    max-width: 100%;
+  }
+  .admin-page .latest-record-text {
+    max-width: 100%;
+  }
+
+  .admin-page .checkin-cell,
+  .admin-page .actions {
+    gap: 24px;
+    display: flex;
+    flex-direction: row!important;
+  }
+
+  /* First group: cells 1-3 -> 3 columns when present */
+  tbody tr td:nth-child(1){
+    flex: 0 0 28px;
+    padding: 0;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  /* Second cell: flexible, fills remaining space */
+  tbody tr td:nth-child(2) {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    align-items: center;
+    min-width: 150px; 
+    /* max-width:250px; */
+    overflow: hidden;
+  }
+  /* Third cell: fixed 100px, right aligned */
+  tbody tr td:nth-child(3) {
+    flex: 0 0 100px;
+    justify-content: flex-end; /* align content to the right */
+    align-items: center;
+    text-align: right;
+  }
+
+  /* Ensure the first visual row contains only cells 1-3. Move cells 4+ to the next wrapped line. */
+  tbody tr td:nth-child(1) { order: 1; }
+  tbody tr td:nth-child(2) { order: 2; }
+  tbody tr td:nth-child(3) { order: 3; }
+  tbody tr td:nth-child(n+4) {
+    /* force these cells to take a full line below the first three */
+    flex: 0 0 100%;
+    order: 10;
+  }
+
+  /* Second group: cells 4-6 -> 3 columns */
+  tbody tr td:nth-child(4),
+  tbody tr td:nth-child(5),
+  tbody tr td:nth-child(6) {
+    flex: 0 0 calc(33.3333% - 8px);
+  }
+
+  tbody tr td:nth-last-child(3) {
+    flex: 0 0 100%;
+    order: 10;
+    align-items: flex-start;
+    text-align: left;
+  }
+  /* Last two cells -> 2 columns */
+  tbody tr td:nth-last-child(2),
+  tbody tr td:nth-last-child(1) {
+    flex: 0 0 calc(50% - 8px);
+  }
+
+  /* Ensure long content wraps inside flex items */
+  tbody tr td .label,
+  tbody tr td .value,
+  tbody tr td * {
+    min-width: 0;
+  }
+
+  /* Tweak typography inside card */
+  tbody tr td .label {
+    font-size: 12px;
+    color: #6b7280;
+  }
+  tbody tr td .value {
+    font-size: 14px;
+    color: #0f172a;
+    word-break: break-word;
+  }
+
+  /* On mobile: show column label inside each cell by default */
+  .admin-page tbody tr td .label {
+    display: block;
+  }
+
+  /* Hide labels for cells 1-6 */
+  .admin-page tbody tr td:nth-child(-n+6) .label {
     display: none;
   }
 
-  /* Card-based row layout with flex container for reordering */
-  .admin-page tr.summary-row {
-    display: flex !important;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    border: 1px solid var(--ant-border-subtle);
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 12px;
-    background: var(--ant-surface);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  /* Hide labels for the last two cells */
+  .admin-page tbody tr td:nth-last-child(1) .label,
+  .admin-page tbody tr td:nth-last-child(2) .label {
+    display: none;
   }
 
-  .admin-page tr.summary-row:hover,
-  .admin-page tr.summary-row.expanded {
-    background: var(--ant-primary-tint-faint);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  }
-
-  .admin-page tr.summary-row.status-mismatch-row {
-    border-color: var(--ant-danger);
-    background: var(--ant-danger-softer);
-  }
-
-  .admin-page tr.summary-row.status-mismatch-row:hover,
-  .admin-page tr.summary-row.status-mismatch-row.expanded {
-    background: var(--ant-danger-soft);
-  }
-
-  .admin-page tr.summary-row td {
-    display: block;
-    border: 0;
-    padding: 0;
-    text-align: left;
-    flex-shrink: 0;
-    min-height: 18px;
-  }
-
-  /* First row: DN Number on left, Region + Plan Date on right */
-  .admin-page tr.summary-row .summary-dn-cell {
-    order: 1;
-    flex: 0 0 auto;
-    width: auto;
-    margin-bottom: 8px;
-    margin-right: auto;
-    min-height: 18px;
-  }
-
-  .admin-page tr.summary-row .summary-cell {
-    gap: 6px;
-    display: flex;
-  }
-
-  .admin-page tr.summary-row .summary-primary {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--ant-primary-strong);
-  }
-
-  .admin-page tr.summary-row .row-toggle::before {
+  /* Show column name before the content for summary-remark-text cells (mobile only)
+     Place label and content on the same line and truncate long text.
+     Support both cases: data-label on the td or on an inner element (e.g. span.summary-remark-text). */
+  .admin-page tbody tr td.summary-remark-text::before,
+  .admin-page tbody tr td .summary-remark-text[data-label]::before,
+  .admin-page tbody tr td.latest-record-text::before,
+  .admin-page tbody tr td .latest-record-text[data-label]::before {
+    content: attr(data-label);
+    display: inline-block;
     font-size: 12px;
-  }
-
-  /* Region & Plan MOS - compact tag with optional mobile formatting */
-  .admin-page tr.summary-row .summary-region-plan-cell {
-    order: 1;
-    flex: 0 0 auto;
-    width: auto;
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-    margin-right: 6px;
-    padding: 4px 4px;
-    font-size: 11px;
-    font-weight: 500;
-    border: 1px solid var(--ant-border-subtle);
-    border-radius: 12px;
-    background: var(--ant-surface-container);
-    position: relative;
-    min-height: 18px;
-  }
-
-  .admin-page tr.summary-row .summary-region-plan-cell .region-plan-cell__region,
-  .admin-page tr.summary-row .summary-region-plan-cell .region-plan-cell__plan {
-    display: inline;
-    margin: 0;
-  }
-
-  .admin-page tr.summary-row .summary-region-plan-cell::before {
-    content: none;
-  }
-
-  /* When a mobile-friendly Plan value exists, display it via pseudo element */
-  .admin-page tr.summary-row .summary-region-plan-cell[data-mobile-value]:not([data-mobile-value=""])::after {
-    content: attr(data-mobile-value);
-    display: inline;
-    font-size: 11px;
-    color: var(--ant-text-secondary);
-    font-weight: 500;
-    line-height: normal;
-    margin-left: 6px;
-  }
-
-  .admin-page tr.summary-row .summary-region-plan-cell[data-mobile-value]:not([data-mobile-value=""]) .region-plan-cell__plan {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
-  /* LSP - same row with Delivery and Status, same height as region/plan date */
-  .admin-page tr.summary-row .summary-lsp-cell {
-    order: 2;
-    flex: 0 0 auto;
-    width: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 6px;
-    margin-right: 6px;
-    padding: 4px 4px;
-    white-space: nowrap;
-    border: 1px solid var(--ant-border-subtle);
-    border-radius: 12px;
-    background: var(--ant-surface-container);
-    min-height: 16px;
-  }
-
-  /* Delivery and Status - same row with LSP, same height as region/plan date */
-  .admin-page tr.summary-row .summary-status-delivery-cell,
-  .admin-page tr.summary-row .summary-status-cell {
-    order: 2;
-    flex: 0 0 auto;
-    width: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 6px;
-    margin-right: 6px;
-    padding: 4px 4px;
-    white-space: nowrap;
-    border: 1px solid var(--ant-border-subtle);
-    border-radius: 12px;
-    background: var(--ant-surface-container);
-    min-height: 16px;
-  }
-
-  .admin-page tr.summary-row .summary-status-delivery-cell {
-    font-size: 11px;
-    color: var(--ant-text-secondary);
-    font-weight: 500;
-    min-height: 16px;
-  }
-
-  .admin-page tr.summary-row .summary-status-delivery-cell::before,
-  .admin-page tr.summary-row .summary-status-cell::before {
-    content: none;
-  }
-
-  .admin-page tr.summary-row .summary-lsp-cell::before,
-  .admin-page tr.summary-row .summary-issue-remark-cell::before,
-  .admin-page tr.summary-row .summary-status-cell::before,
-  .admin-page tr.summary-row .summary-remark-cell::before {
-    font-weight: 600;
     color: var(--ant-text-muted);
-    flex-shrink: 0;
+    margin-right: 8px;
+    white-space: nowrap;
+    vertical-align: middle;
   }
 
-  /* When has mobile value, hide the original LSP name */
-  .admin-page tr.summary-row .summary-lsp-cell[data-mobile-value]:not([data-mobile-value=""]) {
-    font-size: 0 !important;
-    color: transparent !important;
-  }
-
-  /* Show abbreviation after the label */
-  .admin-page tr.summary-row .summary-lsp-cell[data-mobile-value]:not([data-mobile-value=""])::after {
-    content: attr(data-mobile-value);
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    color: var(--ant-text-secondary);
-  }
-
-  /* Hide all child elements when mobile value exists */
-  .admin-page tr.summary-row .summary-lsp-cell[data-mobile-value]:not([data-mobile-value=""]) * {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
-  /* Issue and Remark - separate rows */
-  .admin-page tr.summary-row .summary-issue-remark-cell,
-  .admin-page tr.summary-row .summary-remark-cell {
-    flex: 0 0 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 4px;
-    font-size: 12px;
-    margin-bottom: 6px;
-    min-height: 16px;
-  }
-
-  .admin-page tr.summary-row .summary-issue-remark-cell {
-    order: 4;
-    min-height: 18px;
-  }
-
-  .admin-page tr.summary-row .summary-issue-remark-cell::before {
-    content: 'Issue: ';
-    font-size: 11px;
-  }
-
-  .admin-page tr.summary-row .summary-status-cell .status-cell-wrapper {
-    gap: 4px;
-  }
-
-  .admin-page tr.summary-row .summary-status-cell .status-text {
-    font-weight: 600;
-    font-size: 13px;
-  }
-
-  /* Update count badge - slightly smaller on mobile */
-  .admin-page .update-count-badge {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    font-size: 10px;
-  }
-
-  .admin-page tr.summary-row .summary-remark-cell {
-    order: 5;
-    min-height: 18px;
-  }
-
-  .admin-page tr.summary-row .summary-remark-cell::before {
-    content: '备注: ';
-    font-size: 11px;
-  }
-
-  /* Photo, Location, and Actions - display in one row */
-  .admin-page tr.summary-row .summary-checkin-cell,
-  .admin-page tr.summary-row .summary-actions-cell {
-    order: 8;
-    flex: 0 0 auto;
-    width: auto;
-    display: inline-flex;
+  /* Make the remark element a single-line truncating container so label + content share one row */
+  .admin-page tbody tr td .summary-remark-text,
+  .admin-page tbody tr td .summary-remark-text[data-label],
+  .admin-page tbody tr td .latest-record-text,
+  .admin-page tbody tr td .latest-record-text[data-label] {
+    display: inline-flex; /* allow ::before + text on same line */
     align-items: center;
-    gap: 12px;
-    padding: 0 8px 0 0;
-    margin: 0;
-    border: 0;
-    min-height: 16px;
-    height: 16px;
-  }
-
-  .admin-page tr.summary-row .summary-actions-cell {
-    padding: 0;
-    min-height: 16px;
-    height: 16px;
-  }
-
-  /* Remove previous labels */
-  .admin-page tr.summary-row .summary-checkin-cell::before {
-    content: none;
-  }
-
-  /* Adjust icon and button spacing */
-  .admin-page tr.summary-row .summary-checkin-cell .icon-link,
-  .admin-page tr.summary-row .summary-actions-cell .icon-link,
-  .admin-page tr.summary-row .summary-actions-cell .icon-btn {
-    margin: 0;
-  }
-
-  /* Photo + map buttons appear side-by-side */
-  .admin-page tr.summary-row .summary-checkin-cell .checkin-cell,
-  .admin-page tr.summary-row .summary-actions-cell .actions {
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: nowrap;
-  }
-
-  .admin-page tr.summary-row .summary-checkin-cell .checkin-cell > *,
-  .admin-page tr.summary-row .summary-actions-cell .actions > * {
-    flex: 0 0 auto;
-  }
-
-  .admin-page tr.summary-row .summary-updated-cell {
-    min-height: 16px;
-  }
-
-  /* Updated At - hide on mobile */
-  .admin-page tr.summary-row td[data-column="updatedAt"] {
-    display: none !important;
-  }
-
-  /* Actions - now in the same row as photo and location */
-  .admin-page tr.summary-row .summary-actions-cell .actions {
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: nowrap;
-  }
-
-  /* Detail row adjustments for mobile */
-  .admin-page tr.detail-row {
-    display: block;
-    border: 0;
-    margin-top: -12px;
-    margin-bottom: 12px;
-  }
-
-  .admin-page tr.detail-row td {
-    display: block;
-    padding: 0;
-    border: 0;
-  }
-
-  .admin-page tr.detail-row .detail-content {
-    border-radius: 0 0 12px 12px;
-    padding: 12px;
-  }
-
-  .admin-page tr.detail-row .detail-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .admin-page tr.detail-row .detail-item {
-    padding: 8px;
-  }
-
-  /* Icon sizes for mobile - larger touch targets */
-  .admin-page .icon-svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .admin-page .icon-link,
-  .admin-page .icon-btn,
-  .admin-page tr.summary-row .summary-checkin-cell .muted {
-    min-width: 16px;
-    min-height: 16px;
-    width: 16px;
-    height: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Pager mobile layout */
-  .admin-page .pager {
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-  }
-
-  .admin-page .pager #pginfo {
-    order: -2;
-    width: 100%;
-    text-align: center;
-    margin-bottom: 8px;
-  }
-
-  .admin-page .pager__page-size {
-    order: -1;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .admin-page .pager button {
-    flex: 1;
-    min-width: 80px;
-  }
-
-  /* Modal mobile layout */
-  .admin-page .modal,
-  .admin-page .modal.small,
-  .admin-page .modal.large {
-    width: 95%;
-    max-width: 100%;
-    padding: 12px;
-  }
-
-  .admin-page .row-line {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .admin-page .field.grow {
-    min-width: 100%;
-  }
-
-  /* DN Modal */
-  .admin-page .dn-modal {
-    width: 95vw;
-    height: 60vh;
-    padding: 12px;
-  }
-
-  .admin-page .dn-modal__header h3 {
-    font-size: 16px;
-  }
-
-  /* Update history modal */
-  .admin-page .history-record {
-    padding: 12px;
-    overflow-x: hidden;
-  }
-
-  .admin-page .history-info-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .admin-page .history-record-media {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    overflow-x: auto;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .admin-page .history-media-item {
-    flex: 0 0 calc(50% - 5px);
-    min-width: calc(50% - 5px);
-    max-width: calc(50% - 5px);
-    height: 150px;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0; /* allow flex children to shrink inside flex container */
   }
 
-  /* Ensure map and images fit within their containers */
-  .admin-page .history-media-item img,
-  .admin-page .history-media-item .leaflet-container,
-  .admin-page .history-media-item > div {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100%;
-    object-fit: cover;
+  /* Mobile-only: disable hover background/shadow on table rows/cells to avoid visual noise */
+  .admin-page .ant-table-tbody > tr:hover > td,
+  .admin-page table > tbody > tr:hover > td,
+  .admin-page .ant-table-tbody > tr > td:hover {
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
-  /* Buttons */
-  .admin-page .btn {
-    font-size: 13px;
-    padding: 10px 14px;
-  }
-
-  /* Table toggle */
-  .admin-page .table-toggle-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  /* DN preview area */
-  .admin-page .du-wrap {
-    min-height: 80px;
-  }
-
-  .admin-page .du-wrap textarea,
-  .admin-page .du-wrap .du-hilite {
-    min-height: 80px;
+  /* Mobile filters toggle: show a full-width ghost button between filters-grid and actions
+     The template binds the button to `showFilters`. By default keep filters visible; the
+     button toggles it. */
+  .admin-page .filters-toggle-btn {
+    display: block !important;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
+    padding: 10px 12px;
+    text-align: center;
+    background: transparent;
+    border: 1px solid var(--ant-border-subtle);
+    color: var(--ant-primary);
+    border-radius: 8px;
     font-size: 13px;
   }
 
-  /* Typography adjustments */
-  .admin-page label,
-  .admin-page .muted {
-    font-size: 11px;
-  }
-
-  .admin-page h3 {
-    font-size: 16px;
-  }
-
-  .admin-page h2 {
-    font-size: 18px;
-    margin: 12px 0;
-  }
-
-  /* Muted placeholder styling */
-  .admin-page tr.summary-row .summary-checkin-cell .muted {
-    font-size: 14px;
-    color: var(--ant-text-muted);
-  }
-
-  /* Hide "click to view all fields" hint on mobile */
-  .admin-page tr.summary-row .summary-hint {
+  /* If filters are hidden (v-show=false) the filters-grid will be display:none via Vue,
+     but ensure visual collapse by applying helper class if needed. */
+  .admin-page .filters-grid[hidden],
+  .admin-page .filters-grid[style*="display: none"] {
     display: none !important;
   }
 
-  /* Role tag adjustments */
-  .admin-page .role-tag {
-    padding: 5px 10px;
-    font-size: 11px;
+  /* Animated collapse/expand for filters-grid (only on mobile). We use
+     max-height transition and opacity for a smooth effect. The .collapsed
+     class is toggled from Vue. */
+  .admin-page .filters-grid {
+    transition: max-height 240ms ease, opacity 200ms ease, transform 200ms ease;
+    overflow: hidden;
+    max-height: 999px; /* large by default when expanded */
+    opacity: 1;
+    transform-origin: top center;
+  }
+
+  .admin-page .filters-grid.collapsed {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    transform: translateY(-6px);
+    pointer-events: none;
+  }
+
+  /* Slight transition for the toggle button when switching */
+  .admin-page .filters-toggle-btn {
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+
+  /* Ensure expanded-row's single cell occupies full width on narrow screens
+     Ant adds a tr.ant-table-expanded-row with one td spanning columns. In our
+     mobile card layout we want that td to behave as a block and fill the card
+     width to avoid layout/overflow issues. */
+  .admin-page .ant-table-expanded-row {
+    display: block; /* treat expanded row as a block-level row */
+  }
+  .admin-page .ant-table-expanded-row > td {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    padding: 8px 10px !important;
+    border-bottom: none !important;
+    background: transparent !important;
+  }
+
+  /* Make sure detail content inside expanded cell also fills width */
+  .admin-page .ant-table-expanded-row > td .detail-content,
+  .admin-page .ant-table-expanded-row > td .detail-grid {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .admin-page .detail-row .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px;
   }
 }

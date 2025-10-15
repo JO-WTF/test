@@ -1,34 +1,31 @@
-import { STATUS_VALUES } from '../../config.js';
 import {
-  TRANSPORT_MANAGER_STATUS_CARDS,
+  TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   TRANSPORT_MANAGER_ROLE_KEY,
 } from './constants.js';
 
-const STATUS_CARD_MAX_COLUMNS = 13;
-const STATUS_CARD_TOTAL_KEY = '__TOTAL__';
-
-export function createStatusCardManager({
+export function createStatusDeliveryCardManager({
   container,
   wrapper,
   signal,
   API_BASE,
   i18n,
   getCurrentRole,
-  normalizeStatusValue,
-  i18nStatusDisplay,
-  getStatusDeliveryValues,
-  getStatusFilterValue,
+  normalizeStatusDeliveryValue,
+  i18nStatusDeliveryDisplay,
+  getStatusSiteValues,
+  getStatusDeliveryFilterValue,
   onApplyFilter,
-  transportManagerCards = TRANSPORT_MANAGER_STATUS_CARDS,
+  transportManagerDeliveryCards = TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   onStatsFetched,
   onLoadingChange,
 }) {
   let defs = [];
+  let siteDefs = [];
   const refs = new Map();
   let abortController = null;
   let requestId = 0;
 
-  function getStatusCardLabel(def) {
+  function getStatusDeliveryCardLabel(def) {
     if (!def) return '';
     if (def.labelKey && i18n) {
       try {
@@ -39,32 +36,32 @@ export function createStatusCardManager({
       }
     }
     if (def.label) return def.label;
-    return i18nStatusDisplay(def.status);
+  return i18nStatusDeliveryDisplay(def.status_delivery);
   }
 
-  function getRoleStatusHighlights(role) {
+  function getRoleStatusDeliveryHighlights(role) {
     if (!role) return [];
-    const highlights = Array.isArray(role.statusHighlights)
-      ? role.statusHighlights
+    const highlights = Array.isArray(role.statusDeliveryHighlights)
+      ? role.statusDeliveryHighlights
       : [];
     const seen = new Set();
     const list = [];
     highlights.forEach((item) => {
       if (!item) return;
-      let status = '';
+      let statusDelivery = '';
       let label = '';
       let labelKey = '';
       if (typeof item === 'string') {
-        status = normalizeStatusValue(item) || item;
+        statusDelivery = normalizeStatusDeliveryValue(item) || item;
       } else if (typeof item === 'object') {
-        const target = item.status ?? item.value ?? item.key;
-        status = normalizeStatusValue(target) || target || '';
+        const target = item.status_delivery ?? item.value ?? item.key;
+        statusDelivery = normalizeStatusDeliveryValue(target) || target || '';
         if (typeof item.label === 'string') label = item.label;
         if (typeof item.labelKey === 'string') labelKey = item.labelKey;
       }
-      if (!status || seen.has(status)) return;
-      seen.add(status);
-      list.push({ status, label, labelKey });
+      if (!statusDelivery || seen.has(statusDelivery)) return;
+      seen.add(statusDelivery);
+      list.push({ status_delivery: statusDelivery, label, labelKey });
     });
     return list;
   }
@@ -73,12 +70,12 @@ export function createStatusCardManager({
     button.addEventListener(
       'click',
       () => {
-        if (!def || (def.type !== 'status' && def.type !== 'total')) return;
+        if (!def || (def.type !== 'status_delivery')) return;
         const canonical =
-          def.type === 'status'
-            ? normalizeStatusValue(def.status) || def.status || ''
+          def.type === 'status_delivery'
+            ? normalizeStatusDeliveryValue(def.status_delivery) || def.status_delivery || ''
             : '';
-        if (def.type === 'status' && !canonical) return;
+        if (def.type === 'status_delivery' && !canonical) return;
         onApplyFilter?.(def, canonical);
         updateActiveState();
       },
@@ -90,54 +87,54 @@ export function createStatusCardManager({
     if (!container || !wrapper) return;
     const role = getCurrentRole();
     let list = [];
+    let siteList = [];
 
     if (role?.key === 'lsp') {
       list = [];
     } else {
       if (role?.key === TRANSPORT_MANAGER_ROLE_KEY) {
-        list = transportManagerCards.map((card) => ({
-          status: card.status,
+        list = transportManagerDeliveryCards.map((card) => ({
+          status_delivery: card.status_delivery,
           label: card.label,
         }));
       } else {
-        list = getRoleStatusHighlights(role);
+        list = getRoleStatusDeliveryHighlights(role);
       }
-
       list = list.map((defItem, index) => {
-        const canonical = normalizeStatusValue(defItem.status);
-        const status = canonical || defItem.status || '';
+        const canonical = normalizeStatusDeliveryValue(defItem.status_delivery);
+        const status_delivery = canonical || defItem.status_delivery || '';
         const key =
-          status ||
+          status_delivery ||
           (typeof defItem.labelKey === 'string' && defItem.labelKey
             ? `label:${defItem.labelKey}`
-            : `status:${index}`);
+            : `status_delivery:${index}`);
         return {
           ...defItem,
-          status,
+          status_delivery,
           key,
-          type: 'status',
+          type: 'status_delivery',
         };
       });
 
-      list = list.filter((defItem) => defItem.type !== 'status' || defItem.status);
-
-      if (role?.key === TRANSPORT_MANAGER_ROLE_KEY && list.length) {
-        list = [
-          {
-            status: '',
-            label: 'Total',
-            key: STATUS_CARD_TOTAL_KEY,
-            type: 'total',
-          },
-          ...list,
-        ];
-      }
+      list = list.filter((defItem) => defItem.type !== 'status_delivery' || defItem.status_delivery);
+    // Build site cards from role permissions if available
+    try {
+      const perms = role?.permissions || {};
+      const allowedSites = Array.isArray(perms.statusSiteOptions) ? perms.statusSiteOptions : [];
+      siteList = allowedSites.map((v, idx) => {
+        const status_site = normalizeStatusDeliveryValue(v) || v || '';
+        const key = status_site || `status_site:${idx}`;
+        return { status_site, label: v, key, type: 'status_site' };
+      }).filter((d) => d.status_site);
+    } catch (err) {
+      siteList = [];
+    }
     }
 
     defs = list;
     refs.clear();
 
-    if (!list.length) {
+    if (!list.length && !siteList.length) {
       container.innerHTML = '';
       wrapper.style.display = 'none';
       wrapper.setAttribute('aria-hidden', 'true');
@@ -155,13 +152,19 @@ export function createStatusCardManager({
     wrapper.style.display = '';
     wrapper.setAttribute('aria-hidden', 'false');
     container.innerHTML = '';
-    const columns = Math.max(1, Math.min(list.length, STATUS_CARD_MAX_COLUMNS));
+
+    // Delivery cards container
+    const deliveryGroup = document.createElement('div');
+    deliveryGroup.className = 'status-card-group status-card-group--delivery';
+    // Site cards container
+    const siteGroup = document.createElement('div');
+    siteGroup.className = 'status-card-group status-card-group--site';
 
     list.forEach((defItem) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'status-card';
-      btn.setAttribute('data-status', defItem.type === 'status' ? defItem.status : '');
+      btn.setAttribute('data-status_delivery', defItem.type === 'status_delivery' ? defItem.status_delivery : '');
       btn.setAttribute('data-card-key', defItem.key);
       btn.setAttribute('aria-pressed', 'false');
       btn.setAttribute('aria-busy', 'false');
@@ -172,16 +175,47 @@ export function createStatusCardManager({
 
       const labelEl = document.createElement('div');
       labelEl.className = 'status-card__label';
-      labelEl.textContent = getStatusCardLabel(defItem);
+      labelEl.textContent = getStatusDeliveryCardLabel(defItem);
 
       btn.appendChild(countEl);
       btn.appendChild(labelEl);
 
       attachCardHandler(btn, defItem);
 
-      container.appendChild(btn);
+      deliveryGroup.appendChild(btn);
       refs.set(defItem.key, { def: defItem, button: btn, countEl, labelEl });
     });
+
+    // Render site cards (if any)
+    siteList.forEach((defItem) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'status-card status-card--site';
+      btn.setAttribute('data-status_site', defItem.type === 'status_site' ? defItem.status_site : '');
+      btn.setAttribute('data-card-key', defItem.key);
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-busy', 'false');
+
+      const countEl = document.createElement('div');
+      countEl.className = 'status-card__count';
+      countEl.textContent = '…';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'status-card__label';
+      labelEl.textContent = defItem.label || defItem.status_site || '';
+
+      btn.appendChild(countEl);
+      btn.appendChild(labelEl);
+
+      attachCardHandler(btn, defItem);
+
+      siteGroup.appendChild(btn);
+      refs.set(defItem.key, { def: defItem, button: btn, countEl, labelEl });
+    });
+
+    // Append groups in order: delivery then site
+    container.appendChild(deliveryGroup);
+    if (siteList.length) container.appendChild(siteGroup);
 
     updateLabels();
     updateActiveState();
@@ -193,7 +227,7 @@ export function createStatusCardManager({
       const ref = refs.get(defItem.key);
       if (!ref) return;
       ref.def = defItem;
-      const label = getStatusCardLabel(defItem);
+      const label = getStatusDeliveryCardLabel(defItem);
       ref.labelEl.textContent = label;
       const currentCount = ref.countEl.textContent || '';
       ref.button.setAttribute('aria-label', `${label} ${currentCount}`.trim());
@@ -202,19 +236,21 @@ export function createStatusCardManager({
 
   function updateActiveState() {
     if (!refs.size) return;
-    const deliveryTokens = getStatusDeliveryValues();
-    const deliveryValue = deliveryTokens.length ? deliveryTokens[0] : '';
-    const canonicalDelivery = normalizeStatusValue(deliveryValue);
-    const statusValue = getStatusFilterValue();
-    const canonicalStatus = normalizeStatusValue(statusValue);
-    const canonical = canonicalDelivery || canonicalStatus;
+    const siteTokens = getStatusSiteValues();
+    const siteValue = siteTokens.length ? siteTokens[0] : '';
+    const canonicalSite = normalizeStatusDeliveryValue(siteValue);
+    const statusValue = getStatusDeliveryFilterValue();
+    const canonicalStatus = normalizeStatusDeliveryValue(statusValue);
+    const canonical = canonicalSite || canonicalStatus;
     const hasStatus = Boolean(canonical);
     refs.forEach((ref) => {
       const defItem = ref.def;
       if (!defItem) return;
       const isActive =
-        defItem.type === 'status'
-          ? hasStatus && defItem.status === canonical
+        defItem.type === 'status_delivery'
+          ? hasStatus && defItem.status_delivery === canonical
+          : defItem.type === 'status_site'
+          ? canonicalSite && defItem.status_site === canonicalSite
           : defItem.type === 'total'
           ? !hasStatus
           : false;
@@ -223,41 +259,11 @@ export function createStatusCardManager({
     });
   }
 
-  async function fetchStatusCardStats(signal) {
-    const url = `${API_BASE}/api/dn/status-delivery/stats`;
-    const resp = await fetch(url, { signal });
-    const text = await resp.text();
-    let data = null;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch (err) {
-      console.error(err);
+  async function refreshCounts(passedStats) {
+    const currentRole = typeof getCurrentRole === 'function' ? getCurrentRole() : null;
+    if (!currentRole) {
+      return;
     }
-    if (!resp.ok) {
-      throw new Error((data && (data.detail || data.message)) || `HTTP ${resp.status}`);
-    }
-    const list = Array.isArray(data?.data) ? data.data : [];
-    const counts = Object.create(null);
-    list.forEach((item) => {
-      if (!item || typeof item !== 'object') return;
-      const statusRaw =
-        item.status_delivery ?? item.status ?? item.value ?? item.key ?? '';
-      const status = normalizeStatusValue(statusRaw);
-      if (!status) return;
-      const countRaw = Number(
-        item.count ?? item.total ?? item.value ?? item.qty ?? item.quantity ?? 0
-      );
-      const countValue = Number.isFinite(countRaw) ? countRaw : 0;
-      const existing = Number.isFinite(counts[status]) ? counts[status] : 0;
-      counts[status] = existing + countValue;
-    });
-    const totalRaw = Number(data?.total ?? data?.count);
-    const total = Number.isFinite(totalRaw) ? totalRaw : null;
-    const lspSummary = Array.isArray(data?.lsp_summary) ? data.lsp_summary : [];
-    return { counts, total, lspSummary };
-  }
-
-  async function refreshCounts() {
     const shouldFetchStats =
       (defs.length && refs.size) || typeof onStatsFetched === 'function';
     if (!shouldFetchStats) return;
@@ -291,14 +297,17 @@ export function createStatusCardManager({
       }
     }
 
+    // Use provided stats (from search API). If none provided, use empty stats (no network calls).
     let stats = null;
     try {
-      stats = await fetchStatusCardStats(cardSignal);
-    } catch (err) {
-      if (cardSignal.aborted || currentRequestId !== requestId) return;
-      if (err?.name !== 'AbortError') {
-        console.error(err);
+      if (typeof passedStats === 'object' && passedStats !== null) {
+        stats = passedStats;
+      } else {
+        stats = { counts: Object.create(null), total: null, lspSummary: [] };
       }
+    } catch (err) {
+      console.error('Error preparing stats', err);
+      stats = { counts: Object.create(null), total: null, lspSummary: [] };
     }
 
     if (cardSignal.aborted || currentRequestId !== requestId) {
@@ -328,37 +337,76 @@ export function createStatusCardManager({
       }
     }
 
-    const counts = stats?.counts || Object.create(null);
-    let totalCount = 0;
+    const counts = stats?.counts ?? Object.create(null);
+
+    function findCountForStatus(countsObj, statusKey) {
+      if (!countsObj || !statusKey) return 0;
+      if (Object.prototype.hasOwnProperty.call(countsObj, statusKey)) {
+        const v = countsObj[statusKey];
+        return Number.isFinite(Number(v)) ? Number(v) : 0;
+      }
+      try {
+        for (const k of Object.keys(countsObj)) {
+          try {
+            const nk = normalizeStatusDeliveryValue(k) || String(k || '');
+            if (nk && nk === statusKey) {
+              const vv = countsObj[k];
+              return Number.isFinite(Number(vv)) ? Number(vv) : 0;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.error('Error iterating counts for match', err);
+      }
+
+      const normalizeLoose = (s) =>
+        String(s || '')
+          .toLowerCase()
+          .replace(/[\u2013\u2014\/-]/g, ' ')
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      const targetLoose = normalizeLoose(statusKey);
+      if (!targetLoose) return 0;
+      for (const k of Object.keys(countsObj)) {
+        const kk = normalizeLoose(k);
+        if (kk === targetLoose) {
+          const vv = countsObj[k];
+          return Number.isFinite(Number(vv)) ? Number(vv) : 0;
+        }
+      }
+
+      return 0;
+    }
 
     refs.forEach((ref) => {
       const defItem = ref.def;
       if (!defItem) return;
-      if (defItem.type === 'status') {
-        const rawCount = counts?.[defItem.status];
+      if (defItem.type === 'status_delivery') {
+        const rawCount = findCountForStatus(counts, defItem.status_delivery);
         const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
-        totalCount += displayCount;
         ref.countEl.textContent = String(displayCount);
         ref.button.classList.remove('loading');
         ref.button.setAttribute('aria-busy', 'false');
-        const label = getStatusCardLabel(defItem);
+        const label = getStatusDeliveryCardLabel(defItem);
         ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
-      }
-    });
-
-    refs.forEach((ref) => {
-      const defItem = ref.def;
-      if (!defItem) return;
-      if (defItem.type !== 'status') {
-        const displayCount = stats?.total ?? totalCount;
-        const safeCount = Number.isFinite(displayCount)
-          ? displayCount
-          : totalCount;
-        ref.countEl.textContent = String(safeCount);
+      } else if (defItem.type === 'status_site') {
+        const rawCount = findCountForStatus(counts, defItem.status_site);
+        const displayCount = Number.isFinite(rawCount) ? rawCount : 0;
+        ref.countEl.textContent = String(displayCount);
         ref.button.classList.remove('loading');
         ref.button.setAttribute('aria-busy', 'false');
-        const label = getStatusCardLabel(defItem);
-        ref.button.setAttribute('aria-label', `${label} ${safeCount}`.trim());
+        const label = defItem.label || defItem.status_site || '';
+        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
+      } else {
+        const displayCount = stats?.total;
+        ref.countEl.textContent = String(displayCount);
+        ref.button.classList.remove('loading');
+        ref.button.setAttribute('aria-busy', 'false');
+        const label = getStatusDeliveryCardLabel(defItem);
+        ref.button.setAttribute('aria-label', `${label} ${displayCount}`.trim());
       }
     });
   }

@@ -4,7 +4,7 @@
 
 本项目使用统一的状态管理系统，以 `src/config.js` 作为唯一真实来源（Single Source of Truth）。
 
-所有状态字符串**必须**使用 `STATUS_VALUES` 常量，**禁止硬编码**。
+所有状态字符串**必须**使用 `STATUS_DELIVERY_VALUES` 常量，**禁止硬编码**。
 
 ## 🎯 统一标准
 
@@ -31,7 +31,7 @@
 ┌─────────────────────────────────────────┐
 │         src/config.js                   │  ← 唯一真实来源
 │  - STATUS_DEFINITIONS                   │
-│  - STATUS_VALUES (常量)                 │
+│  - STATUS_DELIVERY_VALUES (常量)                 │
 │  - STATUS_ALIAS_MAP (别名映射)          │
 └────────────┬────────────────────────────┘
              │
@@ -53,7 +53,7 @@
 - 导出常量供其他模块使用
 
 ```javascript
-export const STATUS_VALUES = {
+export const STATUS_DELIVERY_VALUES = {
   NEW_MOS: 'New MOS',
   PREPARE_VEHICLE: 'Prepare Vehicle',
   ON_THE_WAY: 'On the way',
@@ -96,8 +96,8 @@ export const STATUS_ALIAS_MAP = {
 
 #### Admin 组件
 **`src/views/admin/setupAdminPage.js`**
-- 直接使用 `STATUS_VALUES` 常量
-- 通过 `normalizeStatusValue()` 函数统一处理
+- 直接使用 `STATUS_DELIVERY_VALUES` 常量
+- 通过 `normalizeStatusDeliveryValue()` 函数统一处理
 
 #### 状态卡片
 **`src/views/admin/statusCards.js`**
@@ -123,7 +123,7 @@ i18n 翻译系统
 ```
 用户选择状态
     ↓
-使用 STATUS_VALUES 标准值
+使用 STATUS_DELIVERY_VALUES 标准值
     ↓
 后端接收并处理
 ```
@@ -131,20 +131,20 @@ i18n 翻译系统
 ## ✅ 最佳实践
 
 ### DO ✅
-1. **始终使用 `STATUS_VALUES` 常量**
+1. **始终使用 `STATUS_DELIVERY_VALUES` 常量**
    ```javascript
-   import { STATUS_VALUES } from '../config.js';
+   import { STATUS_DELIVERY_VALUES } from '../config.js';
    
    // ✅ 正确
    const cards = [
-     { status: STATUS_VALUES.ON_THE_WAY, label: STATUS_VALUES.ON_THE_WAY }
+     { status: STATUS_DELIVERY_VALUES.ON_THE_WAY, label: STATUS_DELIVERY_VALUES.ON_THE_WAY }
    ];
    ```
 
 2. **新增状态时先在 `config.js` 中定义**
 3. **添加足够的别名以兼容后端可能的变体**
 4. **翻译文件中英文状态与标准值保持一致**
-5. **label 字段也使用 `STATUS_VALUES` 常量，不要硬编码**
+5. **label 字段也使用 `STATUS_DELIVERY_VALUES` 常量，不要硬编码**
 
 ### DON'T ❌
 1. **不要硬编码状态字符串**
@@ -156,7 +156,7 @@ i18n 翻译系统
    
    // ✅ 正确
    const cards = [
-     { status: STATUS_VALUES.ON_THE_WAY, label: STATUS_VALUES.ON_THE_WAY }
+     { status: STATUS_DELIVERY_VALUES.ON_THE_WAY, label: STATUS_DELIVERY_VALUES.ON_THE_WAY }
    ];
    ```
 
@@ -174,7 +174,7 @@ A: 通过 `STATUS_ALIAS_MAP` 进行映射。后端可以返回任何别名，前
 A: 
 1. 在 `config.js` 的 `STATUS_DEFINITIONS` 添加定义
 2. 在各语言的翻译文件中添加翻译
-3. 在需要的组件中使用 `STATUS_VALUES.XXX`
+3. 在需要的组件中使用 `STATUS_DELIVERY_VALUES.XXX`
 
 ### Q: 状态显示不一致怎么办？
 A: 检查以下内容：
@@ -192,7 +192,7 @@ node scripts/check-status-consistency.js
 ## �📝 修改历史
 
 ### 2025-10-01 重构完成
-- ✅ 统一所有状态使用 `STATUS_VALUES` 常量，消除硬编码
+- ✅ 统一所有状态使用 `STATUS_DELIVERY_VALUES` 常量，消除硬编码
 - ✅ 修复拼写错误：`Nwe MOS` → `New MOS`
 - ✅ 统一翻译文件格式（首字母大写）
 

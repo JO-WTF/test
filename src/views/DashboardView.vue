@@ -121,7 +121,7 @@ const changeLang = async (lang) => {
 
 onMounted(async () => {
   i18nInstance = createI18n({
-    namespaces: ['dashboard'],
+    namespaces: ['core', 'dashboard'],
     fallbackLang: 'en',
     defaultLang: 'en',
   });

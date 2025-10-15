@@ -1,44 +1,9 @@
 import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
-import { STATUS_NOT_EMPTY_VALUE, STATUS_ANY_VALUE } from './constants.js';
-import { DN_SCAN_STATUS_ITEMS } from '../../config.js';
+import { STATUS_DELIVERY_ITEMS } from '../../config.js';
 
 export const DATE_PICKER_VALUE_FORMAT = 'YYYY-MM-DD';
 const DEFAULT_SELECT_PLACEHOLDER = 'Type or select';
-const DATE_PRESET_DEFS = [
-  { key: 'yesterday', offset: -1 },
-  { key: 'today', offset: 0 },
-  { key: 'tomorrow', offset: 1 },
-];
-const DATE_PRESET_FALLBACK_LABELS = {
-  yesterday: 'Yesterday',
-  today: 'Today',
-  tomorrow: 'Tomorrow',
-};
-
-// Re-export for backward compatibility
-export { STATUS_NOT_EMPTY_VALUE };
-
-const HAS_COORDINATE_OPTION_DEFS = [
-  { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
-  { value: 'true', translationKey: 'hasCoord.true', fallback: '有经纬度' },
-  { value: 'false', translationKey: 'hasCoord.false', fallback: '无经纬度' },
-];
-
-const STATUS_FILTER_DEFS = [
-  { value: STATUS_ANY_VALUE, translationKey: 'status.filter.any', fallback: '任意' },
-  {
-    value: STATUS_NOT_EMPTY_VALUE,
-    translationKey: 'status.filter.notEmpty',
-    fallback: '任意非空',
-  },
-  ...DN_SCAN_STATUS_ITEMS.map(({ value, filterLabelKey, fallbackLabel }) => ({
-    value,
-    translationKey: filterLabelKey,
-    fallback: fallbackLabel,
-  })),
-];
-
 const translateWithFallback = (translator, key, fallback) => {
   if (typeof translator === 'function') {
     try {
@@ -443,11 +408,11 @@ const createDatePickerState = () => {
 export function useAdminFilters() {
   const planMosDate = createSelectState();
   const region = createSelectState();
+  const area = createSelectState();
   const lsp = createSelectState();
   const subcon = createSelectState();
-  const statusWh = createSelectState();
-  const statusDelivery = createSelectState();
-  const status = createSingleSelectState('Any');
+  const statusSite = createSelectState();
+  const statusDelivery = createSingleSelectState('Any');
   const hasCoordinate = createSingleSelectState('Any');
   const remark = createTextInputState('模糊匹配');
   const du = createTextInputState('精确匹配');
@@ -459,11 +424,11 @@ export function useAdminFilters() {
   const filterSelectBridges = {
     plan_mos_date: planMosDate.bridge,
     region: region.bridge,
+    area: area.bridge,
     lsp: lsp.bridge,
     subcon: subcon.bridge,
-    status_wh: statusWh.bridge,
+    status_site: statusSite.bridge,
     status_delivery: statusDelivery.bridge,
-    status: status.bridge,
     has_coordinate: hasCoordinate.bridge,
     date_from: fromDate.bridge,
     date_to: toDate.bridge,
@@ -475,18 +440,18 @@ export function useAdminFilters() {
   };
 
   const selectPlaceholderBindings = [
-    { placeholderRef: planMosDate.placeholder, translationKey: 'planMosDate.placeholder' },
-    { placeholderRef: region.placeholder, translationKey: 'region.placeholder' },
-    { placeholderRef: lsp.placeholder, translationKey: 'lsp.placeholder' },
-    { placeholderRef: subcon.placeholder, translationKey: 'subcon.placeholder' },
-    { placeholderRef: statusWh.placeholder, translationKey: 'statusWh.placeholder' },
+    { placeholderRef: planMosDate.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: region.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: area.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: lsp.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: subcon.placeholder, translationKey: 'select.placeholder' },
     {
-      placeholderRef: statusDelivery.placeholder,
-      translationKey: 'statusDelivery.placeholder',
+      placeholderRef: statusSite.placeholder,
+      translationKey: 'statusSitePlaceholder',
     },
     {
-      placeholderRef: status.placeholder,
-      translationKey: 'status.filter.any',
+      placeholderRef: statusDelivery.placeholder,
+      translationKey: 'statusDelivery.filter.any',
       fallback: 'Any',
     },
     {
@@ -519,19 +484,37 @@ export function useAdminFilters() {
   };
 
   const updateStatusSelectOptions = (translator) => {
-    const options = STATUS_FILTER_DEFS.map(({ value, translationKey, fallback }) => ({
+    const statusFilterDefs = [
+      { value: '', translationKey: 'statusDelivery.filter.any', fallback: '任意' },
+      {
+        value: '__NOT_EMPTY__',
+        translationKey: 'statusDelivery.filter.notEmpty',
+        fallback: '任意非空',
+      },
+      ...STATUS_DELIVERY_ITEMS.map(({ value, filterLabelKey }) => ({
+        value,
+        translationKey: filterLabelKey,
+        fallback: value,
+      })),
+    ];
+    const options = statusFilterDefs.map(({ value, translationKey, fallback }) => ({
       value,
       label: translateWithFallback(translator, translationKey, fallback),
     }));
     try {
-      status.bridge.setOptions(options);
+      statusDelivery.bridge.setOptions(options);
     } catch (err) {
       console.error(err);
     }
   };
 
   const updateHasCoordinateSelectOptions = (translator) => {
-    const options = HAS_COORDINATE_OPTION_DEFS.map(({ value, translationKey, fallback }) => ({
+    const coordinateOptionDefs = [
+      { value: '', translationKey: 'hasCoord.any', fallback: '（不限）' },
+      { value: 'true', translationKey: 'hasCoord.true', fallback: '有经纬度' },
+      { value: 'false', translationKey: 'hasCoord.false', fallback: '无经纬度' },
+    ];
+    const options = coordinateOptionDefs.map(({ value, translationKey, fallback }) => ({
       value,
       label: translateWithFallback(translator, translationKey, fallback),
     }));
@@ -544,11 +527,21 @@ export function useAdminFilters() {
 
   const refreshDatePresets = (translator) => {
     const base = dayjs();
-    datePresets.value = DATE_PRESET_DEFS.map(({ key, offset }) => ({
+    const presetDefs = [
+      { key: 'yesterday', offset: -1 },
+      { key: 'today', offset: 0 },
+      { key: 'tomorrow', offset: 1 },
+    ];
+    const presetFallbackLabels = {
+      yesterday: 'Yesterday',
+      today: 'Today',
+      tomorrow: 'Tomorrow',
+    };
+    datePresets.value = presetDefs.map(({ key, offset }) => ({
       label: translateWithFallback(
         translator,
         `date.presets.${key}`,
-        DATE_PRESET_FALLBACK_LABELS[key] || key
+        presetFallbackLabels[key] || key
       ),
       value: base.add(offset, 'day'),
     }));
@@ -556,7 +549,7 @@ export function useAdminFilters() {
 
   const setDefaultStatusFilter = () => {
     try {
-  status.bridge.setValue(STATUS_ANY_VALUE);
+      statusDelivery.bridge.setValue('');
     } catch (err) {
       console.error(err);
     }
@@ -572,7 +565,10 @@ export function useAdminFilters() {
     regionSelectOptions: region.options,
     regionSelectValue: region.value,
     regionSelectPlaceholder: region.placeholder,
-    regionSelectBridge: region.bridge,
+    areaSelectOptions: area.options,
+    areaSelectValue: area.value,
+    areaSelectPlaceholder: area.placeholder,
+    areaSelectBridge: area.bridge,
     lspSelectOptions: lsp.options,
     lspSelectValue: lsp.value,
     lspSelectPlaceholder: lsp.placeholder,
@@ -581,18 +577,14 @@ export function useAdminFilters() {
     subconSelectValue: subcon.value,
     subconSelectPlaceholder: subcon.placeholder,
     subconSelectBridge: subcon.bridge,
-    statusWhSelectOptions: statusWh.options,
-    statusWhSelectValue: statusWh.value,
-    statusWhSelectPlaceholder: statusWh.placeholder,
-    statusWhSelectBridge: statusWh.bridge,
+    statusSiteSelectOptions: statusSite.options,
+    statusSiteSelectValue: statusSite.value,
+    statusSiteSelectPlaceholder: statusSite.placeholder,
+    statusSiteSelectBridge: statusSite.bridge,
     statusDeliverySelectOptions: statusDelivery.options,
     statusDeliverySelectValue: statusDelivery.value,
     statusDeliverySelectPlaceholder: statusDelivery.placeholder,
-    statusDeliverySelectBridge: statusDelivery.bridge,
-    statusSelectOptions: status.options,
-    statusSelectValue: status.value,
-    statusSelectPlaceholder: status.placeholder,
-    statusSelectBridge: status.bridge,
+    statusSelectBridge: statusDelivery.bridge,
     hasCoordinateSelectOptions: hasCoordinate.options,
     hasCoordinateSelectValue: hasCoordinate.value,
     hasCoordinateSelectPlaceholder: hasCoordinate.placeholder,

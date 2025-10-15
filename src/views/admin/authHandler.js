@@ -5,7 +5,6 @@
 
 import { ROLE_LIST } from '../../config.js';
 import { ROLE_MAP, AUTH_STORAGE_KEY } from './constants.js';
-import { lockBodyScroll, unlockBodyScroll } from './utils.js';
 
 /**
  * 清理用户信息对象
@@ -166,13 +165,13 @@ function updateAuthButtonLabel(role, i18n, authBtn, currentUserInfo) {
  */
 export function createAuthHandler(options) {
   const {
-    authModal,
     authBtn,
     authCancel,
     authConfirm,
     authInput,
     authMsg,
     authRoleTag,
+    authModalController,
     signal,
     i18n,
     showToast,
@@ -188,15 +187,14 @@ export function createAuthHandler(options) {
    * 打开授权登录模态框
    */
   function openAuthModal() {
-    if (!authModal) return;
-    const wasVisible = authModal.style.display === 'flex';
-    authModal.style.display = 'flex';
-    if (!wasVisible) {
-      lockBodyScroll();
-    }
     if (authMsg) authMsg.textContent = '';
     if (authInput) {
       authInput.value = '';
+    }
+    if (authModalController?.open) {
+      authModalController.open();
+    }
+    if (authInput) {
       setTimeout(() => {
         try {
           authInput.focus();
@@ -211,12 +209,8 @@ export function createAuthHandler(options) {
    * 关闭授权登录模态框
    */
   function closeAuthModal() {
-    if (authModal) {
-      const wasVisible = authModal.style.display === 'flex';
-      authModal.style.display = 'none';
-      if (wasVisible) {
-        unlockBodyScroll();
-      }
+    if (authModalController?.close) {
+      authModalController.close();
     }
   }
 
@@ -432,15 +426,6 @@ export function createAuthHandler(options) {
   authBtn?.addEventListener('click', openAuthModal, { signal });
   authCancel?.addEventListener('click', closeAuthModal, { signal });
   authConfirm?.addEventListener('click', handleAuthSubmit, { signal });
-
-  // 点击模态框背景关闭
-  authModal?.addEventListener(
-    'click',
-    (e) => {
-      if (e.target === authModal) closeAuthModal();
-    },
-    { signal }
-  );
 
   // 回车键提交
   authInput?.addEventListener(
