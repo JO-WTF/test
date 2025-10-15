@@ -1,5 +1,7 @@
 {
-  "pm.title": "Create PM",
+  "pm.title": "PM Management",
+  "pm.use_existing": "Use existing PM",
+  "pm.create_mode": "Create PM",
   "pm.search.placeholder": "Type an address and press Enter or click Search",
   "pm.search.button": "Search",
   "pm.use_current": "Use current location",
@@ -9,4 +11,9 @@
   "pm.confirm": "Confirm",
   "pm.create.success": "Created successfully",
   "pm.create.fail": "Create failed"
+  ,
+  "pm.list.title": "Available PMs",
+  "pm.list.refresh": "Refresh",
+  "pm.list.location": "Location",
+  "pm.select": "Select"
 }
