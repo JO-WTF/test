@@ -11,7 +11,7 @@ import {
 } from '../../config.js';
 
 // Re-export constants from config.js for use in other modules
-export { STATUS_DELIVERY_VALUES, STATUS_SITE_VALUES, STATUS_DELIVERY_VALUE_TO_KEY, STATUS_DELIVERY_ALIAS_MAP,TRANSPORT_MANAGER_ROLE_KEY };
+export { STATUS_DELIVERY_VALUES, STATUS_SITE_VALUES, STATUS_DELIVERY_VALUE_TO_KEY, STATUS_DELIVERY_ALIAS_MAP, STATUS_DELIVERY_ORDERED_LIST, TRANSPORT_MANAGER_ROLE_KEY };
 
 // 角色相关常量
 export const ROLE_MAP = new Map((ROLE_LIST || []).map((role) => [role.key, role]));

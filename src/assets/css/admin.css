@@ -763,7 +763,7 @@ body.admin-theme {
 .admin-page .du-col {
   display: flex;
   flex-direction: column;
-  max-height: 150px;
+  max-height: 250px;
   overflow: auto;
 }
 #f-dn {
@@ -797,6 +797,42 @@ body.admin-theme {
 }
 .admin-page .filters-grid .field datalist {
   width: 100%;
+}
+
+/* Status card theme overrides requested by user */
+.admin-page .status-card--total {
+  background: #ace6fb; /* Total card background */
+  border-color: #cdeef6;
+  color: #072b36;
+}
+.admin-page .status-card--total .status-card__label {
+  color: #05414f;
+}
+.admin-page .status-card--red {
+  background: #fb9d9e; /* No Status color */
+  border-color: #f77b7c;
+  color: #5a1a1a;
+}
+.admin-page .status-card--red .status-card__label {
+  color: #451111;
+}
+
+/* Make ARRIVED AT SITE and POD show as #80e67d by mapping progress-4 and progress-5 */
+.admin-page .status-card--progress-4,
+.admin-page .status-card--progress-5 {
+  background: #A4DEAE; /* ARRIVED AT SITE & POD */
+  border-color: #86d57f;
+  color: #083214;
+}
+.admin-page .status-card--progress-4 .status-card__label,
+.admin-page .status-card--progress-5 .status-card__label {
+  color: #063214;
+}
+/* Default: set other delivery status cards to #e3f6fb, but exclude Total/No Status/ARRIVED_AT_SITE/POD which have their own styles */
+.admin-page .status-card-group--delivery .status-card:not(.status-card--total):not(.status-card--red):not(.status-card--progress-4):not(.status-card--progress-5) {
+  background: #e3f6fb;
+  border-color: #cdeef6;
+  color: #072b36;
 }
 .admin-page .filter-actions {
   display: flex;

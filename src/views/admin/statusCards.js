@@ -2,6 +2,8 @@ import {
   TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   TRANSPORT_MANAGER_ROLE_KEY,
   TRANSPORT_MANAGER_STATUS_SITE_CARDS,
+  STATUS_DELIVERY_VALUES,
+  STATUS_DELIVERY_ORDERED_LIST,
 } from './constants.js';
 
 export function createStatusDeliveryCardManager({
@@ -224,6 +226,19 @@ export function createStatusDeliveryCardManager({
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'status-card';
+      // If this is the Total pseudo-card (string 'Total' or label), add total class
+      if (String(defItem.status_delivery || '').toLowerCase() === 'total' || String(defItem.label || '').toLowerCase() === 'total') {
+        btn.classList.add('status-card--total');
+      }
+      // Map ARRIVED_AT_SITE and POD explicitly to green (override progress mapping)
+      const sd = String(defItem.status_delivery || '');
+      if (sd && (sd === STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE || sd === STATUS_DELIVERY_VALUES.POD)) {
+        btn.classList.add('status-card--progress-4');
+      }
+      // No Status should be red
+      if (sd && sd === STATUS_DELIVERY_VALUES.NO_STATUS) {
+        btn.classList.add('status-card--red');
+      }
       btn.setAttribute('data-status_delivery', defItem.type === 'status_delivery' ? defItem.status_delivery : '');
       btn.setAttribute('data-card-key', defItem.key);
       btn.setAttribute('aria-pressed', 'false');
