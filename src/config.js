@@ -8,6 +8,7 @@ const STATUS_DELIVERY_DEFINITIONS = [
     key: 'DEPARTED_FROM_WH',
     value: 'DEPARTED FROM WH',
     translationKey: 'statusDelivery.departedFromWh',
+    aliases: ['TRANSPORTING FROM WH'],
   },
   {
     key: 'ARRIVED_AT_XD_PM',
@@ -18,6 +19,7 @@ const STATUS_DELIVERY_DEFINITIONS = [
     key: 'DEPARTED_FROM_XD_PM',
     value: 'DEPARTED FROM XD/PM',
     translationKey: 'statusDelivery.departedFromXdPm',
+    aliases: ['TRANSPORTING FROM XD/PM'],
   },
   {
     key: 'ARRIVED_AT_SITE',

@@ -9,7 +9,11 @@ export function createUpdateHistoryRenderer({
   getIconMarkup,
   getMapboxStaticImageUrl,
   getTableRenderer,
+  statusDeliveryValueToKey,
+  statusDeliveryAliasMap,
 }) {
+  const STATUS_DELIVERY_VALUE_TO_KEY = statusDeliveryValueToKey || null;
+  const STATUS_DELIVERY_ALIAS_MAP = statusDeliveryAliasMap || null;
   function render(items) {
     if (!container) return;
 
@@ -57,7 +61,43 @@ export function createUpdateHistoryRenderer({
 
     const recordsHtml = items
       .map((item, index) => {
-        const statusDelivery = i18nStatusDisplay(item.status_delivery || '');
+        // compute delivery status display with i18n when available
+        const rawStatusDelivery = item.status_delivery || '';
+        let statusDelivery = i18nStatusDisplay(rawStatusDelivery);
+        if (i18n && typeof i18n.t === 'function' && STATUS_DELIVERY_VALUE_TO_KEY) {
+          // resolve canonical form using alias map when available
+          let canonical = rawStatusDelivery || '';
+          if (STATUS_DELIVERY_ALIAS_MAP) {
+            canonical = STATUS_DELIVERY_ALIAS_MAP[rawStatusDelivery] || STATUS_DELIVERY_ALIAS_MAP[rawStatusDelivery?.toUpperCase()] || canonical;
+          }
+          // direct lookups
+          let translationKey = STATUS_DELIVERY_VALUE_TO_KEY[canonical] || STATUS_DELIVERY_VALUE_TO_KEY[rawStatusDelivery] || STATUS_DELIVERY_VALUE_TO_KEY[canonical?.toUpperCase()];
+          // underscore -> space fallback
+          if (!translationKey && rawStatusDelivery) {
+            const underscoredToSpace = String(rawStatusDelivery).replace(/_/g, ' ').trim();
+            translationKey = STATUS_DELIVERY_VALUE_TO_KEY[underscoredToSpace] || STATUS_DELIVERY_VALUE_TO_KEY[underscoredToSpace.toUpperCase()];
+          }
+          // case-insensitive key match
+          if (!translationKey) {
+            const lcRaw = String(rawStatusDelivery || '').toLowerCase();
+            for (const k of Object.keys(STATUS_DELIVERY_VALUE_TO_KEY)) {
+              if (k && k.toLowerCase() === lcRaw) {
+                translationKey = STATUS_DELIVERY_VALUE_TO_KEY[k];
+                break;
+              }
+            }
+          }
+          if (translationKey) {
+            const candidates = [translationKey, `core.${translationKey}`, `admin.${translationKey}`];
+            for (const cand of candidates) {
+              const translated = i18n.t(cand);
+              if (translated && translated !== cand) {
+                statusDelivery = translated;
+                break;
+              }
+            }
+          }
+        }
         const statusSite = i18nStatusDisplay(item.status_site || '');
         const remark = item.remark
           ? escapeHtml(item.remark)

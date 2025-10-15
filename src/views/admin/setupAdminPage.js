@@ -177,6 +177,8 @@ export function setupAdminPage(
     getTableRenderer: () => ({
       openViewerWithUrl: openPhotoViewer,
     }),
+    statusDeliveryValueToKey: STATUS_DELIVERY_VALUE_TO_KEY,
+    statusDeliveryAliasMap: STATUS_DELIVERY_ALIAS_MAP,
   });
 
   if (filtersToggle) {
