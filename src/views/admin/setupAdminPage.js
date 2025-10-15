@@ -363,7 +363,7 @@ export function setupAdminPage(
     i18n,
     getCurrentRole,
     normalizeStatusDeliveryValue,
-    i18nStatusDisplay,
+  i18nStatusDeliveryDisplay: i18nStatusDisplay,
     getStatusSiteValues: () => getFilterValues('status_site'),
     getStatusDeliveryFilterValue: () => getSingleFilterValue('status_delivery'),
     transportManagerCards: TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,

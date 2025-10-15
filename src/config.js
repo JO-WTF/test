@@ -180,7 +180,10 @@ const roleDefinitions = {
       statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
       statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
-    statusDeliveryHighlights: [],
+  // Show all delivery status cards for LSP by default (prepend Total)
+  statusDeliveryHighlights: ['Total', ...STATUS_DELIVERY_ORDERED_LIST],
+    // Show all site status cards for LSP by default
+    statusSiteHighlights: [...STATUS_SITE_ORDERED_LIST],
     users: loadRoleUsers(ROLE_USER_PREFIXES.lsp),
   },
   customer: {
@@ -215,7 +218,10 @@ const roleDefinitions = {
       statusDeliveryOptions: [...STATUS_DELIVERY_ORDERED_LIST],
       statusSiteOptions: [...STATUS_SITE_ORDERED_LIST],
     },
-    statusDeliveryHighlights: [],
+  // Show all delivery status cards for Transport Manager by default (prepend Total)
+  statusDeliveryHighlights: ['Total', ...STATUS_DELIVERY_ORDERED_LIST],
+    // Show all site status cards for Transport Manager by default
+    statusSiteHighlights: [...STATUS_SITE_ORDERED_LIST],
     users: loadRoleUsers(ROLE_USER_PREFIXES[TRANSPORT_MANAGER_ROLE_KEY]),
   },
 };

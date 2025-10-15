@@ -1,6 +1,7 @@
 import {
   TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
   TRANSPORT_MANAGER_ROLE_KEY,
+  TRANSPORT_MANAGER_STATUS_SITE_CARDS,
 } from './constants.js';
 
 export function createStatusDeliveryCardManager({
@@ -16,6 +17,7 @@ export function createStatusDeliveryCardManager({
   getStatusDeliveryFilterValue,
   onApplyFilter,
   transportManagerDeliveryCards = TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS,
+  transportManagerSiteCards = TRANSPORT_MANAGER_STATUS_SITE_CARDS,
   onStatsFetched,
   onLoadingChange,
 }) {
@@ -36,7 +38,17 @@ export function createStatusDeliveryCardManager({
       }
     }
     if (def.label) return def.label;
-  return i18nStatusDeliveryDisplay(def.status_delivery);
+    // i18nStatusDeliveryDisplay may be optional; guard the call and fallback
+    try {
+      if (typeof i18nStatusDeliveryDisplay === 'function') {
+        const v = i18nStatusDeliveryDisplay(def.status_delivery);
+        if (v || v === '') return v;
+      }
+    } catch (err) {
+      console.error('i18nStatusDeliveryDisplay error', err);
+    }
+    // final fallback: return the raw status_delivery or empty string
+    return String(def.status_delivery || '') ;
   }
 
   function getRoleStatusDeliveryHighlights(role) {
@@ -66,6 +78,33 @@ export function createStatusDeliveryCardManager({
     return list;
   }
 
+  function getRoleStatusSiteHighlights(role) {
+    if (!role) return [];
+    const highlights = Array.isArray(role.statusSiteHighlights)
+      ? role.statusSiteHighlights
+      : [];
+    const seen = new Set();
+    const list = [];
+    highlights.forEach((item) => {
+      if (!item) return;
+      let statusSite = '';
+      let label = '';
+      let labelKey = '';
+      if (typeof item === 'string') {
+        statusSite = normalizeStatusDeliveryValue(item) || item;
+      } else if (typeof item === 'object') {
+        const target = item.status_site ?? item.value ?? item.key;
+        statusSite = normalizeStatusDeliveryValue(target) || target || '';
+        if (typeof item.label === 'string') label = item.label;
+        if (typeof item.labelKey === 'string') labelKey = item.labelKey;
+      }
+      if (!statusSite || seen.has(statusSite)) return;
+      seen.add(statusSite);
+      list.push({ status_site: statusSite, label, labelKey });
+    });
+    return list;
+  }
+
   function attachCardHandler(button, def) {
     button.addEventListener(
       'click',
@@ -89,17 +128,13 @@ export function createStatusDeliveryCardManager({
     let list = [];
     let siteList = [];
 
-    if (role?.key === 'lsp') {
-      list = [];
+    // Use role-defined highlights when available. Fallback to provided transportManagerDeliveryCards
+    const roleHighlights = getRoleStatusDeliveryHighlights(role);
+    if (roleHighlights && roleHighlights.length) {
+      list = roleHighlights;
     } else {
-      if (role?.key === TRANSPORT_MANAGER_ROLE_KEY) {
-        list = transportManagerDeliveryCards.map((card) => ({
-          status_delivery: card.status_delivery,
-          label: card.label,
-        }));
-      } else {
-        list = getRoleStatusDeliveryHighlights(role);
-      }
+      list = [];
+    }
       list = list.map((defItem, index) => {
         const canonical = normalizeStatusDeliveryValue(defItem.status_delivery);
         const status_delivery = canonical || defItem.status_delivery || '';
@@ -117,20 +152,45 @@ export function createStatusDeliveryCardManager({
       });
 
       list = list.filter((defItem) => defItem.type !== 'status_delivery' || defItem.status_delivery);
-    // Build site cards from role permissions if available
+    // Build site cards: prefer role-defined site highlights, fallback to role.permissions.statusSiteOptions,
     try {
-      const perms = role?.permissions || {};
-      const allowedSites = Array.isArray(perms.statusSiteOptions) ? perms.statusSiteOptions : [];
-      siteList = allowedSites.map((v, idx) => {
-        const status_site = normalizeStatusDeliveryValue(v) || v || '';
-        const key = status_site || `status_site:${idx}`;
-        return { status_site, label: v, key, type: 'status_site' };
-      }).filter((d) => d.status_site);
+      const roleSiteHighlights = getRoleStatusSiteHighlights(role);
+      if (roleSiteHighlights && roleSiteHighlights.length) {
+        siteList = roleSiteHighlights.map((defItem, idx) => {
+          const status_site = normalizeStatusDeliveryValue(defItem.status_site) || defItem.status_site || '';
+          const key = status_site || (typeof defItem.labelKey === 'string' && defItem.labelKey ? `label:${defItem.labelKey}` : `status_site:${idx}`);
+          return { ...defItem, status_site, key, type: 'status_site' };
+        }).filter((d) => d.status_site);
+      } else {
+        const perms = role?.permissions || {};
+        const allowedSites = Array.isArray(perms.statusSiteOptions) ? perms.statusSiteOptions : [];
+        if (allowedSites && allowedSites.length) {
+          siteList = allowedSites.map((v, idx) => {
+            const status_site = normalizeStatusDeliveryValue(v) || v || '';
+            const key = status_site || `status_site:${idx}`;
+            return { status_site, label: v, key, type: 'status_site' };
+          }).filter((d) => d.status_site);
+        } else {
+          // fallback to transport manager default site cards; prepend a Total card
+          if (Array.isArray(transportManagerSiteCards)) {
+            const mapped = transportManagerSiteCards.map((card, idx) => ({
+              status_site: card.status_site,
+              label: card.label,
+              key: card.status_site || `status_site:${idx}`,
+              type: 'status_site',
+            }));
+            // prepend Total card
+            siteList = [{ status_site: 'Total', label: 'Total', key: 'status_site:total', type: 'status_site' }, ...mapped];
+          } else {
+            siteList = [];
+          }
+        }
+      }
     } catch (err) {
+      console.error(err);
       siteList = [];
     }
-    }
-
+    console.log(list);
     defs = list;
     refs.clear();
 

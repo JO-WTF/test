@@ -2,6 +2,7 @@
 import {
   ROLE_LIST,
   STATUS_DELIVERY_VALUES,
+  STATUS_SITE_ORDERED_LIST,
   STATUS_SITE_VALUES,
   STATUS_DELIVERY_VALUE_TO_KEY,
   STATUS_DELIVERY_ALIAS_MAP,
@@ -46,6 +47,12 @@ export const TRANSPORT_MANAGER_STATUS_DELIVERY_CARDS = [
   { status_delivery: STATUS_DELIVERY_VALUES.POD, label: "POD" },
   { status_delivery: STATUS_DELIVERY_VALUES.NO_STATUS, label: "No Status" },
 ];
+
+// Transport manager default site cards (fallback)
+export const TRANSPORT_MANAGER_STATUS_SITE_CARDS = (
+  STATUS_SITE_ORDERED_LIST || []
+).map((v) => ({ status_site: v, label: v }));
+
 
 // DN详情展开时显示的字段及其顺序
 // 只有在此列表中的字段才会在展开详情时显示
