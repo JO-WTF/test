@@ -194,7 +194,7 @@ const refreshPhoneNumber = () => {
 };
 
 const state = reactive({
-  lang: i18n.state.lang,
+  lang: _i18n.state.lang,
   location: null,
   hasDN: false,
   dnNumber: '',
@@ -684,7 +684,7 @@ const hideKeyboard = () => {
 };
 
 const setLang = async (lang) => {
-  await i18n.setLang(lang);
+  await _i18n.setLang(lang);
   state.lang = lang;
 };
 
