@@ -82,7 +82,7 @@
   "table.checkin": "Absen",
   "table.updatedAt": "Terakhir Diperbarui",
   "table.actions": "Tindakan",
-  "table.statusMismatchTooltip": "Status pengiriman (status_delivery) tidak selaras dengan status muatan yang diunggah pengemudi (status). Harap periksa dan perbarui.",
+  "table.statusMismatchTooltip": "Pengiriman ini tidak memiliki status transportasi. Jika pengiriman tidak dapat dilanjutkan karena masalah di lokasi, harap perbarui status lokasi.",
   "table.photoIconLabel": "Lihat foto",
   "table.mapIconLabel": "Buka di Google Maps",
   "pager.prev": "Sebelumnya",

@@ -23,7 +23,7 @@ export const AUTH_STORAGE_KEY = 'jakarta-admin-auth-state';
 export const STATUS_DELIVERY_KNOWN_VALUES = new Set(Object.keys(STATUS_DELIVERY_VALUE_TO_KEY));
 export const DEFAULT_STATUS_DELIVERY_VALUE = "";
 export const STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK =
-  '配送状态(status_delivery)与司机上传的货物状态(status)不一致，请检查并更新。';
+  '该运单缺少运输状态，如因站点原因无法进行派送，请更新站点状态。';
 
 // 时区相关常量
 export const PLAN_MOS_TIME_ZONE = 'Asia/Jakarta';

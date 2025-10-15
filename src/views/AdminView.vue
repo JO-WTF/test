@@ -382,7 +382,20 @@
                 <span class="status-text">{{ record.statusDeliveryDisplay || '-' }}</span>
                 <template v-if="record.statusMismatch">
                   <Tooltip :title="record.statusMismatchTooltip">
-                    <span class="status-mismatch" role="img" aria-hidden="false">!</span>
+                    <span
+                      class="status-mismatch"
+                      role="img"
+                      :aria-label="record.statusMismatchTooltip || 'Status mismatch'"
+                      tabindex="0"
+                    >
+                      <span class="status-mismatch-icon" aria-hidden="true">
+                        <!-- SVG: red circle with white exclamation mark -->
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" fill="var(--ant-danger)" />
+                          <path d="M12 7.5C11.59 7.5 11.25 7.84 11.25 8.25V13.5C11.25 13.91 11.59 14.25 12 14.25C12.41 14.25 12.75 13.91 12.75 13.5V8.25C12.75 7.84 12.41 7.5 12 7.5ZM12 17.25C11.59 17.25 11.25 17.59 11.25 18C11.25 18.41 11.59 18.75 12 18.75C12.41 18.75 12.75 18.41 12.75 18C12.75 17.59 12.41 17.25 12 17.25Z" fill="#FFFFFF" />
+                        </svg>
+                      </span>
+                    </span>
                   </Tooltip>
                 </template>
               </div>
@@ -941,27 +954,10 @@ const shouldShowStatusDeliveryMismatch = (statusSiteRaw, statusDeliveryRaw, norm
   const normalizeFn = typeof normalize === 'function' ? normalize : defaultNormalizeStatus;
   const site = normalizeFn(statusSiteRaw);
   const statusDelivery = normalizeFn(statusDeliveryRaw);
-  if (!site) return false;
 
-  const arrivedStatusDelivery = normalizeFn(STATUS_DELIVERY_VALUES.ARRIVED_AT_SITE);
-  const podStatusDelivery = normalizeFn(STATUS_DELIVERY_VALUES.POD || 'POD');
-
-  if (site === STATUS_DELIVERY_VALUES.ON_THE_WAY) {
-    const allowedTransportStatusDelivery = [
-      STATUS_DELIVERY_VALUES.DEPARTED_FROM_WH,
-      STATUS_DELIVERY_VALUES.TRANSPORTING_FROM_XD_PM,
-    ]
-      .map((value) => normalizeFn(value))
-      .filter(Boolean);
-    const isAllowed = allowedTransportStatusDelivery.includes(statusDelivery);
-    return !isAllowed;
-  }
-  if (site === STATUS_DELIVERY_VALUES.ON_SITE) {
-    return statusDelivery !== arrivedStatusDelivery && statusDelivery !== podStatusDelivery;
-  }
-  if (site === STATUS_DELIVERY_VALUES.POD) {
-    return statusDelivery !== podStatusDelivery && statusDelivery !== arrivedStatusDelivery;
-  }
+  // Show mismatch only when delivery status is NO_STATUS AND site is empty
+  const noStatusValue = normalizeFn(STATUS_DELIVERY_VALUES.NO_STATUS);
+  if (!site && statusDelivery === noStatusValue) return true;
   return false;
 };
 

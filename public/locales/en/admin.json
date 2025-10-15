@@ -80,7 +80,7 @@
   "table.checkin": "Check-in",
   "table.updatedAt": "Last Updated",
   "table.actions": "Actions",
-  "table.statusMismatchTooltip": "Delivery status (status_delivery) does not match the driver-uploaded cargo status (status). Please review and update.",
+  "table.statusMismatchTooltip": "This shipment is missing a transport status. If delivery cannot proceed due to site issues, please update the site status.",
   "table.photoIconLabel": "View photo",
   "table.mapIconLabel": "Open in Google Maps",
   "pager.prev": "Previous",

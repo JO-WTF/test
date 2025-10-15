@@ -82,7 +82,7 @@
   "table.checkin": "打卡",
   "table.updatedAt": "更新时间",
   "table.actions": "操作",
-  "table.statusMismatchTooltip": "配送状态(status_delivery)与司机上传的货物状态(status)不一致，请检查并更新。",
+  "table.statusMismatchTooltip": "该运单缺少运输状态，如因站点原因无法进行派送，请更新站点状态。",
   "table.photoIconLabel": "查看照片",
   "table.mapIconLabel": "在 Google 地图中打开",
   "pager.prev": "上一页",
