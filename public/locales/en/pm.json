@@ -2,7 +2,7 @@
   "pm.title": "Create PM",
   "pm.search.placeholder": "Type an address and press Enter or click Search",
   "pm.search.button": "Search",
-  "pm.use_current": "Use current location as PM",
+  "pm.use_current": "Use current location",
   "pm.address.hint": "Please confirm the Pool Mover location shown on the map is correct. If the location is incorrect, click the address, enter the correct location and search.",
   "pm.name.label": "PM Name",
   "pm.name.placeholder": "Enter PM name",
