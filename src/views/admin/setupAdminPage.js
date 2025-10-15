@@ -667,7 +667,7 @@ export function setupAdminPage(
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
       if (du) params.set('du_id', du.toUpperCase());
       if (st === '__NOT_EMPTY__') {
-        params.set('status_not_empty', 'true');
+        params.set('status_delivery_not_empty', 'true');
       } else if (st) {
         params.set('status_delivery', st);
       }
