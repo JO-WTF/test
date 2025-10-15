@@ -78,7 +78,7 @@ export function createUpdateHistoryRenderer({
 
         const createdAtRaw = item.created_at ? formatTimestampToJakarta(item.created_at) : '';
         const createdAt = createdAtRaw
-          ? escapeHtml(createdAtRaw).replace(/\n/g, '<br>')
+          ? escapeHtml(createdAtRaw).replace(/\s+/g, ' ')
           : '<span class="muted">-</span>';
 
         const [lat, lng] = [item.lat, item.lng];
@@ -110,7 +110,7 @@ export function createUpdateHistoryRenderer({
 
         const photoSection = photoUrl
           ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(text.photoAlt)}" class="history-photo-thumbnail view-link" data-url="${escapeHtml(photoUrl)}" loading="lazy" />`
-          : `<span class="muted">${escapeHtml(text.noPhoto)}</span>`;
+          : ``;
 
         return `
         <div class="history-record ${index === 0 ? 'latest' : ''}">
@@ -140,8 +140,9 @@ export function createUpdateHistoryRenderer({
               </div>
             </div>
             <div class="history-record-media">
-              <div class="history-media-item">${mapSection}</div>
-              <div class="history-media-item">${photoSection}</div>
+              ${(!hasCoords && !photoUrl)
+                ? `<div class="history-media-empty muted">${escapeHtml(text.noPhoto)} ${escapeHtml(text.noLocation)}</div>`
+                : `<div class="history-media-item">${mapSection}</div><div class="history-media-item">${photoSection || `<span class="muted">${escapeHtml(text.noPhoto)}</span>`}</div>`}
             </div>
           </div>
         </div>
