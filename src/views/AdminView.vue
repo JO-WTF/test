@@ -344,14 +344,36 @@
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'dn'">
               <div class="summary-cell">
-                <button
-                  type="button"
-                  class="summary-primary"
-                  :data-dn-number="record.dnNumber"
-                  @click="copyDnNumber(record)"
-                >
-                  {{ record.dnNumber || '-' }}
-                </button>
+                <div class="summary-top">
+                  <button
+                    type="button"
+                    class="summary-primary"
+                    :data-dn-number="record.dnNumber"
+                    @click="copyDnNumber(record)"
+                  >
+                    {{ record.dnNumber || '-' }}
+                  </button>
+                  <template v-if="(record.original && (record.original.gs_cell_url))">
+                    <Tooltip :title="translate('table.openInGoogleSheet') || 'Open in Google Sheets'">
+                      <button
+                        type="button"
+                        class="gs-link"
+                        @click.stop.prevent="openGsForRecord(record)"
+                        :aria-label="translate('table.openInGoogleSheet') || 'Open in Google Sheets'"
+                        title=""
+                      >
+                        <span class="gs-link-icon" aria-hidden="true">
+                          <!-- simple link arrow -->
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+                            <path d="M14 3h7v7" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 14L21 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M21 21H3V3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </span>
+                      </button>
+                    </Tooltip>
+                  </template>
+                </div>
                 <div class="summary-hint summary-du-id">
                   <template v-if="record.duId">
                     <button
@@ -1151,6 +1173,30 @@ const handleOpenPhoto = (record) => {
   }
 };
 
+const openGsForRecord = (record) => {
+  if (!record || !record.original) return;
+  const orig = record.original;
+  let href = '';
+  if (orig.gs_cell_url) {
+    href = String(orig.gs_cell_url);
+  } else if (orig.gs_cell_link) {
+    href = String(orig.gs_cell_link);
+  } else if (orig.gs_sheet && orig.gs_row) {
+    const sheet = String(orig.gs_sheet);
+    const row = String(orig.gs_row);
+    // default to gid=0 and column A; users can override by providing gs_cell_link
+    href = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheet)}/edit#gid=0&range=A${encodeURIComponent(row)}`;
+  }
+  if (!href) return;
+  try {
+    if (typeof window !== 'undefined') {
+      window.open(href, '_blank', 'noopener');
+    }
+  } catch (err) {
+    console.error('Failed to open Google Sheet link', err);
+  }
+};
+
 const tableRows = computed(() => {
   translationVersion.value;
   const mismatchTooltip = translate('table.statusMismatchTooltip') || STATUS_DELIVERY_MISMATCH_TOOLTIP_FALLBACK;
@@ -1253,7 +1299,7 @@ const tableColumns = computed(() => {
       title: translate('table.regionPlan', '区域/MOS 计划') || '区域/MOS 计划',
       dataIndex: 'region',
       key: 'regionPlan',
-      width: 120,
+      width: 180,
     },
     {
       title: translate('table.lsp', 'LSP') || 'LSP',

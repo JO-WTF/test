@@ -139,5 +139,6 @@
   "updateHistory.noPhoto": "No photo",
   "updateHistory.mapAlt": "Location map",
   "updateHistory.photoAlt": "Site photo",
+  "table.openInGoogleSheet": "Open in Google Sheets",
   "details.save": "保存"
 }

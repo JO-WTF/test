@@ -345,6 +345,20 @@ body.admin-theme {
   align-items: flex-start;
   gap: 4px;
 }
+
+.admin-page .summary-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.admin-page .summary-top .summary-primary {
+  line-height: 20px;
+}
+.admin-page .gs-link {
+  margin-left: 0;
+  padding: 2px;
+}
 .admin-page tr.summary-row .summary-primary {
   font-weight: 700!important;
   color: var(--ant-primary);
@@ -526,6 +540,15 @@ body.admin-theme {
   flex-direction: column;
   gap: 4px;
 }
+
+/* Ensure the second column (region/MOS plan) has a reasonable minimum width on larger viewports */
+@media (min-width: 769px) {
+  .admin-page table tbody td:nth-child(2),
+  .admin-page table thead th:nth-child(2) {
+    min-width: 190px;
+    max-width: 420px;
+  }
+}
 .admin-page .region-plan-cell .region-plan-cell__region {
   display: block;
   font-weight: 600;
@@ -694,6 +717,41 @@ body.admin-theme {
   padding: 0;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
+}
+.admin-page .gs-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  min-width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.06) inset, 0 1px 2px rgba(0,0,0,0.04);
+  border: 0.5px solid rgba(0,0,0,0.06);
+}
+.admin-page .gs-link-icon {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ant-success);
+  box-shadow: 0 4px 10px rgba(40, 167, 69, 0.24);
+  flex-shrink: 0;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.admin-page .gs-link-icon:focus,
+.admin-page .gs-link-icon:hover {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 8px 22px rgba(40, 167, 69, 0.36);
 }
 .admin-page .icon-link {
   text-decoration: none;

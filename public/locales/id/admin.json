@@ -140,5 +140,6 @@
   "updateHistory.noPhoto": "Tidak ada foto",
   "updateHistory.mapAlt": "Peta lokasi",
   "updateHistory.photoAlt": "Foto lokasi",
+  "table.openInGoogleSheet": "Buka di Google Sheets",
   "details.save": "Simpan"
 }

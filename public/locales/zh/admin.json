@@ -140,5 +140,6 @@
   "updateHistory.noPhoto": "无照片",
   "updateHistory.mapAlt": "位置地图",
   "updateHistory.photoAlt": "站点照片",
+  "table.openInGoogleSheet": "前往 Google Sheets 查看该 DN",
   "details.save": "保存"
 }
