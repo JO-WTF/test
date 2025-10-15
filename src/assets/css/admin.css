@@ -203,8 +203,9 @@ body.admin-theme {
 }
 .admin-page .status-card.active {
   border-color: var(--ant-primary);
+  border-width: 2px;
   box-shadow: 0 0 0 1px var(--ant-shadow-strong);
-  background: var(--ant-primary-tint-soft);
+
 }
 .admin-page .status-card.loading {
   opacity: 0.7;
@@ -833,13 +834,17 @@ body.admin-theme {
   color: #05414f;
 }
 .admin-page .status-card--red {
-  background: #fb9d9e; /* No Status color */
-  border-color: #f77b7c;
-  color: #5a1a1a;
+  background: var(--ant-danger); /* No Status uses danger color */
+  border-color: var(--ant-danger-light);
+  color: var(--ant-text-inverse);
 }
 .admin-page .status-card--red .status-card__label {
-  color: #451111;
+  color: var(--ant-text-inverse);
 }
+.admin-page .status-card--red .status-card__count {
+  color: var(--ant-text-inverse);
+}
+
 
 /* Make ARRIVED AT SITE and POD show as #80e67d by mapping progress-4 and progress-5 */
 .admin-page .status-card--progress-4,
