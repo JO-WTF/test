@@ -649,7 +649,7 @@ export function setupAdminPage(
       const statusSiteValues = getFilterValues('status_site');
 
       if (tokens.length === 1) params.set('dn_number', tokens[0]);
-      if (du) params.set('du_id', du.toUpperCase());
+      if (du) params.set('du_id', du);
       if (st === '__NOT_EMPTY__') {
         params.set('status_delivery_not_empty', 'true');
       } else if (st) {
