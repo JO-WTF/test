@@ -5,6 +5,8 @@
     :footer="null"
     :closable="false"
     :maskClosable="true"
+    :keyboard="true"
+    @cancel="() => { $emit('update:open', false); $emit('close'); }"
     :force-render="true"
     :centered="true"
     width="1000px"
