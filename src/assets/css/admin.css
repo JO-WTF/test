@@ -43,9 +43,15 @@ body.admin-theme {
   background: var(--ant-background);
   color: var(--ant-text-primary);
 }
-/* .admin-page * {
-  box-sizing: border-box;
-} */
+.admin-page a {
+  color: var(--ant-primary);
+  text-decoration: none;
+  width: 100%;
+  height: 100%;
+}
+.admin-page a:hover {
+  text-decoration: underline;
+}
 .admin-page .admin-container {
   width: 100%;
   max-width: none;
@@ -970,6 +976,7 @@ body.admin-theme {
   border: 1px solid var(--ant-border-strong);
   border-radius: 14px;
   width: 92%;
+  height: 100%;
   padding: 14px;
   margin: 0 auto;
 }
@@ -1034,13 +1041,11 @@ body.admin-theme {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 12px;
 }
 .admin-modal-wrap .foot .btn {
   min-width: 108px;
   border-radius: 6px;
   font-weight: 600;
-  padding: 9px 18px;
   border: 1px solid transparent;
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease,
     border-color 0.2s ease;
@@ -1298,8 +1303,13 @@ body.admin-theme {
   font-size: 18px;
   line-height: 1;
 }
+.admin-modal-wrap .modal-content {
+  display: grid;
+  grid-template-rows: 30px 1fr 30px;
+  height: 100%;
+}
 .admin-modal-wrap .modal-body {
-  max-height: 60vh;
+  max-height: 80vh;
   overflow-y: auto;
   margin-bottom: 16px;
 }
@@ -1356,6 +1366,58 @@ body.admin-theme {
   flex-direction: column;
   gap: 8px;
 }
+
+/* Desktop layout: >=768px, make each history-record two-row: header (index/time) + content row with two columns
+   Left column: fields (statusDelivery, statusSite, updatedBy, remark)
+   Right column: map image and photo thumbnails
+*/
+@media (min-width: 768px) {
+  .admin-modal-wrap .history-record-main {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr; /* left fixed media column, right flexible */
+    gap: 12px;
+    align-items: start;
+  }
+
+  /* Ensure info column stacks items vertically */
+  .admin-modal-wrap .history-record-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* Keep the header (index/time) above the grid; it's a sibling of .history-record-main so no change needed */
+
+  /* For very wide screens, increase media column slightly */
+  @media (min-width: 1200px) {
+    .admin-modal-wrap .history-record-main {
+      grid-template-columns: 1fr 1.5fr;
+    }
+  }
+  /* Media column should occupy the right column */
+  .admin-modal-wrap .history-record-media {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    max-height: none; /* allow media column to expand naturally */
+  }
+
+  /* Make media items fit the column width and keep fixed height for thumbnails */
+  .admin-modal-wrap .history-media-item {
+    max-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Ensure the placeholder message spans the media column properly */
+  .admin-modal-wrap .history-media-empty {
+    grid-column: 1 / -1;
+    height: 40px;
+  }
+}
 .admin-modal-wrap .history-record-info {
   display: flex;
   flex-direction: column;
@@ -1368,21 +1430,14 @@ body.admin-theme {
 }
 .admin-modal-wrap .history-record-media {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 150px;
   gap: 12px;
   max-height: 180px;
 }
 .admin-modal-wrap .history-media-item {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--ant-border-subtle);
-  background: var(--ant-surface-alt);
-  height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-height: 180px;
 }
+
 /* Compact placeholder when both photo and location are missing */
 .admin-modal-wrap .history-media-empty {
   grid-column: 1 / -1;
@@ -1406,13 +1461,13 @@ body.admin-theme {
   font-weight: 500;
 }
 .admin-modal-wrap .history-field-value {
-  font-size: 14px;
+  font-size: 11px;
   color: var(--ant-text-primary);
   line-height: 1.5;
 }
 .admin-modal-wrap .history-field-value .phone-number-suffix {
   color: var(--ant-text-secondary);
-  font-size: 13px;
+  font-size: 11px;
   margin-left: 4px;
 }
 
@@ -1477,7 +1532,6 @@ body.admin-theme {
   opacity: 0.9;
 }
 .admin-modal-wrap .history-field-value {
-  font-size: 14px;
   color: var(--ant-text-title, var(--ant-text-primary));
   line-height: 1;
   display: inline-flex;
@@ -1488,9 +1542,6 @@ body.admin-theme {
 .admin-modal-wrap .history-field-value strong {
   font-weight: 700;
   color: inherit;
-}
-.admin-modal-wrap .history-status {
-  font-size: 15px;
 }
 .admin-modal-wrap .history-map-image-link {
   display: block;
@@ -1551,6 +1602,22 @@ body.admin-theme {
 .admin-modal-wrap .history-map-link-compact .icon-svg {
   width: 20px;
   height: 20px;
+}
+.admin-modal-wrap .history-photo-placeholder ,
+.admin-modal-wrap .history-map-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 120px; /* ensure reasonable fallback */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover; /* no-op for div but indicates intent */
+  background: var(--ant-surface-alt);
+  border-radius: 6px;
+  border: 1px dashed rgba(0,0,0,0.06);
+  color: var(--ant-text-secondary);
+  padding: 8px;
+  text-align: center;
 }
 .admin-modal-wrap .history-photo-thumbnail {
   width: 100%;

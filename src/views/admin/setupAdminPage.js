@@ -26,7 +26,7 @@ import {
   extractItemsFromResponse,
   showToast,
 } from './utils.js';
-import { createUpdateHistoryRenderer } from './updateHistoryRenderer.js';
+import { prepareUpdateHistoryItems } from './updateHistoryData.js';
 
 import {
   TRANSPORT_MANAGER_ROLE_KEY,
@@ -149,10 +149,6 @@ export function setupAdminPage(
   const dnConfirm = el('dn-confirm');
   const archiveExpiredDnBtn = el('btn-archive-expired-dn');
 
-  const historyDnNumber = el('history-dn-number');
-  const historyContent = el('history-content');
-  const historyOk = el('history-ok');
-
   const editModalController = modalControllers?.edit || null;
   const authModalController = modalControllers?.auth || null;
   const dnModalController = modalControllers?.dn || null;
@@ -164,22 +160,6 @@ export function setupAdminPage(
   let filtersExpanded = true;
   let filtersMediaQuery = null;
   let removeFiltersMediaListener = null;
-  const updateHistoryRenderer = createUpdateHistoryRenderer({
-    container: historyContent,
-    signal,
-    i18n,
-    i18nStatusDisplay,
-    escapeHtml,
-    formatTimestampToJakarta,
-    toAbsUrl,
-    getIconMarkup,
-    getMapboxStaticImageUrl,
-    getTableRenderer: () => ({
-      openViewerWithUrl: openPhotoViewer,
-    }),
-    statusDeliveryValueToKey: STATUS_DELIVERY_VALUE_TO_KEY,
-    statusDeliveryAliasMap: STATUS_DELIVERY_ALIAS_MAP,
-  });
 
   if (filtersToggle) {
     filtersToggle.setAttribute('aria-expanded', 'false');
@@ -897,20 +877,13 @@ export function setupAdminPage(
 
   async function openUpdateHistoryModal(dnNumber) {
     if (!dnNumber) return;
-
-    if (historyDnNumber) {
-      historyDnNumber.textContent = dnNumber;
-    }
-
-    if (historyContent) {
-      historyContent.innerHTML = '<div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>';
-    }
-
-    if (updateHistoryModalController?.open) {
-      updateHistoryModalController.open();
-    }
-
     try {
+      const modal = updateHistoryModalController;
+      if (modal && modal.setLoading) modal.setLoading(true);
+      if (modal && modal.setError) modal.setError('');
+      if (modal && modal.setData) modal.setData([], dnNumber);
+      if (modal && modal.open) modal.open();
+
       const url = `${API_BASE}/api/dn/${encodeURIComponent(dnNumber)}`;
       const { resp, data, message } = await fetchWithPayload(url, { signal });
       if (!resp.ok) {
@@ -918,14 +891,29 @@ export function setupAdminPage(
       }
 
       const items = Array.isArray(data?.items) ? data.items : [];
-      updateHistoryRenderer.render(items);
+      const prepared = prepareUpdateHistoryItems(items, {
+        i18n,
+        i18nStatusDisplay,
+        escapeHtml,
+        formatTimestampToJakarta,
+        toAbsUrl,
+        getIconMarkup,
+        getMapboxStaticImageUrl,
+        statusDeliveryValueToKey: STATUS_DELIVERY_VALUE_TO_KEY,
+        statusDeliveryAliasMap: STATUS_DELIVERY_ALIAS_MAP,
+      });
+      if (modal && modal.setData) modal.setData(prepared, dnNumber);
     } catch (err) {
       if (err?.name === 'AbortError') return;
-      if (historyContent) {
+      if (updateHistoryModalController && updateHistoryModalController.setError) {
         const errorMsg = i18n?.t('updateHistory.error') || '加载失败';
-        historyContent.innerHTML = `<div class="error-state">${escapeHtml(errorMsg)}: ${escapeHtml(err?.message || err)}</div>`;
+        updateHistoryModalController.setError(`${errorMsg}: ${err?.message || err}`);
       }
       console.error('Failed to load update history', err);
+    } finally {
+      if (updateHistoryModalController && updateHistoryModalController.setLoading) {
+        updateHistoryModalController.setLoading(false);
+      }
     }
   }
 
@@ -948,9 +936,7 @@ export function setupAdminPage(
     return `https://api.mapbox.com/styles/v1/${style}/static/${marker}/${lng},${lat},${zoom},0/${width}x${height}@2x?access_token=${encodeURIComponent(mapboxToken)}`;
   }
 
-  if (historyOk) {
-    historyOk.addEventListener('click', closeUpdateHistoryModal, { signal });
-  }
+  // historyOk listener removed; modal close handled by component via modalControllers
   function buildFormDataForSave() {
     const perms = getCurrentPermissions();
     const form = new FormData();

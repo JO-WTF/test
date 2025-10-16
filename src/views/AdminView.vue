@@ -647,31 +647,15 @@
       </div>
     </a-modal>
 
-    <a-modal
-      v-model:open="updateHistoryModalOpen"
-      :footer="null"
-      :closable="false"
-      :maskClosable="true"
-      :force-render="true"
-      :centered="true"
-      width="1000px"
-      wrap-class-name="admin-modal-wrap admin-history-modal-wrap"
-    >
-      <div class="modal large">
-        <div class="modal-header">
-          <h3>
-            <span data-i18n="updateHistory.title">DN 更新记录</span>
-            <span id="history-dn-number" class="tag"></span>
-          </h3>
-        </div>
-        <div id="history-content" class="modal-body">
-          <div class="loading-state" data-i18n="updateHistory.loading">加载中...</div>
-        </div>
-        <div class="foot">
-          <button class="btn" id="history-ok" data-i18n="updateHistory.close">关闭</button>
-        </div>
-      </div>
-    </a-modal>
+    <UpdateHistoryModal
+      :open="updateHistoryModalOpen"
+      :items="updateHistoryItems"
+      :dn-number="updateHistoryDn"
+      :loading="updateHistoryLoading"
+      :error="updateHistoryError"
+      @openViewer="(url) => actionHandlers.onOpenPhoto?.(url)"
+      @close="() => (updateHistoryModalOpen = false)"
+    />
   </div>
 </template>
 
@@ -703,6 +687,7 @@ import {
   ICON_MARKUP,
 } from './admin/constants';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
+import UpdateHistoryModal from '../components/UpdateHistoryModal.vue';
 import 'toastify-js/src/toastify.css';
 import { useBodyTheme } from '../composables/useBodyTheme';
 import 'dayjs/locale/zh-cn';
@@ -1384,6 +1369,10 @@ const editModalOpen = ref(false);
 const authModalOpen = ref(false);
 const dnModalOpen = ref(false);
 const updateHistoryModalOpen = ref(false);
+const updateHistoryItems = ref([]);
+const updateHistoryDn = ref('');
+const updateHistoryLoading = ref(false);
+const updateHistoryError = ref('');
 
 const modalControllers = {
   edit: {
@@ -1421,6 +1410,16 @@ const modalControllers = {
       updateHistoryModalOpen.value = false;
     },
     isOpen: () => updateHistoryModalOpen.value,
+    setData: (items, dn) => {
+      updateHistoryItems.value = Array.isArray(items) ? items : [];
+      updateHistoryDn.value = dn || '';
+    },
+    setLoading: (v) => {
+      updateHistoryLoading.value = !!v;
+    },
+    setError: (msg) => {
+      updateHistoryError.value = msg || '';
+    },
   },
 };
 
