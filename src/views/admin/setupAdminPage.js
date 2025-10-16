@@ -612,7 +612,9 @@ export function setupAdminPage(
     );
 
     resetAllFilters({ preservePageSize: true });
-    setFilterValue('status_delivery', targetStatus);
+    if (targetStatus !== 'Total') {
+      setFilterValue('status_delivery', targetStatus);
+    }
     setFilterValue('plan_mos_date', todayJakarta);
   }
 
