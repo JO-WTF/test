@@ -13,6 +13,8 @@
   "remark.kw.placeholder": "模糊匹配",
   "du.filter.label": "关联 DU ID",
   "du.filter.placeholder": "精确匹配",
+  "du.label": "DU ID（支持换行批量查询）",
+  "du.placeholder": "示例：\nDU123...",
   "has.label": "是否带附件",
   "has.any": "(任意)",
   "has.true": "有附件",

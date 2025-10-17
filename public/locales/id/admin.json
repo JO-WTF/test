@@ -13,6 +13,8 @@
   "remark.kw.placeholder": "Pencocokan samar",
   "du.filter.label": "DU ID terkait",
   "du.filter.placeholder": "Pencocokan tepat",
+  "du.label": "DU ID (satu per baris untuk pencarian massal)",
+  "du.placeholder": "Contoh:\nDU123...",
   "has.label": "Ada Lampiran",
   "has.any": "(Apa saja)",
   "has.true": "Dengan Lampiran",

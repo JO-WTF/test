@@ -290,7 +290,11 @@ export function setupAdminPage(
           ? paramInput.toString()
           : '';
     const basePath =
-      mode === 'batch' ? '/api/dn/list/batch?' : '/api/dn/list/search?';
+      mode === 'batch'
+        ? '/api/dn/list/batch?'
+        : mode === 'batch_du'
+        ? '/api/dn/list/batch-by-du?'
+        : '/api/dn/list/search?';
     return `${API_BASE}${basePath}${params}`;
   }
 
@@ -632,32 +636,41 @@ export function setupAdminPage(
 
   function buildParamsAuto() {
     const params = new URLSearchParams();
-    const tokens = dnEntry.normalizeFilterInput({ enforceFormat: false });
+    const dnTokens = dnEntry.normalizeFilterInput({ enforceFormat: false });
     const ps = getNormalizedPageSize();
     q.page_size = ps;
 
-    if (tokens.length > 1) {
-      tokens.forEach((token) => params.append('dn_number', token));
-      q.mode = 'batch';
+    const duRaw = getInputValue('du');
+    const duTokens = (duRaw || '')
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    let mode = 'single';
+    if (dnTokens.length) {
+      mode = 'batch';
+    } else if (duTokens.length) {
+      mode = 'batch_du';
+    }
+    q.mode = mode;
+
+    if (mode === 'batch') {
+      dnTokens.forEach((token) => params.append('dn_number', token));
     } else {
-      q.mode = 'single';
       const st = getSingleFilterValue('status_delivery');
       const rk = getInputValue('remark').trim();
       const hp = hasSelect?.value;
       const hc = getSingleFilterValue('has_coordinate');
       const df = getDateFilterValue('date_from');
       const dt = getDateFilterValue('date_to');
-      const du = getInputValue('du').trim();
       const lspValues = getFilterValues('lsp');
       const regionValues = getFilterValues('region');
-  const areaValues = getFilterValues('area');
+      const areaValues = getFilterValues('area');
       const planMosDateTokens = getFilterValues('plan_mos_date');
       const subconValues = getFilterValues('subcon');
-      
       const statusSiteValues = getFilterValues('status_site');
 
-      if (tokens.length === 1) params.set('dn_number', tokens[0]);
-      if (du) params.set('du_id', du);
+      if (dnTokens.length === 1) params.set('dn_number', dnTokens[0]);
       if (st === '__NOT_EMPTY__') {
         params.set('status_delivery_not_empty', 'true');
       } else if (st) {
@@ -677,10 +690,10 @@ export function setupAdminPage(
       setSearchParamValues(params, {
         lsp: lspValues,
         region: regionValues,
-  area: areaValues,
+        area: areaValues,
         date: planMosDateTokens,
         subcon: subconValues,
-        
+        du_id: duTokens,
         status_site: statusSiteValues,
       });
     }

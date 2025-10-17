@@ -52,8 +52,16 @@
                 placeholder="示例：&#10;DN123..."
               ></textarea>
             </div>
-            <div class="muted" style="margin-top: 6px" data-i18n="dn.tip">
-              提示：DN 号支持字母数字与短横线。
+            <div class="du-section">
+              <label data-i18n="du.label">DU ID（支持换行批量查询）</label>
+              <div class="dn-wrap">
+                <textarea
+                  id="f-du"
+                  class="admin-textarea"
+                  v-model="duInputValue"
+                  :placeholder="duInputPlaceholder"
+                ></textarea>
+              </div>
             </div>
           </div>
 
@@ -190,19 +198,9 @@
                   v-model:value="remarkInputValue"
                   :placeholder="remarkInputPlaceholder"
                   allow-clear
-                  style="width: 100%"
-                />
-              </div>
-              <div class="field filter-field">
-                <label data-i18n="du.filter.label">关联 DU ID</label>
-                <a-input
-                  id="f-du"
-                  v-model:value="duInputValue"
-                  :placeholder="duInputPlaceholder"
-                  allow-clear
-                  style="width: 100%"
-                />
-              </div>
+              style="width: 100%"
+            />
+          </div>
               <div class="field filter-field">
                 <label data-i18n="date.from">最近修改于(开始)</label>
                 <a-date-picker

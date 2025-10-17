@@ -9,6 +9,8 @@
   "remark.kw.placeholder": "Fuzzy match",
   "du.filter.label": "Related DU ID",
   "du.filter.placeholder": "Exact match",
+  "du.label": "DU ID (one per line for bulk search)",
+  "du.placeholder": "Example:\nDU123...",
   "has.label": "Has Attachment",
   "has.any": "(Any)",
   "has.true": "With Attachment",

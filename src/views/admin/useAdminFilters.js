@@ -415,7 +415,7 @@ export function useAdminFilters() {
   const statusDelivery = createSingleSelectState('Any');
   const hasCoordinate = createSingleSelectState('Any');
   const remark = createTextInputState('模糊匹配');
-  const du = createTextInputState('精确匹配');
+  const du = createTextInputState('One DU ID per line');
   const fromDate = createDatePickerState();
   const toDate = createDatePickerState();
 
@@ -469,8 +469,8 @@ export function useAdminFilters() {
     },
     {
       placeholderRef: du.placeholder,
-      translationKey: 'du.filter.placeholder',
-      fallback: '精确匹配',
+      translationKey: 'du.placeholder',
+      fallback: 'Example:\nDU123...',
     },
   ];
 
