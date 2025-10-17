@@ -39,12 +39,12 @@
           <div class="status-card-grid" id="status-card-container"></div>
         </div>
         <div class="grid-2col">
-          <div class="du-col">
+          <div class="dn-col">
             <label data-i18n="dn.label"
               >DN 号（支持多行/逗号/空格分隔；多于1个则批量查询）</label
             >
-            <div class="du-wrap">
-              <div id="dn-preview" class="du-hilite" aria-hidden="true"></div>
+            <div class="dn-wrap">
+              <div id="dn-preview" class="dn-hilite" aria-hidden="true"></div>
               <textarea
                 id="f-dn"
                 class="admin-textarea"

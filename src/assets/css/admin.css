@@ -849,7 +849,7 @@ body.admin-theme {
   gap: 12px;
   align-items: stretch;
 }
-.admin-page .du-col {
+.admin-page .dn-col {
   display: flex;
   flex-direction: column;
   max-height: 250px;
@@ -858,7 +858,7 @@ body.admin-theme {
 #f-dn {
   min-height: 60px!important;
 }
-.admin-page .du-col textarea {
+.admin-page .dn-col textarea {
   flex: 1;
 }
 .admin-page .rhs {
@@ -1121,11 +1121,11 @@ body.admin-theme {
 .admin-modal-wrap .modal.edit-modal .foot .btn {
   min-width: 110px;
 }
-.admin-page .du-wrap {
+.admin-page .dn-wrap {
   position: relative;
   margin-top: 5px;
 }
-.admin-page .du-hilite {
+.admin-page .dn-hilite {
   position: absolute;
   inset: 0;
   color: transparent;
