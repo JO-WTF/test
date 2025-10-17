@@ -1449,8 +1449,8 @@ export function setupAdminPage(
   async function init() {
     dnEntry.normalizeFilterInput({ enforceFormat: false });
     if (hint) hint.textContent = i18n?.t('hint.ready') || '输入条件后点击查询。';
-    await fetchFilterCandidates();
     await fetchList();
+    await fetchFilterCandidates();
   }
 
   hideHasAttachmentFilter();

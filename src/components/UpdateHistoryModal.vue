@@ -21,7 +21,7 @@
         </h3>
       </div>
       <div class="modal-body">
-        <div v-if="loading" class="loading-state" data-i18n="updateHistory.loading">加载中...</div>
+        <div v-if="loading" class="loading-state" data-i18n="hint.loading">加载中...</div>
         <div v-else-if="error" class="error-state">{{ error }}</div>
         <div v-else-if="!items || !items.length" class="empty-state">{{ translate('updateHistory.empty') || 'No update records' }}</div>
         <div v-else class="history-records">
@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { defineEmits, defineProps, ref, onMounted, watch } from 'vue';
+import { defineEmits, defineProps, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useI18n } from '../i18n/useI18n';
 import { applyI18n } from '../i18n/dom';
 
@@ -103,36 +103,45 @@ const emit = defineEmits(['update:open', 'close', 'openViewer']);
 // i18n instance will be retrieved from shared useI18n
 const rootRef = ref(null);
 let i18nInstance = null;
+let removeI18nListener = null;
+
+const reapplyTranslations = async () => {
+    if (!i18nInstance) return;
+    await nextTick();
+    const root = rootRef.value;
+    if (!root) return;
+    applyI18n(root, i18nInstance);
+};
 
 onMounted(async () => {
     try {
         // request namespaces used by this component
         i18nInstance = await useI18n({ namespaces: ['core', 'admin'], fallbackLang: 'en' });
-        if (rootRef.value) applyI18n(rootRef.value, i18nInstance);
-    } catch (err) {
+        await reapplyTranslations();
+        if (typeof i18nInstance?.onChange === 'function') {
+            removeI18nListener = i18nInstance.onChange(() => {
+                reapplyTranslations();
+            });
+        }
+    } catch {
         // keep graceful fallback
     }
 });
 
-// when modal opens (teleported content might be re-attached), re-apply translations
-watch(() => props.open, (v) => {
-    if (v && i18nInstance && rootRef.value) {
-        try {
-            applyI18n(rootRef.value, i18nInstance);
-        } catch (err) {
-            // ignore
-        }
+onBeforeUnmount(() => {
+    if (typeof removeI18nListener === 'function') {
+        removeI18nListener();
     }
 });
 
-const translate = (key) => {
-    if (!i18nInstance) return undefined;
-    try {
-        return i18nInstance.t(key);
-    } catch (err) {
-        return undefined;
+// when modal opens (teleported content might be re-attached) or loading toggles, re-apply translations
+watch([() => props.open, () => props.loading], ([isOpen, isLoading]) => {
+    if (isOpen || isLoading) {
+        reapplyTranslations();
     }
-};
+});
+
+const translate = (key) => i18nInstance?.t(key);
 
 const openViewer = (url) => {
     emit('openViewer', url);
@@ -144,14 +153,7 @@ const formatRemark = (text) => {
     return String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;');
 };
 
-const getIcon = (name) => {
-    try {
-        if (name === 'map') {
-            return '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#1677ff"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>';
-        }
-        return '';
-    } catch (err) {
-        return '';
-    }
-};
+const MAP_ICON = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#1677ff"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>';
+
+const getIcon = (name) => (name === 'map' ? MAP_ICON : '');
 </script>
