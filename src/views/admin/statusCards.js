@@ -111,12 +111,19 @@ export function createStatusDeliveryCardManager({
     button.addEventListener(
       'click',
       () => {
-        if (!def || (def.type !== 'status_delivery')) return;
-        const canonical =
-          def.type === 'status_delivery'
-            ? normalizeStatusDeliveryValue(def.status_delivery) || def.status_delivery || ''
-            : '';
-        if (def.type === 'status_delivery' && !canonical) return;
+        if (!def) return;
+        const type = def.type;
+        if (type !== 'status_delivery' && type !== 'status_site') return;
+        const raw =
+          type === 'status_delivery'
+            ? def.status_delivery
+            : def.status_site;
+        let canonical = normalizeStatusDeliveryValue(raw) || raw || '';
+        if (!canonical) {
+          const rawText = String(raw || '').trim();
+          if (!rawText) return;
+          canonical = rawText;
+        }
         onApplyFilter?.(def, canonical);
         updateActiveState();
       },

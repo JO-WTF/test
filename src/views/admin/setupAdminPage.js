@@ -583,8 +583,10 @@ export function setupAdminPage(
     fetchList();
   }
 
-  function applyStatusCardFilter(def, canonicalStatus) {
-    const targetStatus = def?.type === 'status_delivery' ? canonicalStatus : '';
+  function applyStatusCardFilter(def, canonicalValue) {
+    const isDeliveryCard = def?.type === 'status_delivery';
+    const isSiteCard = def?.type === 'status_site';
+    const targetValue = canonicalValue || '';
     const todayJakarta = getTodayDateStringInTimezone(
       PLAN_MOS_TIME_ZONE,
       JAKARTA_OFFSET,
@@ -592,8 +594,14 @@ export function setupAdminPage(
     );
 
     resetAllFilters({ preservePageSize: true });
-    if (targetStatus !== 'Total') {
-      setFilterValue('status_delivery', targetStatus);
+    if (isDeliveryCard) {
+      if (targetValue && targetValue !== 'Total') {
+        setFilterValue('status_delivery', targetValue);
+      }
+    } else if (isSiteCard) {
+      if (targetValue && targetValue !== 'Total') {
+        setFilterValue('status_site', [targetValue]);
+      }
     }
     setFilterValue('plan_mos_date', todayJakarta);
   }

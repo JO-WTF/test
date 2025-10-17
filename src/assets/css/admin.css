@@ -181,10 +181,10 @@ body.admin-theme {
 
 .admin-page .status-card {
   appearance: none;
-  border: 1px solid var(--ant-border-subtle);
+  border: 1px solid #cdeef6;
   border-radius: 12px;
-  background: var(--ant-surface);
-  color: var(--ant-text-primary);
+  background: #e3f6fb;
+  color: #072b36;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   padding: 8px 5px;
   display: flex;
@@ -220,7 +220,7 @@ body.admin-theme {
 .admin-page .status-card__count {
   font-size: 24px;
   font-weight: 700;
-  color: var(--ant-text-primary);
+  color: #072b36;
   line-height: 1.1;
 }
 .admin-page .status-card.loading .status-card__count {
@@ -229,7 +229,7 @@ body.admin-theme {
 .admin-page .status-card__label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ant-text-secondary);
+  color: #072b36;
   line-height: 1.4;
 }
 .admin-page label {
