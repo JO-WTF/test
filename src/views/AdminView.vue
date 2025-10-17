@@ -128,6 +128,21 @@
                 ></a-select>
               </div>
               <div class="field filter-field">
+                <label>Project</label>
+                <a-select
+                  id="f-project"
+                  v-model:value="projectSelectValue"
+                  :options="projectSelectOptions"
+                  :placeholder="projectSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
+              <div class="field filter-field">
                 <label data-i18n="subcon.label">分包商</label>
                 <a-select
                   id="f-subcon"
@@ -718,6 +733,9 @@ let i18nInstance = null;
   lspSelectOptions,
   lspSelectValue,
   lspSelectPlaceholder,
+  projectSelectOptions,
+  projectSelectValue,
+  projectSelectPlaceholder,
   subconSelectOptions,
   subconSelectValue,
   subconSelectPlaceholder,

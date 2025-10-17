@@ -410,6 +410,7 @@ export function useAdminFilters() {
   const region = createSelectState();
   const area = createSelectState();
   const lsp = createSelectState();
+  const project = createSelectState();
   const subcon = createSelectState();
   const statusSite = createSelectState();
   const statusDelivery = createSingleSelectState('Any');
@@ -426,6 +427,7 @@ export function useAdminFilters() {
     region: region.bridge,
     area: area.bridge,
     lsp: lsp.bridge,
+    project_request: project.bridge,
     subcon: subcon.bridge,
     status_site: statusSite.bridge,
     status_delivery: statusDelivery.bridge,
@@ -573,6 +575,10 @@ export function useAdminFilters() {
     lspSelectValue: lsp.value,
     lspSelectPlaceholder: lsp.placeholder,
     lspSelectBridge: lsp.bridge,
+    projectSelectOptions: project.options,
+    projectSelectValue: project.value,
+    projectSelectPlaceholder: project.placeholder,
+    projectSelectBridge: project.bridge,
     subconSelectOptions: subcon.options,
     subconSelectValue: subcon.value,
     subconSelectPlaceholder: subcon.placeholder,

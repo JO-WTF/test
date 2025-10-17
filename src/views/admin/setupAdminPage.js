@@ -625,6 +625,7 @@ export function setupAdminPage(
       setFilterDropdownOptions('region', payload?.region);
       setFilterDropdownOptions('area', payload?.area);
       setFilterDropdownOptions('plan_mos_date', payload?.plan_mos_date);
+      setFilterDropdownOptions('project_request', payload?.project_request);
       setFilterDropdownOptions('subcon', payload?.subcon);
       const siteOptions = payload?.status_site;
       setFilterDropdownOptions('status_site', siteOptions);
@@ -667,6 +668,7 @@ export function setupAdminPage(
       const regionValues = getFilterValues('region');
       const areaValues = getFilterValues('area');
       const planMosDateTokens = getFilterValues('plan_mos_date');
+      const projectValues = getFilterValues('project_request');
       const subconValues = getFilterValues('subcon');
       const statusSiteValues = getFilterValues('status_site');
 
@@ -692,6 +694,7 @@ export function setupAdminPage(
         region: regionValues,
         area: areaValues,
         date: planMosDateTokens,
+        project_request: projectValues,
         subcon: subconValues,
         du_id: duTokens,
         status_site: statusSiteValues,
@@ -1240,7 +1243,12 @@ export function setupAdminPage(
   }
 
   async function exportAll() {
-    const basePath = q.mode === 'batch' ? '/api/dn/list/batch' : '/api/dn/list/search';
+    const basePath =
+      q.mode === 'batch'
+        ? '/api/dn/list/batch'
+        : q.mode === 'batch_du'
+        ? '/api/dn/list/batch-by-du'
+        : '/api/dn/list/search';
     await exportData({
       basePath,
       prepareParams: (params) => {
@@ -1286,6 +1294,7 @@ export function setupAdminPage(
     setFilterValue('lsp', '');
     setFilterValue('region', '');
   setFilterValue('area', '');
+    setFilterValue('project_request', '');
     setFilterValue('subcon', '');
     setFilterValue('status_site', '');
     setInputValue('du', '');
