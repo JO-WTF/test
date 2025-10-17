@@ -660,7 +660,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue';
 import { Switch, Tooltip } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -1455,10 +1455,32 @@ const translate = (key, vars) => {
   }
 };
 
+const applyModalTranslations = () => {
+  if (!i18nInstance) return;
+  if (typeof document === 'undefined') return;
+  const modalRoots = document.querySelectorAll('.admin-modal-wrap');
+  modalRoots.forEach((modalRoot) => {
+    if (!modalRoot) return;
+    try {
+      applyI18n(modalRoot, i18nInstance);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+};
+
+const scheduleModalTranslations = () => {
+  if (!i18nInstance) return;
+  nextTick(() => {
+    applyModalTranslations();
+  });
+};
+
 const applyTranslations = () => {
   if (adminRoot.value && i18nInstance) {
     applyI18n(adminRoot.value, i18nInstance);
   }
+  applyModalTranslations();
   const translator = (key) => translate(key);
   updatePlaceholders(translator);
   updateStatusSelectOptions(translator);
@@ -1466,6 +1488,24 @@ const applyTranslations = () => {
   refreshDatePresets(translator);
   adminTableBridge.notifyTranslations?.();
 };
+
+watch(editModalOpen, (isOpen) => {
+  if (isOpen) {
+    scheduleModalTranslations();
+  }
+});
+
+watch(authModalOpen, (isOpen) => {
+  if (isOpen) {
+    scheduleModalTranslations();
+  }
+});
+
+watch(dnModalOpen, (isOpen) => {
+  if (isOpen) {
+    scheduleModalTranslations();
+  }
+});
 
 const normalizeStatusSelection = (raw) => {
   if (!raw) return [];
