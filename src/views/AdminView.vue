@@ -459,6 +459,9 @@
             <template v-else-if="column.key === 'statusSite'">
               <span>{{ record.statusSiteDisplay || '-' }}</span>
             </template>
+            <template v-else-if="column.key === 'subconStatus'">
+              <span>{{ record.subconStatusDisplay || '-' }}</span>
+            </template>
             <template v-else-if="column.key === 'remark'">
               <!-- Inject data-label so CSS can display column name via ::before on mobile -->
               <span
@@ -1260,6 +1263,7 @@ const tableRows = computed(() => {
       statusDisplay(statusDeliveryRaw) || statusDisplay(normalize(statusDeliveryRaw));
     const statusSiteRaw = item?.[STATUS_SITE_FIELD] ?? item?.status_site ?? item?.statusSite ?? '';
     const statusSiteDisplay = normalizeTextValue(statusSiteRaw);
+    const subconStatusRaw = normalizeTextValue(item?.subcon_status ?? item?.subconStatus);
     const remark = normalizeTextValue(item?.remark);
     const latestRecordRaw = normalizeTextValue(
       item?.[LATEST_RECORD_CREATED_AT_FIELD] ?? item?.latest_record_created_at
@@ -1308,6 +1312,7 @@ const tableRows = computed(() => {
       statusDeliveryDisplay,
       statusDeliveryRaw,
       statusSiteDisplay,
+      subconStatusDisplay: subconStatusRaw,
   remark,
   latestRecordCreatedAt: latestRecordFormatted,
       statusMismatch: shouldShowStatusDeliveryMismatch(statusSiteRaw, statusDeliveryRaw, normalize),
@@ -1365,6 +1370,12 @@ const tableColumns = computed(() => {
       title: translate('table.statusSite', '站点状态') || '站点状态',
       dataIndex: 'statusSiteDisplay',
       key: 'statusSite',
+      width: 100,
+    },
+    {
+      title: translate('table.subconStatus', 'Subcon Status') || 'Subcon Status',
+      dataIndex: 'subconStatusDisplay',
+      key: 'subconStatus',
       width: 100,
     },
     {

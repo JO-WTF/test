@@ -77,6 +77,7 @@
   "table.issueRemark": "Issue Remark",
   "table.statusDelivery": "Delivery Status",
   "table.statusSite": "Site Status",
+  "table.subconStatus": "Subcon Status",
   "table.remark": "Remark",
   "table.latestRecordCreatedAt": "Update Time",
   "table.checkin": "Check-in",

@@ -2,6 +2,7 @@
   "statusSiteLabel": "Status Site",
   "statusSitePlaceholder": "Ketik atau pilih",
   "table.statusSite": "Status Site",
+  "table.subconStatus": "Status Subkon",
   "title": "Manajemen Catatan Pengajuan DN",
   "dn.label": "Nomor DN (mendukung baris/komma/spasi; lebih dari satu = pencarian batch)",
   "dn.placeholder": "Contoh:\nDN123...\nDN456...",
