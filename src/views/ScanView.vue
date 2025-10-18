@@ -106,6 +106,12 @@
             </div>
           </div>
 
+          <div v-if="locationWarningVisible" class="location-warning">
+            <p>{{ t('locationWarningReward') }}</p>
+            <p>{{ t('locationWarningRefresh') }}</p>
+            <p>{{ t('locationWarningNote') }}</p>
+          </div>
+
           <button class="primary" style="align-self: flex-start" @click="submitUpdate"
             :disabled="!state.isValid || state.submitting">
             {{ state.submitting ? t('submitting') : t('submit') }}
@@ -196,6 +202,7 @@ const refreshPhoneNumber = () => {
 const state = reactive({
   lang: _i18n.state.lang,
   location: null,
+  locationError: false,
   hasDN: false,
   dnNumber: '',
   dnStatusSite: '',
@@ -231,6 +238,7 @@ const t = (key, vars) => { i18nVersion.value; return _i18n.t(key, vars); };
 
 const showScanControls = computed(() => !state.isValid);
 const torchTagVisible = computed(() => state.running && !state.isValid);
+const locationWarningVisible = computed(() => state.hasDN && state.locationError);
 const submitSummaryRows = computed(() => {
   // depend on language changes so labels re-render with the active locale
   state.lang;
@@ -375,6 +383,8 @@ const resume = async () => {
   state.hasDN = false;
   state.isValid = false;
   state.dnNumber = '';
+  state.location = null;
+  state.locationError = false;
   try {
     await start();
   } catch (e) {
@@ -648,15 +658,24 @@ const onOkClick = async () => {
     state.hasDN = true;
   }
 
+  state.locationError = false;
+  state.location = null;
   try {
     const location = await getLocation();
-    state.location = {
-      lat: location?.lat ?? null,
-      lng: location?.lng ?? null,
-    };
+    const lat = Number(location?.lat);
+    const lng = Number(location?.lng);
+    const hasValidCoords = Number.isFinite(lat) && Number.isFinite(lng);
+    if (hasValidCoords) {
+      state.location = { lat, lng };
+      state.locationError = false;
+    } else {
+      state.location = { lat: null, lng: null };
+      state.locationError = true;
+    }
   } catch (e) {
     console.error('Failed to get location:', e);
     state.location = { lat: null, lng: null };
+    state.locationError = true;
   }
 };
 

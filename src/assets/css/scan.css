@@ -53,6 +53,9 @@ button.ghost,.ant-btn.ghost{background:transparent;border:1px solid rgba(255,255
 .status-box{border:1px solid rgba(255,255,255,0.04);padding:12px;border-radius:8px;margin-top:8px}
 .result-box{padding:12px;border:1px solid rgba(255,255,255,0.04);border-radius:8px;margin-top:8px}
 .hint{color:rgba(255,255,255,0.6);margin-top:6px}
+.location-warning{margin-top:12px;padding:12px;border-radius:8px;background:rgba(255,196,60,0.15);border:1px solid rgba(255,196,60,0.45);color:#ffe3a0}
+.location-warning p{margin:0 0 6px;line-height:1.5;white-space:pre-wrap}
+.location-warning p:last-child{margin-bottom:0}
 
 /* small responsive tweaks */
 @media (max-width:480px){.dce-video-container{height:200px}}
