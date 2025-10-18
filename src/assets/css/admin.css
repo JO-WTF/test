@@ -224,7 +224,27 @@ body.admin-theme {
   line-height: 1.1;
 }
 .admin-page .status-card.loading .status-card__count {
-  color: var(--ant-text-muted);
+  color: transparent;
+  position: relative;
+  min-height: 24px;
+}
+.admin-page .status-card.loading .status-card__count::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(7, 43, 54, 0.25);
+  border-top-color: rgba(7, 43, 54, 0.75);
+  border-right-color: rgba(7, 43, 54, 0.4);
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  animation: status-card-spinner 0.75s linear infinite;
+}
+.admin-page .status-card.loading .status-card__count::before {
+  content: none;
 }
 .admin-page .status-card__label {
   font-size: 13px;
@@ -924,6 +944,16 @@ body.admin-theme {
   border-color: var(--ant-primary);
   box-shadow: 0 0 0 1px var(--ant-shadow-strong);
 }
+
+@keyframes status-card-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .admin-page .filter-actions {
   display: flex;
   flex-wrap: wrap;

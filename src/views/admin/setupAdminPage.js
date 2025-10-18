@@ -761,6 +761,7 @@ export function setupAdminPage(
     try {
       hint.textContent = i18n?.t('hint.loading') || '加载中…';
       tableBridge?.setLoading?.(true);
+      statusCards.setLoadingState?.(true);
       q.page_size = getNormalizedPageSize();
 
       const params = buildParamsAuto();
@@ -842,6 +843,11 @@ export function setupAdminPage(
         tableBridge?.setLoading?.(false);
       } catch (err) {
         console.error('Failed to clear table loading state', err);
+      }
+      try {
+        statusCards.setLoadingState?.(false);
+      } catch (err) {
+        console.error('Failed to clear status card loading state', err);
       }
     }
   }

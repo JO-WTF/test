@@ -351,6 +351,33 @@ export function createStatusDeliveryCardManager({
     });
   }
 
+  function setLoadingState(isLoading) {
+    if (!refs.size) return;
+    refs.forEach((ref) => {
+      if (!ref) return;
+      if (isLoading) {
+        if (ref.countEl) {
+          ref.countEl.dataset.prevText = ref.countEl.textContent || '';
+        }
+        ref.button.classList.add('loading');
+        ref.button.setAttribute('aria-busy', 'true');
+        ref.countEl.textContent = '';
+        const labelText = ref.labelEl?.textContent || '';
+        const aria = labelText ? `${labelText} loading` : 'Loading';
+        ref.button.setAttribute('aria-label', aria);
+      } else {
+        ref.button.classList.remove('loading');
+        ref.button.setAttribute('aria-busy', 'false');
+        if (ref.countEl && !ref.countEl.textContent) {
+          const prev = ref.countEl.dataset.prevText;
+          if (prev !== undefined) {
+            ref.countEl.textContent = prev;
+          }
+        }
+      }
+    });
+  }
+
   async function refreshCounts(passedStats) {
     const currentRole = typeof getCurrentRole === 'function' ? getCurrentRole() : null;
     if (!currentRole) {
@@ -373,13 +400,7 @@ export function createStatusDeliveryCardManager({
     abortController = controller;
     const { signal: cardSignal } = controller;
 
-    if (refs.size) {
-      refs.forEach((ref) => {
-        ref.button.classList.add('loading');
-        ref.button.setAttribute('aria-busy', 'true');
-        ref.countEl.textContent = '…';
-      });
-    }
+    setLoadingState(true);
 
     if (typeof onLoadingChange === 'function') {
       try {
@@ -508,5 +529,6 @@ export function createStatusDeliveryCardManager({
     updateLabels,
     updateActiveState,
     refreshCounts,
+    setLoadingState,
   };
 }
