@@ -129,6 +129,7 @@ export function setupAdminPage(
   const mMsg = el('m-msg');
   const filtersGrid = el('filters-grid');
   const filtersToggle = el('filters-toggle');
+  const filtersOverlayTarget = filtersGrid ? filtersGrid.closest('.dn-col2') : null;
 
   const authBtn = el('btn-auth');
   const authCancel = el('auth-cancel');
@@ -160,6 +161,7 @@ export function setupAdminPage(
   let filtersExpanded = true;
   let filtersMediaQuery = null;
   let removeFiltersMediaListener = null;
+  let filterOverlayDepth = 0;
 
   if (filtersToggle) {
     filtersToggle.setAttribute('aria-expanded', 'false');
@@ -428,6 +430,23 @@ export function setupAdminPage(
     updateFiltersToggleLabel();
   }
 
+  function setFilterOverlayVisible(visible, { forceReset = false } = {}) {
+    if (!filtersOverlayTarget) return;
+    if (forceReset) {
+      filterOverlayDepth = visible ? 1 : 0;
+    } else if (visible) {
+      filterOverlayDepth += 1;
+    } else {
+      filterOverlayDepth = Math.max(0, filterOverlayDepth - 1);
+    }
+    const shouldShow = filterOverlayDepth > 0;
+    try {
+      filtersOverlayTarget.classList.toggle('with-overlay', shouldShow);
+    } catch (err) {
+      console.error('Failed to toggle filter overlay', err);
+    }
+  }
+
   function handleFiltersMediaChange(event) {
     const isMobile = !!event?.matches;
     setFiltersExpanded(!isMobile);
@@ -650,6 +669,7 @@ export function setupAdminPage(
 
 
   async function fetchFilterCandidates() {
+    setFilterOverlayVisible(true);
     try {
       const { resp, data, message } = await fetchWithPayload(
         `${API_BASE}/api/dn/filters`,
@@ -670,6 +690,8 @@ export function setupAdminPage(
     } catch (err) {
       if (err?.name === 'AbortError') return;
       console.error('Failed to load DN filter options', err);
+    } finally {
+      setFilterOverlayVisible(false);
     }
   }
 
@@ -1515,8 +1537,12 @@ export function setupAdminPage(
   async function init() {
     dnEntry.normalizeFilterInput({ enforceFormat: false });
     if (hint) hint.textContent = i18n?.t('hint.ready') || '输入条件后点击查询。';
-    await fetchList();
-    await fetchFilterCandidates();
+    setFilterOverlayVisible(true);
+    try {
+      await Promise.all([fetchList(), fetchFilterCandidates()]);
+    } finally {
+      setFilterOverlayVisible(false);
+    }
   }
 
   hideHasAttachmentFilter();
@@ -1590,5 +1616,6 @@ export function setupAdminPage(
     }
     cleanupFilterSubscriptions();
     cleanupPhotoViewer();
+    setFilterOverlayVisible(false, { forceReset: true });
   };
 }

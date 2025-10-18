@@ -65,7 +65,7 @@
             </div>
           </div>
 
-          <div class="rhs">
+          <div class="rhs dn-col2">
             <div class="filters-grid" id="filters-grid" :class="{ collapsed: !showFilters }" :aria-hidden="String(!showFilters)">
               <div class="field filter-field">
                 <label data-i18n="planMosDate.label">Plan MOS Date</label>

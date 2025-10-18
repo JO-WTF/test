@@ -869,6 +869,35 @@ body.admin-theme {
   flex-direction: column;
   gap: 12px;
 }
+.admin-page .dn-col2 {
+  position: relative;
+}
+.admin-page .dn-col2.with-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(1px);
+  z-index: 5;
+  pointer-events: all;
+}
+.admin-page .dn-col2.with-overlay::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid rgba(7, 43, 54, 0.2);
+  border-top-color: rgba(7, 43, 54, 0.7);
+  border-right-color: rgba(7, 43, 54, 0.4);
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  animation: status-card-spinner 0.75s linear infinite;
+  z-index: 6;
+  pointer-events: none;
+}
 .admin-page .dn-col textarea {
   flex: none;
 }
