@@ -687,6 +687,7 @@ export function setupAdminPage(
       setFilterDropdownOptions('subcon', payload?.subcon);
       const siteOptions = payload?.status_site;
       setFilterDropdownOptions('status_site', siteOptions);
+      setFilterDropdownOptions('mos_type', payload?.mos_type);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       console.error('Failed to load DN filter options', err);
@@ -731,6 +732,7 @@ export function setupAdminPage(
       const projectValues = getFilterValues('project_request');
       const subconValues = getFilterValues('subcon');
       const statusSiteValues = getFilterValues('status_site');
+      const mosTypeValues = getFilterValues('mos_type');
 
       if (dnTokens.length === 1) params.set('dn_number', dnTokens[0]);
       if (st === '__NOT_EMPTY__') {
@@ -758,6 +760,7 @@ export function setupAdminPage(
         subcon: subconValues,
         du_id: duTokens,
         status_site: statusSiteValues,
+        mos_type: mosTypeValues,
       });
     }
 
@@ -1363,6 +1366,7 @@ export function setupAdminPage(
     setFilterValue('project_request', '');
     setFilterValue('subcon', '');
     setFilterValue('status_site', '');
+    setFilterValue('mos_type', '');
     setInputValue('du', '');
     if (!preservePageSize) {
       q.page_size = 20;

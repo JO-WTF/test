@@ -185,6 +185,21 @@
                   style="width: 100%"
                 ></a-select>
               </div>
+              <div class="field filter-field">
+                <label>Mos Type</label>
+                <a-select
+                  id="f-mos-type"
+                  v-model:value="mosTypeSelectValue"
+                  :options="mosTypeSelectOptions"
+                  :placeholder="mosTypeSelectPlaceholder"
+                  :filter-option="filterSelectOption"
+                  mode="multiple"
+                  max-tag-count="responsive"
+                  allow-clear
+                  show-search
+                  style="width: 100%"
+                ></a-select>
+              </div>
               <div class="field filter-field" style="display: none" aria-hidden="true">
                 <label data-i18n="has.label">是否带附件</label>
                 <select id="f-has">
@@ -366,6 +381,12 @@
                   >
                     {{ record.dnNumber || '-' }}
                   </button>
+                  <span
+                    v-if="record.mosBadge"
+                    :class="['mos-badge', record.mosBadgeClass ? `mos-badge--${record.mosBadgeClass}` : '']"
+                  >
+                    {{ record.mosBadge }}
+                  </span>
                   <template v-if="(record.original && (record.original.gs_cell_url))">
                     <Tooltip :title="translate('table.openInGoogleSheet') || 'Open in Google Sheets'">
                       <button
@@ -742,6 +763,9 @@ let i18nInstance = null;
   statusSiteSelectOptions,
   statusSiteSelectValue,
   statusSiteSelectPlaceholder,
+  mosTypeSelectOptions,
+  mosTypeSelectValue,
+  mosTypeSelectPlaceholder,
   statusDeliverySelectOptions,
   statusDeliverySelectValue: statusDeliverySelectValue,
   statusDeliverySelectPlaceholder,
@@ -1206,6 +1230,27 @@ const tableRows = computed(() => {
   return rawTableItems.value.map((item, index) => {
     const rowKey = getRowKey(item, index);
     const dnNumber = normalizeTextValue(item?.dn_number ?? item?.dnNumber);
+    const mosTypeRaw = normalizeTextValue(item?.mos_type);
+    const mosBadge = (() => {
+      if (!mosTypeRaw) return '';
+      const [token = ''] = mosTypeRaw.split(/\s+/);
+      if (!token) return '';
+      if (/^new$/i.test(token)) return 'New';
+      const ordinalMatch = token.match(/^(\d+)(st|nd|rd|th)$/i);
+      if (ordinalMatch) {
+        const [, num, suffix] = ordinalMatch;
+        return `${num}${suffix.toLowerCase()}`;
+      }
+      return token;
+    })();
+    const mosBadgeClass = (() => {
+      if (!mosBadge) return '';
+      const lower = mosBadge.toLowerCase();
+      if (lower === 'new') return 'new';
+      if (lower === '2nd') return 'second';
+      if (lower === '3rd') return 'third';
+      return '';
+    })();
     const duId = normalizeTextValue(item?.du_id);
     const region = normalizeTextValue(item?.[REGION_FIELD] ?? item?.region);
     const planMos = normalizeTextValue(item?.[PLAN_MOS_DATE_FIELD] ?? item?.plan_mos_date);
@@ -1252,6 +1297,8 @@ const tableRows = computed(() => {
       key: rowKey,
       rowKey,
       dnNumber,
+      mosBadge,
+      mosBadgeClass,
       duId,
       region,
       planMosDate: planMos,

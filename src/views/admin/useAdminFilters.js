@@ -413,6 +413,7 @@ export function useAdminFilters() {
   const project = createSelectState();
   const subcon = createSelectState();
   const statusSite = createSelectState();
+  const mosType = createSelectState();
   const statusDelivery = createSingleSelectState('Any');
   const hasCoordinate = createSingleSelectState('Any');
   const remark = createTextInputState('模糊匹配');
@@ -430,6 +431,7 @@ export function useAdminFilters() {
     project_request: project.bridge,
     subcon: subcon.bridge,
     status_site: statusSite.bridge,
+    mos_type: mosType.bridge,
     status_delivery: statusDelivery.bridge,
     has_coordinate: hasCoordinate.bridge,
     date_from: fromDate.bridge,
@@ -447,6 +449,7 @@ export function useAdminFilters() {
     { placeholderRef: area.placeholder, translationKey: 'select.placeholder' },
     { placeholderRef: lsp.placeholder, translationKey: 'select.placeholder' },
     { placeholderRef: subcon.placeholder, translationKey: 'select.placeholder' },
+    { placeholderRef: mosType.placeholder, translationKey: 'select.placeholder' },
     {
       placeholderRef: statusSite.placeholder,
       translationKey: 'statusSitePlaceholder',
@@ -587,6 +590,10 @@ export function useAdminFilters() {
     statusSiteSelectValue: statusSite.value,
     statusSiteSelectPlaceholder: statusSite.placeholder,
     statusSiteSelectBridge: statusSite.bridge,
+    mosTypeSelectOptions: mosType.options,
+    mosTypeSelectValue: mosType.value,
+    mosTypeSelectPlaceholder: mosType.placeholder,
+    mosTypeSelectBridge: mosType.bridge,
     statusDeliverySelectOptions: statusDelivery.options,
     statusDeliverySelectValue: statusDelivery.value,
     statusDeliverySelectPlaceholder: statusDelivery.placeholder,
