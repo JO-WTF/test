@@ -181,7 +181,7 @@ body.admin-theme {
 
 .admin-page .status-card {
   appearance: none;
-  border: 1px solid #cdeef6;
+  border: 1px solid var(--ant-border-subtle);
   border-radius: 12px;
   background: #e3f6fb;
   color: #072b36;
@@ -915,8 +915,14 @@ body.admin-theme {
 /* Default: set other delivery status cards to #e3f6fb, but exclude Total/No Status/ARRIVED_AT_SITE/POD which have their own styles */
 .admin-page .status-card-group--delivery .status-card:not(.status-card--total):not(.status-card--red):not(.status-card--progress-4):not(.status-card--progress-5) {
   background: #e3f6fb;
-  border-color: #cdeef6;
   color: #072b36;
+}
+.admin-page .status-card--total.active,
+.admin-page .status-card--red.active,
+.admin-page .status-card--progress-4.active,
+.admin-page .status-card--progress-5.active {
+  border-color: var(--ant-primary);
+  box-shadow: 0 0 0 1px var(--ant-shadow-strong);
 }
 .admin-page .filter-actions {
   display: flex;

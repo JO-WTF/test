@@ -590,24 +590,62 @@ export function setupAdminPage(
   function applyStatusCardFilter(def, canonicalValue) {
     const isDeliveryCard = def?.type === 'status_delivery';
     const isSiteCard = def?.type === 'status_site';
-    const targetValue = canonicalValue || '';
-    const todayJakarta = getTodayDateStringInTimezone(
-      PLAN_MOS_TIME_ZONE,
-      JAKARTA_OFFSET,
-      'dd MMM yy'
-    );
+    if (!isDeliveryCard && !isSiteCard) return;
 
-    resetAllFilters({ preservePageSize: true });
+    const fallbackValue = isDeliveryCard ? def?.status_delivery : def?.status_site;
+    const preferredValue =
+      typeof canonicalValue === 'string' ? canonicalValue : '';
+    const normalizedValue =
+      (preferredValue ||
+        (typeof fallbackValue === 'string' ? fallbackValue : '') ||
+        '').trim();
+    const isTotalSelection =
+      normalizedValue && normalizedValue.toLowerCase() === 'total';
+    const toCompareKey = (value) => {
+      if (value === undefined || value === null) return '';
+      const normalized =
+        normalizeStatusDeliveryValue(value) || (typeof value === 'string' ? value : String(value));
+      return String(normalized || '').trim().toLowerCase();
+    };
+    const currentDeliveryKey = toCompareKey(getSingleFilterValue('status_delivery'));
+    const currentSiteValues = getFilterValues('status_site');
+    const currentSiteValue =
+      Array.isArray(currentSiteValues) && currentSiteValues.length
+        ? currentSiteValues[0]
+        : '';
+    const currentSiteKey = toCompareKey(currentSiteValue);
+    const targetKey = toCompareKey(normalizedValue);
+    const isAlreadySelected =
+      !isTotalSelection &&
+      !!targetKey &&
+      (isDeliveryCard
+        ? targetKey === currentDeliveryKey
+        : targetKey === currentSiteKey);
+
     if (isDeliveryCard) {
-      if (targetValue && targetValue !== 'Total') {
-        setFilterValue('status_delivery', targetValue);
-      }
+      setFilterValue(
+        'status_delivery',
+        isTotalSelection || isAlreadySelected
+          ? DEFAULT_STATUS_DELIVERY_VALUE
+          : normalizedValue
+      );
     } else if (isSiteCard) {
-      if (targetValue && targetValue !== 'Total') {
-        setFilterValue('status_site', [targetValue]);
+      if (isTotalSelection || isAlreadySelected || !normalizedValue) {
+        setFilterValue('status_site', '');
+      } else {
+        setFilterValue('status_site', [normalizedValue]);
       }
     }
-    setFilterValue('plan_mos_date', todayJakarta);
+
+    const currentPlanMosDate = getSingleFilterValue('plan_mos_date');
+    if (!currentPlanMosDate) {
+      const todayJakarta = getTodayDateStringInTimezone(
+        PLAN_MOS_TIME_ZONE,
+        JAKARTA_OFFSET,
+        'dd MMM yy'
+      );
+      setFilterValue('plan_mos_date', todayJakarta);
+    }
   }
 
 

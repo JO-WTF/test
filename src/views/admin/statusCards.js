@@ -318,24 +318,34 @@ export function createStatusDeliveryCardManager({
 
   function updateActiveState() {
     if (!refs.size) return;
+    const toCompareKey = (value) => {
+      if (value === undefined || value === null) return '';
+      const normalized =
+        normalizeStatusDeliveryValue(value) || (typeof value === 'string' ? value : String(value));
+      return String(normalized || '').trim().toLowerCase();
+    };
+    const statusValue = getStatusDeliveryFilterValue();
+    const statusKey = toCompareKey(statusValue);
+    const hasStatusFilter = Boolean(statusKey);
     const siteTokens = getStatusSiteValues();
     const siteValue = siteTokens.length ? siteTokens[0] : '';
-    const canonicalSite = normalizeStatusDeliveryValue(siteValue);
-    const statusValue = getStatusDeliveryFilterValue();
-    const canonicalStatus = normalizeStatusDeliveryValue(statusValue);
-    const canonical = canonicalSite || canonicalStatus;
-    const hasStatus = Boolean(canonical);
+    const siteKey = toCompareKey(siteValue);
+    const hasSiteFilter = Boolean(siteKey);
     refs.forEach((ref) => {
       const defItem = ref.def;
       if (!defItem) return;
-      const isActive =
-        defItem.type === 'status_delivery'
-          ? hasStatus && defItem.status_delivery === canonical
-          : defItem.type === 'status_site'
-          ? canonicalSite && defItem.status_site === canonicalSite
-          : defItem.type === 'total'
-          ? !hasStatus
-          : false;
+      let isActive = false;
+      if (defItem.type === 'status_delivery') {
+        const defKey = toCompareKey(defItem.status_delivery);
+        const isTotal = defKey === 'total';
+        isActive = isTotal ? !hasStatusFilter : hasStatusFilter && defKey === statusKey;
+      } else if (defItem.type === 'status_site') {
+        const defKey = toCompareKey(defItem.status_site);
+        const isTotal = defKey === 'total';
+        isActive = isTotal ? !hasSiteFilter : hasSiteFilter && defKey === siteKey;
+      } else if (defItem.type === 'total') {
+        isActive = !hasStatusFilter && !hasSiteFilter;
+      }
       ref.button.classList.toggle('active', isActive);
       ref.button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
